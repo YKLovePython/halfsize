@@ -1,6 +1,6 @@
 {
   "name": "halfsize",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Compress any video to an exact target size, locally, and prove the quality did not drop.",
   "type": "module",
   "bin": {

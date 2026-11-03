@@ -7,7 +7,7 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.2";
 
 const HELP = `
   halfsize ${VERSION} - compress a video to an exact size, and prove it still looks the same.

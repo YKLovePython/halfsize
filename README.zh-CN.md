@@ -12,6 +12,7 @@
   <a href="https://www.npmjs.com/package/halfsize"><img alt="npm" src="https://img.shields.io/npm/v/halfsize?color=b6f36a"></a>
   <a href="https://www.npmjs.com/package/halfsize"><img alt="downloads" src="https://img.shields.io/npm/dm/halfsize?color=b6f36a"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-b6f36a"></a>
+  <a href="https://github.com/YKLovePython/halfsize/actions/workflows/test.yml"><img alt="tests" src="https://github.com/YKLovePython/halfsize/actions/workflows/test.yml/badge.svg"></a>
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-b6f36a">
   <img alt="no upload" src="https://img.shields.io/badge/%E4%B8%8D%E4%B8%8A%E4%BC%A0-%E6%9C%AC%E5%9C%B0-b6f36a">
 </p>
@@ -95,9 +96,6 @@ npx halfsize video.mp4 --to 25mb --dry-run
 # 给脚本用的 JSON
 npx halfsize video.mp4 --to 25mb --json
 ```
-
-> npm 版本正在发布中；在那之前，同一条命令可以直接从仓库运行：
-> `npx github:YKLovePython/halfsize video.mp4 --to 25mb`
 
 常用的话装到全局：
 
