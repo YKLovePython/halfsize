@@ -224,6 +224,7 @@ more than half". The tool reports the real number either way.
 - Hardware encoding (NVENC / QSV / VideoToolbox) as an opt-in fast path
 - Batch mode and a folder watcher
 - Subtitle and multiple audio track passthrough
+- HDR-to-SDR tonemapping, so iPhone HDR clips keep their colors
 - AV1 (`libsvtav1`) when the source is already AV1-friendly
 - A single-file binary, so Node.js is not required
 - Presets for specific platform caps (WeChat, Discord, email, X, Bluesky)

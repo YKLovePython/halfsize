@@ -210,6 +210,7 @@ for f in *.mp4; do npx halfsize "$f" --to 25mb; done
 - 硬件编码（NVENC / QSV / VideoToolbox）作为可选的快速路径
 - 批量模式与文件夹监听
 - 字幕和多音轨原样保留
+- HDR 转 SDR（让 iPhone 拍的 HDR 视频保住颜色）
 - 源已经是 AV1 时改用 AV1（`libsvtav1`）
 - 单文件二进制，不依赖 Node.js
 - 面向具体平台上限的预设（微信、Discord、邮件、X、Bluesky）

@@ -113,6 +113,9 @@ export function planEncode(info, options = {}) {
   if (videoKbps < 120) {
     warnings.push("Very low bitrate. Consider a larger target or H.265.");
   }
+  if (info.video.hdr) {
+    warnings.push("HDR source detected. HDR-to-SDR conversion is not implemented yet, so colors may look washed out.");
+  }
 
   const downscaled = chosen.w !== original.w || chosen.h !== original.h;
 

@@ -36,37 +36,39 @@ export async function encode(input, output, plan, info, onProgress = () => {}) {
   const passlog = path.join(os.tmpdir(), `halfsize-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const started = Date.now();
 
-  if (plan.mode === "size" && plan.twoPass) {
-    const pass1 = [
-      ...baseArgs(input, plan, passlog),
-      "-b:v", `${plan.videoKbps}k`,
-      "-pass", "1",
-      "-an",
-      "-f", "null",
-      NULL_DEVICE,
-    ];
-    await runFfmpeg(ffmpeg, pass1, info.duration, () => {});
-    const pass2 = [
-      ...baseArgs(input, plan, passlog),
-      "-b:v", `${plan.videoKbps}k`,
-      "-pass", "2",
-      ...audioArgs(plan),
-      "-movflags", "+faststart",
-      output,
-    ];
-    await runFfmpeg(ffmpeg, pass2, info.duration, onProgress);
-  } else {
-    const args = [...baseArgs(input, plan, null)];
-    if (plan.mode === "size") {
-      args.push("-b:v", `${plan.videoKbps}k`, "-maxrate", `${Math.round(plan.videoKbps * 1.2)}k`, "-bufsize", `${plan.videoKbps * 2}k`);
+  try {
+    if (plan.mode === "size" && plan.twoPass) {
+      const pass1 = [
+        ...baseArgs(input, plan, passlog),
+        "-b:v", `${plan.videoKbps}k`,
+        "-pass", "1",
+        "-an",
+        "-f", "null",
+        NULL_DEVICE,
+      ];
+      await runFfmpeg(ffmpeg, pass1, info.duration, () => {});
+      const pass2 = [
+        ...baseArgs(input, plan, passlog),
+        "-b:v", `${plan.videoKbps}k`,
+        "-pass", "2",
+        ...audioArgs(plan),
+        "-movflags", "+faststart",
+        output,
+      ];
+      await runFfmpeg(ffmpeg, pass2, info.duration, onProgress);
     } else {
-      args.push("-crf", String(plan.crf));
+      const args = [...baseArgs(input, plan, null)];
+      if (plan.mode === "size") {
+        args.push("-b:v", `${plan.videoKbps}k`, "-maxrate", `${Math.round(plan.videoKbps * 1.2)}k`, "-bufsize", `${plan.videoKbps * 2}k`);
+      } else {
+        args.push("-crf", String(plan.crf));
+      }
+      args.push(...audioArgs(plan), "-movflags", "+faststart", output);
+      await runFfmpeg(ffmpeg, args, info.duration, onProgress);
     }
-    args.push(...audioArgs(plan), "-movflags", "+faststart", output);
-    await runFfmpeg(ffmpeg, args, info.duration, onProgress);
+  } finally {
+    cleanup(passlog);
   }
-
-  cleanup(passlog);
 
   return {
     outputBytes: fs.statSync(output).size,
