@@ -27,7 +27,7 @@
   "scripts": {
     "start": "node bin/halfsize.mjs",
     "web": "node bin/halfsize.mjs --web",
-    "test": "node --test \"test/*.test.mjs\""
+    "test": "node --test test/human.test.mjs test/plan.test.mjs test/quality.test.mjs test/e2e.test.mjs"
   },
   "keywords": [
     "video",
