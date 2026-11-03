@@ -7,7 +7,7 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.2";
+const VERSION = "0.1.3";
 
 const HELP = `
   halfsize ${VERSION} - compress a video to an exact size, and prove it still looks the same.
@@ -17,6 +17,7 @@ const HELP = `
     halfsize <file> --to 25mb --codec h265
     halfsize <file> --crf 23           Quality-first mode
     halfsize --web                     Open the local app
+    halfsize --web --port 8080         Use a different port
     halfsize --doctor                  Check FFmpeg and hardware encoders
 
   Options
@@ -29,6 +30,7 @@ const HELP = `
     --no-downscale    Never reduce resolution
     --json            Machine-readable result
     --dry-run         Print the plan, do not encode
+    --port <n>        Port for --web (default 4174)
     -h, --help        Show this help
     -v, --version     Show version
 
@@ -52,6 +54,7 @@ function parseArgs(argv) {
     else if (a === "--no-downscale") args.flags.downscale = false;
     else if (a === "--web") args.flags.web = true;
     else if (a === "--doctor") args.flags.doctor = true;
+    else if (a === "--port") args.flags.port = Number(argv[++i]);
     else if (a === "--to") args.flags.to = argv[++i];
     else if (a === "--crf") args.flags.crf = Number(argv[++i]);
     else if (a === "--codec") args.flags.codec = argv[++i];
@@ -76,7 +79,7 @@ export async function main(argv) {
     return;
   }
   if (flags.doctor) return doctor();
-  if (flags.web) return startWeb();
+  if (flags.web) return startWeb(flags.port);
 
   const input = path.resolve(args._[0]);
   if (!fs.existsSync(input)) throw new Error(`File not found: ${input}`);
@@ -192,7 +195,7 @@ class Progress {
     this.start = Date.now();
   }
 
-  update({ ratio, speed }) {
+  update({ ratio, speed, pass, passes }) {
     if (!this.enabled) return;
     const now = Date.now();
     if (now - this.lastPrint < 120 && ratio < 1) return;
@@ -203,8 +206,9 @@ class Progress {
     const elapsed = (now - this.start) / 1000;
     const eta = ratio > 0.02 ? (elapsed / ratio) * (1 - ratio) : 0;
     const speedText = String(speed || "").replace("x", "");
+    const passText = passes > 1 ? `pass ${pass}/2  ` : "";
     process.stdout.write(
-      `\r  [${bar}] ${String(Math.round(ratio * 100)).padStart(3)}%  ${speedText ? `${speedText}x` : ""}  eta ${clock(eta)}   `,
+      `\r  [${bar}] ${String(Math.round(ratio * 100)).padStart(3)}%  ${passText}${speedText ? `${speedText}x` : ""}  eta ${clock(eta)}   `,
     );
   }
 
@@ -271,9 +275,9 @@ async function doctor() {
   console.log("");
 }
 
-async function startWeb() {
+async function startWeb(port) {
   const { startServer } = await import("./server.mjs");
-  const url = await startServer();
+  const url = await startServer(port ? { port } : {});
   console.log("");
   console.log(`  halfsize is running at ${url}`);
   console.log("  Press Ctrl+C to stop.");

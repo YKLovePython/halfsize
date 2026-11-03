@@ -164,6 +164,7 @@ halfsize <file> [options]
   --json            Machine-readable result
   --dry-run         Print the plan, do not encode
   --web             Start the local web app
+  --port <n>        Port for the web app (default 4174)
   --doctor          Show which FFmpeg and encoders were found
   -h, --help        Help
   -v, --version     Version

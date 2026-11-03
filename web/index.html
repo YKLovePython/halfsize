@@ -248,6 +248,7 @@ const I18N = {
     smallerLabel: "更小",
     accuracyUnder: (p) => `比目标小 ${p}%`,
     accuracyOver: (p) => `超出目标 ${p}%`,
+    passLabel: (n) => `第 ${n}/2 遍`,
     alreadySmall: (a, b) => `这个文件已经只有 ${a}，小于 ${b} 的目标。换一个更小的目标。`,
     badSize: "看不懂这个大小。试试 25mb、700k 或 1.5gb。",
     failed: "压缩失败",
@@ -287,6 +288,7 @@ const I18N = {
     smallerLabel: "smaller",
     accuracyUnder: (p) => `${p}% under target`,
     accuracyOver: (p) => `${p}% over target`,
+    passLabel: (n) => `pass ${n}/2`,
     alreadySmall: (a, b) => `This file is already ${a}, smaller than the ${b} target. Pick a smaller target.`,
     badSize: "Can't read that size. Try 25mb, 700k or 1.5gb.",
     failed: "compression failed",
@@ -461,7 +463,8 @@ go.addEventListener("click", async () => {
     const percent = Math.round((p.ratio || 0) * 100);
     fill.style.width = `${percent}%`;
     pct.textContent = `${percent}%`;
-    speed.textContent = `${p.speed || ""}  eta ${fmtDur(p.eta)}`;
+    const pass = p.passes > 1 ? `${strings.passLabel(p.pass)}  ` : "";
+    speed.textContent = `${pass}${p.speed || ""}  eta ${fmtDur(p.eta)}`;
   });
   es.addEventListener("phase", () => {
     fill.style.width = "100%";

@@ -155,6 +155,7 @@ halfsize <file> [options]
   --json            机器可读结果
   --dry-run         只打印方案，不编码
   --web             启动本地网页版
+  --port <n>        网页版端口（默认 4174）
   --doctor          查看找到的 FFmpeg 和编码器
   -h, --help        帮助
   -v, --version     版本

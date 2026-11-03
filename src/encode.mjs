@@ -46,7 +46,7 @@ export async function encode(input, output, plan, info, onProgress = () => {}) {
         "-f", "null",
         NULL_DEVICE,
       ];
-      await runFfmpeg(ffmpeg, pass1, info.duration, () => {});
+      await runFfmpeg(ffmpeg, pass1, info.duration, (p) => onProgress({ ...p, ratio: p.ratio * 0.5, pass: 1, passes: 2 }));
       const pass2 = [
         ...baseArgs(input, plan, passlog),
         "-b:v", `${plan.videoKbps}k`,
@@ -55,7 +55,7 @@ export async function encode(input, output, plan, info, onProgress = () => {}) {
         "-movflags", "+faststart",
         output,
       ];
-      await runFfmpeg(ffmpeg, pass2, info.duration, onProgress);
+      await runFfmpeg(ffmpeg, pass2, info.duration, (p) => onProgress({ ...p, ratio: 0.5 + p.ratio * 0.5, pass: 2, passes: 2 }));
     } else {
       const args = [...baseArgs(input, plan, null)];
       if (plan.mode === "size") {
@@ -64,7 +64,7 @@ export async function encode(input, output, plan, info, onProgress = () => {}) {
         args.push("-crf", String(plan.crf));
       }
       args.push(...audioArgs(plan), "-movflags", "+faststart", output);
-      await runFfmpeg(ffmpeg, args, info.duration, onProgress);
+      await runFfmpeg(ffmpeg, args, info.duration, (p) => onProgress({ ...p, pass: 1, passes: 1 }));
     }
   } finally {
     cleanup(passlog);
