@@ -99,6 +99,9 @@ npx halfsize video.mp4 --to 25mb --dry-run
 npx halfsize video.mp4 --to 25mb --json
 ```
 
+> While the npm release is being finalized, the same commands work straight from this repo:
+> `npx github:YKLovePython/halfsize video.mp4 --to 25mb`
+
 Install it globally if you will use it more than once:
 
 ```bash

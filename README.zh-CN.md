@@ -96,6 +96,9 @@ npx halfsize video.mp4 --to 25mb --dry-run
 npx halfsize video.mp4 --to 25mb --json
 ```
 
+> npm 版本正在发布中；在那之前，同一条命令可以直接从仓库运行：
+> `npx github:YKLovePython/halfsize video.mp4 --to 25mb`
+
 常用的话装到全局：
 
 ```bash
