@@ -1,0 +1,47 @@
+{
+  "name": "halfsize",
+  "version": "0.1.0",
+  "description": "Compress any video to an exact target size, locally, and prove the quality did not drop.",
+  "type": "module",
+  "bin": {
+    "halfsize": "bin/halfsize.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YKLovePython/halfsize.git"
+  },
+  "homepage": "https://github.com/YKLovePython/halfsize#readme",
+  "bugs": {
+    "url": "https://github.com/YKLovePython/halfsize/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "src",
+    "web",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node bin/halfsize.mjs",
+    "web": "node bin/halfsize.mjs --web",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "keywords": [
+    "video",
+    "compress",
+    "video-compression",
+    "ffmpeg",
+    "target-size",
+    "vmaf",
+    "cli",
+    "windows"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0"
+  }
+}

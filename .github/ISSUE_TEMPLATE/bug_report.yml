@@ -1,0 +1,43 @@
+name: Bug report
+description: Something compressed wrong, failed, or looked worse than expected.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The fastest way to fix a video bug is to include the exact command and FFmpeg details.
+  - type: textarea
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran.
+      placeholder: npx halfsize video.mp4 --to 25mb --codec h265
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `npx halfsize --doctor`
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: input
+    attributes:
+      label: Input details
+      description: Resolution, duration, codec, and file size. `ffprobe` output is ideal.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What happened vs. what you expected
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11, macOS 15, Ubuntu 24.04
+    validations:
+      required: true

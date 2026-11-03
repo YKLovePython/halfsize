@@ -1,0 +1,238 @@
+<p align="center">
+  <img src="docs/card.webp" width="760" alt="halfsize：23.2 MB 压缩到 1.99 MB，小了 12 倍，VMAF 84.4">
+</p>
+
+<h1 align="center">halfsize</h1>
+
+<p align="center">
+  <b>把任何视频塞进任何大小限制。全程本地。并且证明画质没垮。</b>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/halfsize"><img alt="npm" src="https://img.shields.io/npm/v/halfsize?color=b6f36a"></a>
+  <a href="https://www.npmjs.com/package/halfsize"><img alt="downloads" src="https://img.shields.io/npm/dm/halfsize?color=b6f36a"></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-b6f36a"></a>
+  <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-b6f36a">
+  <img alt="no upload" src="https://img.shields.io/badge/%E4%B8%8D%E4%B8%8A%E4%BC%A0-%E6%9C%AC%E5%9C%B0-b6f36a">
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="#快速开始">快速开始</a> ·
+  <a href="#它怎么工作">它怎么工作</a> ·
+  <a href="#常见问题">常见问题</a>
+</p>
+
+---
+
+微信不让发超过 **25 MB**，Discord 只给 **10 MB**，邮件大多卡在 **20 MB**。
+于是你打开剪辑软件，猜一个码率，导出，看一眼大小，再导一次——最后还是不知道画质到底掉了多少。
+
+`halfsize` 把这件事变成一行命令：
+
+```bash
+npx halfsize 婚礼.mp4 --to 25mb
+```
+
+它会算码率、挑一个真正塞得下的分辨率、做两遍编码，最后用 **SSIM** 和 **VMAF** 测给你看：
+画质到底还在不在。
+
+```
+  halfsize 0.1.0
+
+  source.mp4
+  23.2 MB  8s  1920x1080  30.00 fps  h264
+
+  target     2.00 MB
+  plan       H.264  960x540  1.81 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 -> 960x540
+  estimate   1.94 MB  (12x smaller)
+  output     source.2mb.mp4
+
+  measuring quality                                        done in 2s
+
+  23.2 MB  ->  1.99 MB   12x smaller   0.3% under target
+  VMAF 84.4   SSIM 0.968   slight softening
+
+  -> C:\Videos\source.2mb.mp4
+```
+
+## 为什么做这个
+
+「把视频变小」早就有人解决了。真正没人做好的是：**「刚好塞进 25 MB，然后告诉我画质还行不行」**。
+
+- HandBrake 很好用，但它要你想清楚编码器、RF 值、preset 这些词。
+- 在线压缩网站也能用，直到你想起自己刚把私人视频传给了陌生人。
+- `ffmpeg` 当然做得到，只是没人记得那 11 个参数，而且几乎没人压完再测一遍 VMAF。
+
+`halfsize` 补的就是这最后 5%：你输入一个目标大小，它给你一个看得懂的画质分数。
+
+| | halfsize | HandBrake | 在线压缩 |
+|---|---|---|---|
+| 精确压到指定大小 | ✅ 一个参数 | 要自己算码率 | 通常只是盲压 |
+| 告诉你画质代价 | ✅ VMAF + SSIM | ❌ | ❌ |
+| 文件留在本机 | ✅ | ✅ | ❌ |
+| 能写进脚本 / CI | ✅ CLI + JSON | ❌ 图形界面 | ❌ |
+| 需要重新学一套界面 | 不用 | 要 | 要 |
+
+## 快速开始
+
+需要 [Node.js 18+](https://nodejs.org)。首次安装会下载 FFmpeg；下载失败时会自动使用你系统里已有的 FFmpeg。
+
+```bash
+# 压到指定大小
+npx halfsize video.mp4 --to 25mb
+
+# 更小的文件，H.265
+npx halfsize video.mp4 --to 10mb --codec h265
+
+# 不在乎大小，只想要好画质
+npx halfsize video.mp4 --crf 23
+
+# 只看方案，不真的压
+npx halfsize video.mp4 --to 25mb --dry-run
+
+# 给脚本用的 JSON
+npx halfsize video.mp4 --to 25mb --json
+```
+
+常用的话装到全局：
+
+```bash
+npm install -g halfsize
+```
+
+### 本地网页版
+
+```bash
+npx halfsize --web
+```
+
+打开 `http://127.0.0.1:4174`，把视频拖进去，选 25 MB / 10 MB / 20 MB / 5 MB，或者自己输入一个数，
+然后看着它压。文件只会写进**你自己电脑**的临时目录，不会发到任何地方。
+
+<p align="center">
+  <img src="docs/screenshot.webp" width="860" alt="halfsize 本地网页版：23.2 MB 压缩到 1.99 MB，VMAF 84.4">
+</p>
+
+每次压完可以生成一张**分享图**（就是本文最上面那张），上面是这次真实的数字。
+
+## 它怎么工作
+
+1. **探测。** 读取时长、分辨率、帧率、音频码率、旋转信息、HDR 标记。
+2. **算预算。** 总码率 = 目标字节 × 8 ÷ 时长，减掉音频，再留一点容器开销。
+3. **选分辨率。** 从原分辨率开始，沿着 2160p → 240p 的阶梯往下走，挑「按这个编码器每像素比特数
+   （H.264 0.072 bpp，H.265 0.045 bpp）刚好塞得下」的最大一档。这就是 12 倍压缩还能看的原因：
+   让编码器把有限的比特花在更少的像素上，而不是硬撑 4K。
+4. **压两遍。** `libx264` 或 `libx265` 两遍 ABR。第一遍找出哪里需要比特，第二遍把比特花在那里。
+   输出 `yuv420p`、AAC 音频、`+faststart`，H.265 额外打 `hvc1` 标签，保证苹果设备能播。
+5. **证明。** 在视频里取三个采样点算 SSIM，在中间点算 VMAF，对照阈值给一句人话结论。
+
+```
+VMAF ≥ 95  几乎看不出差别
+VMAF ≥ 90  看起来一样
+VMAF ≥ 80  轻微变软
+VMAF ≥ 70  能看出损失
+低于 70    明显变差
+```
+
+VMAF 是 Netflix 提出的感知质量指标，比 PSNR 或「码率多少」更接近人眼判断。
+它不是魔法，但比「相信我」靠谱得多。
+
+## 命令行参数
+
+```
+halfsize <file> [options]
+
+  --to <size>       目标大小：25mb、700k、1.5gb
+  --crf <n>         质量模式，不按大小（18 最好，23 均衡，28 更小）
+  --codec <name>    h264（默认，兼容性最好）或 h265（大约再小 30%）
+  --preset <name>   ultrafast .. veryslow（默认 medium）
+  --out <file>      输出路径
+  --no-verify       跳过 SSIM/VMAF 检测
+  --no-downscale    绝不降分辨率（可能会压不到目标）
+  --json            机器可读结果
+  --dry-run         只打印方案，不编码
+  --web             启动本地网页版
+  --doctor          查看找到的 FFmpeg 和编码器
+  -h, --help        帮助
+  -v, --version     版本
+```
+
+大小支持 `b`、`k`/`kb`、`m`/`mb`、`g`/`gb`，中间可以有空格。不写单位按 MB 算。
+
+退出码：`0` 成功，`1` 出错。`--json` 会返回方案、画质测量和目标误差，方便包进脚本。
+
+## 安装说明
+
+`ffmpeg-static` 和 `ffprobe-static` 会在 `npm install` 时下载预编译二进制。如果你在公司代理或
+会拦截 TLS 的网络后面，这一步可能失败。`halfsize` 会退回到 `PATH` 里的 `ffmpeg`，或者你手动指定的版本：
+
+```bash
+HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe npx halfsize video.mp4 --to 25mb
+```
+
+Windows 上 `winget install Gyan.FFmpeg` 就够了；macOS 用 `brew install ffmpeg`；
+Debian/Ubuntu 用 `sudo apt install ffmpeg`。跑一下 `npx halfsize --doctor` 能看到实际用的是哪个。
+
+## 常见问题
+
+**视频会被上传吗？**
+不会。命令行完全不联网。网页版只和 `127.0.0.1` 通信，上传的文件放在临时目录，进程退出就删掉。
+
+**为什么给我降分辨率了？**
+因为 25 MB 的 4K 根本不够比特，硬撑 4K 只会满屏马赛克。降分辨率、把每像素比特数保住，
+通常比「分辨率不变但饿死编码器」好看得多。不想降就加 `--no-downscale`。
+
+**为什么输出比目标小一点，而不是刚好等于？**
+容器开销和两遍 ABR 都会有波动。`halfsize` 会刻意瞄准低 3%，保证不会超过平台的硬上限。
+上面那个例子里，最终比目标低 0.3%。
+
+**H.264 还是 H.265？**
+H.264 到处都能播，包括老安卓机和浏览器。H.265 同画质大约小 30%，但部分剪辑软件和老硬件
+支持得别扭。默认 H.264。
+
+**Windows / macOS / Linux 都能用吗？**
+能。就是 Node.js + FFmpeg，没有平台特定的东西。
+
+**能批量压一个文件夹吗？**
+还没内置。现在可以用一行 shell：
+
+```bash
+for f in *.mp4; do npx halfsize "$f" --to 25mb; done
+```
+
+**为什么叫 halfsize？**
+因为「能小多少」的诚实答案通常是「差不多一半，或者远不止一半」。它每次都会把真实数字告诉你。
+
+## 路线图
+
+- 硬件编码（NVENC / QSV / VideoToolbox）作为可选的快速路径
+- 批量模式与文件夹监听
+- 字幕和多音轨原样保留
+- 源已经是 AV1 时改用 AV1（`libsvtav1`）
+- 单文件二进制，不依赖 Node.js
+- 面向具体平台上限的预设（微信、Discord、邮件、X、Bluesky）
+
+想要哪个就开 issue 说一声。欢迎 PR，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 开发
+
+```bash
+git clone https://github.com/YKLovePython/halfsize.git
+cd halfsize
+npm install
+npm test
+node bin/halfsize.mjs --web
+```
+
+测试里包含一次真实的端到端编码：用 FFmpeg 生成素材、压到目标大小、探测输出、断言大小和 SSIM。
+仓库里不放视频素材。
+
+## 许可证
+
+MIT。随便用，随便改，随便发布。
+
+---
+
+如果 `halfsize` 帮你少猜了一次码率，点个 star 能让下一个人也找到它。

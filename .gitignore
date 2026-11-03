@@ -1,0 +1,7 @@
+node_modules/
+_old_firstlook/
+*.25mb.mp4
+*.mp4
+!test/fixtures/*.mp4
+.DS_Store
+npm-debug.log*
