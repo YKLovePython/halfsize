@@ -22,6 +22,8 @@
     "src",
     "web",
     "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

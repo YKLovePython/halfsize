@@ -118,6 +118,12 @@ npx halfsize --web
 
 每次压完可以生成一张**分享图**（就是本文最上面那张），上面是这次真实的数字。
 
+### 给 agent 用
+
+仓库里带了 [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md)。把整个文件夹放进你的
+agent 技能目录（Claude Code 是 `.claude/skills/halfsize/`），agent 就能把「把这个视频压到
+25 MB」变成一次压缩加一份画质报告，而不是瞎猜码率。
+
 ## 它怎么工作
 
 1. **探测。** 读取时长、分辨率、帧率、音频码率、旋转信息、HDR 标记。
@@ -235,6 +241,8 @@ node bin/halfsize.mjs --web
 ## 许可证
 
 MIT。随便用，随便改，随便发布。
+
+版本变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

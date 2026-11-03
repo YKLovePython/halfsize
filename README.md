@@ -123,6 +123,13 @@ machine**; nothing is sent anywhere.
 After each run you can download a **share card** (the image at the top of this README) with the
 real numbers on it.
 
+### Use it from an agent
+
+The repo ships a skill in [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md). Drop that
+folder into your agent's skills directory (for Claude Code: `.claude/skills/halfsize/`) and the
+agent can turn "make this fit in 25 MB" into a compression plus a measured quality report,
+instead of guessing a bitrate.
+
 ## How it works
 
 1. **Probe.** Read duration, resolution, frame rate, audio bitrate, rotation, and HDR metadata.
@@ -250,6 +257,8 @@ it to a target, probes the output, and asserts the size and SSIM. No fixtures in
 ## License
 
 MIT. Use it, fork it, ship it.
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed.
 
 ---
 
