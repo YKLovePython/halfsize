@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/card.webp" width="760" alt="halfsize: 23.2 MB to 1.99 MB, 12x smaller, VMAF 84.4">
+  <img src="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.webp" width="760" alt="halfsize: 23.2 MB to 1.99 MB, 12x smaller, VMAF 84.4">
 </p>
 
 <h1 align="center">halfsize</h1>
@@ -119,7 +119,7 @@ your own limit, and watch the encode. The file goes to a temporary folder **on y
 machine**; nothing is sent anywhere.
 
 <p align="center">
-  <img src="docs/screenshot.webp" width="860" alt="halfsize local web app showing 23.2 MB compressed to 1.99 MB with VMAF 84.4">
+  <img src="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/screenshot.webp" width="860" alt="halfsize local web app showing 23.2 MB compressed to 1.99 MB with VMAF 84.4">
 </p>
 
 After each run you can download a **share card** (the image at the top of this README) with the

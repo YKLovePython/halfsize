@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/card.webp" width="760" alt="halfsize：23.2 MB 压缩到 1.99 MB，小了 12 倍，VMAF 84.4">
+  <img src="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.webp" width="760" alt="halfsize：23.2 MB 压缩到 1.99 MB，小了 12 倍，VMAF 84.4">
 </p>
 
 <h1 align="center">halfsize</h1>
@@ -115,7 +115,7 @@ npx halfsize --web
 然后看着它压。文件只会写进**你自己电脑**的临时目录，不会发到任何地方。
 
 <p align="center">
-  <img src="docs/screenshot.webp" width="860" alt="halfsize 本地网页版：23.2 MB 压缩到 1.99 MB，VMAF 84.4">
+  <img src="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/screenshot.webp" width="860" alt="halfsize 本地网页版：23.2 MB 压缩到 1.99 MB，VMAF 84.4">
 </p>
 
 每次压完可以生成一张**分享图**（就是本文最上面那张），上面是这次真实的数字。

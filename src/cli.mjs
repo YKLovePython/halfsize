@@ -7,7 +7,7 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 const HELP = `
   halfsize ${VERSION} - compress a video to an exact size, and prove it still looks the same.
@@ -67,12 +67,12 @@ export async function main(argv) {
   const args = parseArgs(argv);
   const flags = args.flags;
 
-  if (flags.help || (!args._.length && !flags.web && !flags.doctor)) {
-    console.log(HELP);
-    return;
-  }
   if (flags.version) {
     console.log(VERSION);
+    return;
+  }
+  if (flags.help || (!args._.length && !flags.web && !flags.doctor)) {
+    console.log(HELP);
     return;
   }
   if (flags.doctor) return doctor();
