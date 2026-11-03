@@ -9,7 +9,7 @@ const NULL_DEVICE = process.platform === "win32" ? "NUL" : "/dev/null";
 function buildFilters(plan) {
   const filters = [];
   if (plan.scaleFilter) filters.push(plan.scaleFilter);
-  if (plan.fpsFilter) filters.push(plan.fpsFilter);
+  if (plan.fps) filters.push(`fps=${plan.fps}`);
   return filters.length ? filters.join(",") : null;
 }
 
@@ -17,6 +17,7 @@ function baseArgs(input, plan, passlog) {
   const args = ["-hide_banner", "-y", "-i", input];
   const filters = buildFilters(plan);
   if (filters) args.push("-vf", filters);
+  args.push("-fps_mode", "cfr");
   args.push("-c:v", plan.encoder, "-preset", plan.preset);
   if (plan.codec === "h265") args.push("-x265-params", "log-level=error");
   if (plan.codec === "h265") args.push("-tag:v", "hvc1");
@@ -86,6 +87,7 @@ function cleanup(passlog) {
 }
 
 function runFfmpeg(bin, args, duration, onProgress) {
+  if (process.env.HALFSIZE_DEBUG_FFMPEG) console.error(`\n[ffmpeg] ${bin} ${args.join(" ")}\n`);
   return new Promise((resolve, reject) => {
     const child = spawn(bin, ["-progress", "pipe:1", "-nostats", ...args], {
       windowsHide: true,

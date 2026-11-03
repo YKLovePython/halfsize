@@ -152,7 +152,7 @@ function defaultOutput(input, flags, plan) {
   const ext = path.extname(input);
   const base = path.basename(input, ext);
   const tag = flags.to ? String(flags.to).replace(/\s+/g, "").toLowerCase() : `crf${flags.crf}`;
-  return path.join(dir, `${base}.${tag}${ext || ".mp4"}`);
+  return path.join(dir, `${base}.${tag}.mp4`);
 }
 
 function line(label, value) {

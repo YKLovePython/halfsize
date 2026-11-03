@@ -66,3 +66,43 @@ test("end to end: generate, probe, compress to size, verify quality", async (t) 
   assert.equal(outInfo.video.width, plan.width);
   assert.equal(outInfo.video.height, plan.height);
 });
+
+test("end to end: a Matroska source still lands on target", async (t) => {
+  const { ffmpeg } = await resolveBinaries();
+  const source = path.join(WORK, "source-mkv.mp4");
+  try {
+    execFileSync(
+      ffmpeg,
+      [
+        "-hide_banner", "-loglevel", "error", "-y",
+        "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=24",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
+        "-t", "2.5",
+        "-c:v", "libx264", "-preset", "veryfast", "-b:v", "2M", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "96k",
+        source,
+      ],
+      { windowsHide: true, stdio: "ignore" },
+    );
+  } catch {
+    t.skip("ffmpeg cannot generate test clips here");
+    return;
+  }
+
+  const mkv = path.join(WORK, "source.mkv");
+  execFileSync(ffmpeg, ["-hide_banner", "-loglevel", "error", "-y", "-i", source, "-c", "copy", mkv], {
+    windowsHide: true,
+    stdio: "ignore",
+  });
+
+  const info = await probe(mkv);
+  const targetBytes = 200_000;
+  const plan = planEncode(info, { targetBytes });
+  const output = path.join(WORK, "out-from-mkv.mp4");
+  const result = await encode(mkv, output, plan, info);
+
+  assert.ok(
+    result.outputBytes <= targetBytes * 1.08,
+    `Matroska input overshot: ${result.outputBytes} vs target ${targetBytes}`,
+  );
+});
