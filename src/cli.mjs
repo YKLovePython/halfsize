@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { probe } from "./probe.mjs";
 import { planEncode, estimateBytes } from "./plan.mjs";
 import { encode } from "./encode.mjs";
@@ -277,4 +278,21 @@ async function startWeb() {
   console.log(`  halfsize is running at ${url}`);
   console.log("  Press Ctrl+C to stop.");
   console.log("");
+  if (!process.env.HALFSIZE_NO_OPEN) openBrowser(url);
+}
+
+function openBrowser(url) {
+  const [command, args] =
+    process.platform === "win32"
+      ? ["cmd", ["/c", "start", "", url]]
+      : process.platform === "darwin"
+        ? ["open", [url]]
+        : ["xdg-open", [url]];
+  try {
+    const child = spawn(command, args, { detached: true, stdio: "ignore", windowsHide: true });
+    child.on("error", () => {});
+    child.unref();
+  } catch {
+    // The URL is already printed; opening a browser is a convenience.
+  }
 }

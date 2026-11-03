@@ -153,7 +153,7 @@
   <p class="sub" data-i18n-html="sub">微信只让发 25 MB，Discord 只让发 10 MB。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。</p>
 
   <div class="card" id="card">
-    <div id="drop" class="drop">
+    <div id="drop" class="drop" role="button" tabindex="0">
       <div class="icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7 9m5-5l5 5"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
       </div>
@@ -343,6 +343,12 @@ function parseTarget(value) {
 }
 
 drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    fileInput.click();
+  }
+});
 drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
 drop.addEventListener("dragleave", () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => {
