@@ -94,6 +94,20 @@ test("silent video spends the whole budget on pixels", () => {
   assert.ok(plan.videoKbps > 3000);
 });
 
+test("--no-audio drops the track and gives the bits to video", () => {
+  const withAudio = planEncode(info(), { targetBytes: target(25) });
+  const muted = planEncode(info(), { targetBytes: target(25), audio: false });
+  assert.equal(muted.audioKbps, 0);
+  assert.ok(muted.videoKbps > withAudio.videoKbps);
+});
+
+test("mono audio stays mono instead of being upmixed", () => {
+  const plan = planEncode(info({ audio: { bitrate: 96_000, channels: 1 } }), { targetBytes: target(25) });
+  assert.equal(plan.audioChannels, 1);
+  const stereo = planEncode(info({ audio: { bitrate: 128_000, channels: 2 } }), { targetBytes: target(25) });
+  assert.equal(stereo.audioChannels, 2);
+});
+
 test("invalid input fails loudly", () => {
   assert.throws(() => planEncode(info(), {}), /target size is required/);
   assert.throws(() => planEncode(info({ duration: 0 }), { targetBytes: target(25) }), /duration/);

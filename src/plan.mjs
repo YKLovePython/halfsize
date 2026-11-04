@@ -62,6 +62,8 @@ export function planEncode(info, options = {}) {
 
   if (!info.duration) throw new Error("Could not read the duration of this file.");
 
+  const audioChannels = info.audio?.channels === 1 ? 1 : 2;
+
   if (options.crf !== undefined) {
     return {
       mode: "quality",
@@ -74,7 +76,8 @@ export function planEncode(info, options = {}) {
       height: info.video.height,
       fps: capFps(info.video.fps),
       videoKbps: null,
-      audioKbps: audioBitrate(info, 2000),
+      audioKbps: options.audio === false ? 0 : audioBitrate(info, 2000),
+      audioChannels,
       targetBytes: null,
       twoPass: false,
       downscaled: false,
@@ -87,7 +90,7 @@ export function planEncode(info, options = {}) {
   if (!options.targetBytes) throw new Error("A target size is required.");
 
   const totalKbps = ((options.targetBytes * 8) / info.duration / 1000) * 0.97;
-  const audioKbps = audioBitrate(info, totalKbps);
+  const audioKbps = options.audio === false ? 0 : audioBitrate(info, totalKbps);
   const videoKbps = Math.max(40, Math.round(totalKbps - audioKbps));
   const fps = capFps(info.video.fps);
 
@@ -131,6 +134,7 @@ export function planEncode(info, options = {}) {
     fps,
     videoKbps,
     audioKbps,
+    audioChannels,
     targetBytes: options.targetBytes,
     twoPass: Boolean(codec.twoPass),
     downscaled,

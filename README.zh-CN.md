@@ -39,7 +39,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.0
+  halfsize 0.1.4
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -83,6 +83,12 @@ npx halfsize 婚礼.mp4 --to 25mb
 ```bash
 # 压到指定大小
 npx halfsize video.mp4 --to 25mb
+
+# 或者直接说你要传到哪里
+npx halfsize video.mp4 --for discord
+
+# 一次压好几个
+npx halfsize clip1.mp4 clip2.mp4 clip3.mp4 --to 10mb
 
 # 更小的文件，H.265
 npx halfsize video.mp4 --to 10mb --codec h265
@@ -152,10 +158,12 @@ VMAF 是 Netflix 提出的感知质量指标，比 PSNR 或「码率多少」更
 halfsize <file> [options]
 
   --to <size>       目标大小：25mb、700k、1.5gb
+  --for <app>       按平台上限：discord、whatsapp、wechat、email、twitter
   --crf <n>         质量模式，不按大小（18 最好，23 均衡，28 更小）
   --codec <name>    h264（默认，兼容性最好）或 h265（大约再小 30%）
   --preset <name>   ultrafast .. veryslow（默认 medium）
   --out <file>      输出路径
+  --no-audio        去掉音轨
   --no-verify       跳过 SSIM/VMAF 检测
   --no-downscale    绝不降分辨率（可能会压不到目标）
   --json            机器可读结果
@@ -168,6 +176,9 @@ halfsize <file> [options]
 ```
 
 大小支持 `b`、`k`/`kb`、`m`/`mb`、`g`/`gb`，中间可以有空格。不写单位按 MB 算。
+
+`--for` 用的是当前免费档上限：`discord` 10 MB、`whatsapp` 16 MB、`wechat` 25 MB、
+`email` 20 MB、`twitter` 512 MB。平台上限会变，写死不如随时用 `--to` 覆盖。
 
 退出码：`0` 成功，`1` 出错。`--json` 会返回方案、画质测量和目标误差，方便包进脚本。
 
@@ -204,11 +215,14 @@ H.264 到处都能播，包括老安卓机和浏览器。H.265 同画质大约�
 能。就是 Node.js + FFmpeg，没有平台特定的东西。
 
 **能批量压一个文件夹吗？**
-还没内置。现在可以用一行 shell：
+能。直接把文件列出来，或者让 shell 展开：
 
 ```bash
-for f in *.mp4; do npx halfsize "$f" --to 25mb; done
+npx halfsize *.mp4 --to 25mb
 ```
+
+每个文件单独出方案和结论，某个失败不影响后面的，`--json` 返回 `{ "files": [ ... ] }`。
+多个输入时不能用 `--out`。
 
 **为什么叫 halfsize？**
 因为「能小多少」的诚实答案通常是「差不多一半，或者远不止一半」。它每次都会把真实数字告诉你。
@@ -216,12 +230,11 @@ for f in *.mp4; do npx halfsize "$f" --to 25mb; done
 ## 路线图
 
 - 硬件编码（NVENC / QSV / VideoToolbox）作为可选的快速路径
-- 批量模式与文件夹监听
+- 文件夹监听，新文件一出现就自动压
 - 字幕和多音轨原样保留
 - HDR 转 SDR（让 iPhone 拍的 HDR 视频保住颜色）
 - 源已经是 AV1 时改用 AV1（`libsvtav1`）
 - 单文件二进制，不依赖 Node.js
-- 面向具体平台上限的预设（微信、Discord、邮件、X、Bluesky）
 
 想要哪个就开 issue 说一声。欢迎 PR，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

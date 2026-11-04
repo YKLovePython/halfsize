@@ -40,7 +40,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.0
+  halfsize 0.1.4
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -86,6 +86,12 @@ be downloaded, `halfsize` uses your system install instead.
 ```bash
 # compress to a size
 npx halfsize video.mp4 --to 25mb
+
+# or just name the app you are uploading to
+npx halfsize video.mp4 --for discord
+
+# several files in one go
+npx halfsize clip1.mp4 clip2.mp4 clip3.mp4 --to 10mb
 
 # smaller file, same quality budget
 npx halfsize video.mp4 --to 10mb --codec h265
@@ -162,10 +168,12 @@ or bitrate. It is not magic, but it is a much better answer than "trust me".
 halfsize <file> [options]
 
   --to <size>       Target size: 25mb, 700k, 1.5gb
+  --for <app>       Target cap for discord, whatsapp, wechat, email, twitter
   --crf <n>         Quality mode instead of size mode (18 best, 23 balanced, 28 small)
   --codec <name>    h264 (default, maximum compatibility) or h265 (about 30% smaller)
   --preset <name>   ultrafast .. veryslow (default: medium)
   --out <file>      Output path
+  --no-audio        Drop the audio track
   --no-verify       Skip SSIM/VMAF
   --no-downscale    Never reduce resolution (the target may then be missed)
   --json            Machine-readable result
@@ -178,6 +186,9 @@ halfsize <file> [options]
 ```
 
 Sizes accept `b`, `k`/`kb`, `m`/`mb`, `g`/`gb`, with or without a space. No unit means MB.
+
+`--for` uses the current free-tier caps: `discord` 10 MB, `whatsapp` 16 MB, `wechat` 25 MB,
+`email` 20 MB, `twitter` 512 MB. Caps change, so `--to` always overrides.
 
 Exit codes: `0` success, `1` error. `--json` returns the plan, the measured quality, and the
 target accuracy, which makes it easy to wrap in a script.
@@ -218,11 +229,14 @@ at the same quality but can be awkward in some editors and older hardware. Defau
 Yes. It is plain Node.js and FFmpeg.
 
 **Can I batch a folder?**
-Not built in yet. A shell loop works today:
+Yes. List the files, or let your shell expand them:
 
 ```bash
-for f in *.mp4; do npx halfsize "$f" --to 25mb; done
+npx halfsize *.mp4 --to 25mb
 ```
+
+Each file gets its own plan and verdict, a failure does not stop the rest, and `--json` returns
+`{ "files": [ ... ] }`. `--out` is allowed only when there is a single input.
 
 **Why "halfsize"?**
 Because the honest answer to "how much smaller will it get?" is usually "about half, or a lot
@@ -231,12 +245,11 @@ more than half". The tool reports the real number either way.
 ## Roadmap
 
 - Hardware encoding (NVENC / QSV / VideoToolbox) as an opt-in fast path
-- Batch mode and a folder watcher
+- A folder watcher that compresses new files as they appear
 - Subtitle and multiple audio track passthrough
 - HDR-to-SDR tonemapping, so iPhone HDR clips keep their colors
 - AV1 (`libsvtav1`) when the source is already AV1-friendly
 - A single-file binary, so Node.js is not required
-- Presets for specific platform caps (WeChat, Discord, email, X, Bluesky)
 
 If you want one of these, open an issue and say which. Pull requests are welcome; see
 [CONTRIBUTING.md](CONTRIBUTING.md).

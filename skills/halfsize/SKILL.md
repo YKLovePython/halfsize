@@ -20,11 +20,20 @@ and reports the measured quality. It never uploads the file.
 # exact size
 npx halfsize input.mp4 --to 25mb
 
+# let a platform cap pick the size
+npx halfsize input.mp4 --for discord
+
+# several files, one command
+npx halfsize a.mp4 b.mp4 c.mp4 --to 10mb
+
 # smaller, at the cost of compatibility
 npx halfsize input.mp4 --to 10mb --codec h265
 
 # keep resolution, accept a worse ratio
 npx halfsize input.mp4 --to 25mb --no-downscale
+
+# no soundtrack
+npx halfsize input.mp4 --to 10mb --no-audio
 
 # inspect the plan without encoding
 npx halfsize input.mp4 --to 25mb --dry-run --json
@@ -32,6 +41,8 @@ npx halfsize input.mp4 --to 25mb --dry-run --json
 # machine-readable result (plan, accuracy, VMAF, SSIM)
 npx halfsize input.mp4 --to 25mb --json
 ```
+
+With more than one input, `--json` returns `{ "files": [ ... ] }`.
 
 If `npx halfsize` is unavailable, use `npx github:YKLovePython/halfsize` with the same flags.
 

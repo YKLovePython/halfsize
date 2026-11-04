@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Batch mode: `halfsize a.mp4 b.mp4 --to 10mb` compresses several files in a row
+- `--for discord|whatsapp|wechat|email|twitter` picks the platform's upload cap for you
+- `--no-audio` drops the audio track and spends the bits on video instead
+- Streams are mapped explicitly, so cover art and extra tracks cannot be picked by mistake
+- Mono audio stays mono instead of being silently upmixed to stereo
+
 ## 0.1.3
 
 - Two-pass progress now spans both passes and shows `pass 1/2`

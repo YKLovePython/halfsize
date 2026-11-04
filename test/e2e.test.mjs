@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { resolveBinaries } from "../src/ffmpeg.mjs";
 import { probe } from "../src/probe.mjs";
 import { planEncode } from "../src/plan.mjs";
@@ -11,6 +12,7 @@ import { encode } from "../src/encode.mjs";
 import { measureQuality } from "../src/quality.mjs";
 
 const WORK = fs.mkdtempSync(path.join(os.tmpdir(), "halfsize-test-"));
+const BIN = fileURLToPath(new URL("../bin/halfsize.mjs", import.meta.url));
 
 test.after(() => {
   fs.rmSync(WORK, { recursive: true, force: true });
@@ -67,6 +69,44 @@ test("end to end: generate, probe, compress to size, verify quality", async (t) 
   assert.equal(outInfo.video.height, plan.height);
 });
 
+test("end to end: --no-audio produces a silent file and mono stays mono", async (t) => {
+  const { ffmpeg } = await resolveBinaries();
+  const source = path.join(WORK, "mono.mp4");
+  try {
+    execFileSync(
+      ffmpeg,
+      [
+        "-hide_banner", "-loglevel", "error", "-y",
+        "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=24",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
+        "-t", "2",
+        "-c:v", "libx264", "-preset", "veryfast", "-b:v", "2M", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "96k", "-ac", "1",
+        source,
+      ],
+      { windowsHide: true, stdio: "ignore" },
+    );
+  } catch {
+    t.skip("ffmpeg cannot generate test clips here");
+    return;
+  }
+
+  const info = await probe(source);
+  assert.equal(info.audio.channels, 1);
+
+  const muted = path.join(WORK, "muted.mp4");
+  const mutePlan = planEncode(info, { targetBytes: 180_000, audio: false });
+  await encode(source, muted, mutePlan, info);
+  const mutedInfo = await probe(muted).catch(() => null);
+  assert.equal(mutedInfo?.audio, null, "no audio stream should be written");
+
+  const mono = path.join(WORK, "mono-out.mp4");
+  const monoPlan = planEncode(info, { targetBytes: 180_000 });
+  await encode(source, mono, monoPlan, info);
+  const monoInfo = await probe(mono);
+  assert.equal(monoInfo.audio.channels, 1, "mono input must not be upmixed to stereo");
+});
+
 test("end to end: a Matroska source still lands on target", async (t) => {
   const { ffmpeg } = await resolveBinaries();
   const source = path.join(WORK, "source-mkv.mp4");
@@ -105,4 +145,44 @@ test("end to end: a Matroska source still lands on target", async (t) => {
     result.outputBytes <= targetBytes * 1.08,
     `Matroska input overshot: ${result.outputBytes} vs target ${targetBytes}`,
   );
+});
+
+test("batch: several files in one command, one JSON document", async (t) => {
+  const { ffmpeg } = await resolveBinaries();
+  const files = [];
+  for (const name of ["batch-a", "batch-b"]) {
+    const file = path.join(WORK, `${name}.mp4`);
+    try {
+      execFileSync(
+        ffmpeg,
+        [
+          "-hide_banner", "-loglevel", "error", "-y",
+          "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=24",
+          "-t", "1.5",
+          "-c:v", "libx264", "-preset", "veryfast", "-b:v", "2M", "-pix_fmt", "yuv420p",
+          file,
+        ],
+        { windowsHide: true, stdio: "ignore" },
+      );
+    } catch {
+      t.skip("ffmpeg cannot generate test clips here");
+      return;
+    }
+    files.push(file);
+  }
+
+  const targetBytes = 150_000;
+  const stdout = execFileSync(
+    process.execPath,
+    [BIN, ...files, "--to", "150kb", "--json", "--no-verify"],
+    { encoding: "utf8", windowsHide: true },
+  );
+  const parsed = JSON.parse(stdout);
+  assert.ok(Array.isArray(parsed.files), "batch JSON should wrap results in files[]");
+  assert.equal(parsed.files.length, 2);
+  for (const result of parsed.files) {
+    assert.ok(result.output, "every file should produce an output");
+    assert.ok(fs.existsSync(result.output.file));
+    assert.ok(result.output.bytes <= targetBytes * 1.08, `${result.output.bytes} overshot`);
+  }
 });

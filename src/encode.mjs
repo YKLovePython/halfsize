@@ -15,6 +15,10 @@ function buildFilters(plan) {
 
 function baseArgs(input, plan, passlog) {
   const args = ["-hide_banner", "-y", "-i", input];
+  // Map exactly the streams we mean to encode. Without this, ffmpeg can pick a
+  // cover art / thumbnail stream on files that carry one.
+  args.push("-map", "0:v:0");
+  if (plan.audioKbps) args.push("-map", "0:a:0?");
   const filters = buildFilters(plan);
   if (filters) args.push("-vf", filters);
   args.push("-fps_mode", "cfr");
@@ -28,7 +32,7 @@ function baseArgs(input, plan, passlog) {
 
 function audioArgs(plan) {
   if (!plan.audioKbps) return ["-an"];
-  return ["-c:a", "aac", "-b:a", `${plan.audioKbps}k`, "-ac", "2"];
+  return ["-c:a", "aac", "-b:a", `${plan.audioKbps}k`, "-ac", String(plan.audioChannels === 1 ? 1 : 2)];
 }
 
 export async function encode(input, output, plan, info, onProgress = () => {}) {

@@ -7,13 +7,15 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.3";
+const VERSION = "0.1.4";
 
 const HELP = `
   halfsize ${VERSION} - compress a video to an exact size, and prove it still looks the same.
 
   Usage
     halfsize <file> --to 25mb          Compress to a target size
+    halfsize <file> --for discord      Use a platform's upload limit
+    halfsize a.mp4 b.mp4 --to 10mb     Compress several files in a row
     halfsize <file> --to 25mb --codec h265
     halfsize <file> --crf 23           Quality-first mode
     halfsize --web                     Open the local app
@@ -22,10 +24,12 @@ const HELP = `
 
   Options
     --to <size>       Target size: 25mb, 700k, 1.5gb
+    --for <app>       Target cap for discord, whatsapp, wechat, email, twitter
     --crf <n>         Quality mode (18 best / 23 balanced / 28 small)
     --codec <name>    h264 (default, compatible) or h265 (smaller)
     --preset <name>   ultrafast..veryslow (default: medium)
     --out <file>      Output path
+    --no-audio        Drop the audio track
     --no-verify       Skip the SSIM/VMAF check
     --no-downscale    Never reduce resolution
     --json            Machine-readable result
@@ -40,7 +44,26 @@ const HELP = `
     resolution, encodes twice, then measures the result with SSIM and VMAF.
 `;
 
-const DEFAULTS = { codec: "h264", preset: "medium", verify: true, downscale: true };
+const DEFAULTS = { codec: "h264", preset: "medium", verify: true, downscale: true, audio: true };
+
+// Current upload caps as people hit them. Caps change, so --to always wins if a
+// preset is wrong for your account tier.
+const PLATFORMS = {
+  discord: { bytes: 10 * 1_000_000, label: "Discord free (10 MB)" },
+  whatsapp: { bytes: 16 * 1_000_000, label: "WhatsApp media (16 MB)" },
+  wechat: { bytes: 25 * 1_000_000, label: "WeChat video (25 MB)" },
+  email: { bytes: 20 * 1_000_000, label: "Email attachment (20 MB)" },
+  twitter: { bytes: 512 * 1_000_000, label: "X / Twitter (512 MB)" },
+};
+
+function platformFor(name) {
+  const key = String(name || "").toLowerCase();
+  const found = PLATFORMS[key];
+  if (!found) {
+    throw new Error(`Unknown platform "${name}". Use one of: ${Object.keys(PLATFORMS).join(", ")}.`);
+  }
+  return { key, ...found };
+}
 
 function parseArgs(argv) {
   const args = { _: [], flags: { ...DEFAULTS } };
@@ -52,10 +75,12 @@ function parseArgs(argv) {
     else if (a === "--dry-run") args.flags.dryRun = true;
     else if (a === "--no-verify") args.flags.verify = false;
     else if (a === "--no-downscale") args.flags.downscale = false;
+    else if (a === "--no-audio") args.flags.audio = false;
     else if (a === "--web") args.flags.web = true;
     else if (a === "--doctor") args.flags.doctor = true;
     else if (a === "--port") args.flags.port = Number(argv[++i]);
     else if (a === "--to") args.flags.to = argv[++i];
+    else if (a === "--for") args.flags.for = argv[++i];
     else if (a === "--crf") args.flags.crf = Number(argv[++i]);
     else if (a === "--codec") args.flags.codec = argv[++i];
     else if (a === "--preset") args.flags.preset = argv[++i];
@@ -81,18 +106,53 @@ export async function main(argv) {
   if (flags.doctor) return doctor();
   if (flags.web) return startWeb(flags.port);
 
-  const input = path.resolve(args._[0]);
-  if (!fs.existsSync(input)) throw new Error(`File not found: ${input}`);
-  if (!flags.to && flags.crf === undefined) {
-    throw new Error("Pick a target: --to 25mb, or use --crf 23 for quality mode.");
+  if (flags.to && flags.for) throw new Error("Use --to or --for, not both.");
+  const platform = flags.for ? platformFor(flags.for) : null;
+  if (!flags.to && !platform && flags.crf === undefined) {
+    throw new Error("Pick a target: --to 25mb, --for discord, or --crf 23 for quality mode.");
+  }
+  if (flags.out && args._.length > 1) {
+    throw new Error("--out only works with one input file. It would overwrite itself in a batch.");
   }
 
-  const targetBytes = flags.to ? parseSize(flags.to) : null;
+  const inputs = args._.map((file) => path.resolve(file));
+  const targetBytes = platform ? platform.bytes : flags.to ? parseSize(flags.to) : null;
+  const batch = inputs.length > 1;
+
+  const results = [];
+  let failed = 0;
+  for (const input of inputs) {
+    try {
+      results.push(await processFile(input, flags, targetBytes, platform, batch));
+    } catch (err) {
+      failed++;
+      results.push({ input: { file: input }, error: err?.message || String(err) });
+      if (!flags.json) console.error(`\n  x ${path.basename(input)}: ${err?.message || err}`);
+      if (process.env.HALFSIZE_DEBUG) console.error(err?.stack);
+    }
+  }
+
+  if (flags.json) {
+    console.log(JSON.stringify(batch ? { files: results } : results[0], null, 2));
+  } else if (batch && !flags.dryRun) {
+    printBatch(results);
+  }
+
+  if (failed) process.exitCode = 1;
+}
+
+async function processFile(input, flags, targetBytes, platform, batch) {
+  if (!fs.existsSync(input)) throw new Error(`File not found: ${input}`);
+
   const info = await probe(input);
 
   if (targetBytes && targetBytes >= info.sizeBytes) {
-    console.log(`\n  This file is already ${bytes(info.sizeBytes)}, smaller than the ${bytes(targetBytes)} target.\n`);
-    return;
+    if (batch) {
+      console.log(`\n  ${path.basename(input)} already fits (${bytes(info.sizeBytes)}), skipped.`);
+    } else {
+      console.log(`\n  This file is already ${bytes(info.sizeBytes)}, smaller than the ${bytes(targetBytes)} target.\n`);
+    }
+    return { input: { file: input, bytes: info.sizeBytes }, targetBytes, skipped: "already-smaller" };
   }
 
   const plan = planEncode(info, {
@@ -101,17 +161,20 @@ export async function main(argv) {
     codec: flags.codec,
     preset: flags.preset,
     downscale: flags.downscale,
+    audio: flags.audio,
   });
 
-  const outPath = flags.out
-    ? path.resolve(flags.out)
-    : defaultOutput(input, flags, plan);
+  const outPath = flags.out ? path.resolve(flags.out) : defaultOutput(input, flags, plan);
 
-  if (!flags.json) printPlan(info, plan, flags, outPath);
+  if (!flags.json) printPlan(info, plan, flags, outPath, platform, !batch);
 
   if (flags.dryRun) {
-    if (flags.json) console.log(JSON.stringify({ info, plan, out: outPath }, null, 2));
-    return;
+    return {
+      info,
+      plan,
+      out: outPath,
+      dryRun: true,
+    };
   }
 
   const progress = new Progress(Boolean(process.stdout.isTTY) && !flags.json, info.duration);
@@ -123,7 +186,7 @@ export async function main(argv) {
   }
 
   let quality = { ssim: null, vmaf: null };
-  if (flags.verify && !flags.noVerify) {
+  if (flags.verify) {
     if (!flags.json) process.stdout.write(`  measuring quality `);
     quality = await measureQuality(input, outPath, info.duration);
     if (!flags.json) process.stdout.write(`\r${" ".repeat(40)}\r`);
@@ -142,19 +205,34 @@ export async function main(argv) {
     elapsedMs: result.elapsedMs,
   };
 
-  if (flags.json) {
-    console.log(JSON.stringify(summary, null, 2));
-    return;
-  }
+  if (!flags.json) printResult(summary, outPath);
+  return summary;
+}
 
-  printResult(summary, outPath);
+function printBatch(results) {
+  const done = results.filter((r) => r.output);
+  const skipped = results.filter((r) => r.skipped);
+  const errors = results.filter((r) => r.error);
+  console.log("");
+  if (done.length) {
+    const before = done.reduce((sum, r) => sum + r.input.bytes, 0);
+    const after = done.reduce((sum, r) => sum + r.output.bytes, 0);
+    console.log(`  ${done.length} compressed   ${bytes(before)} -> ${bytes(after)}   ${ratio(before, after)} smaller`);
+  }
+  if (skipped.length) console.log(`  ${skipped.length} skipped (already under target)`);
+  if (errors.length) console.log(`  ${errors.length} failed`);
+  console.log("");
 }
 
 function defaultOutput(input, flags, plan) {
   const dir = path.dirname(input);
   const ext = path.extname(input);
   const base = path.basename(input, ext);
-  const tag = flags.to ? String(flags.to).replace(/\s+/g, "").toLowerCase() : `crf${flags.crf}`;
+  const tag = flags.for
+    ? String(flags.for).toLowerCase()
+    : flags.to
+      ? String(flags.to).replace(/\s+/g, "").toLowerCase()
+      : `crf${flags.crf}`;
   return path.join(dir, `${base}.${tag}.mp4`);
 }
 
@@ -162,16 +240,18 @@ function line(label, value) {
   console.log(`  ${label.padEnd(10)} ${value}`);
 }
 
-function printPlan(info, plan, flags, outPath) {
+function printPlan(info, plan, flags, outPath, platform, showHeader = true) {
   console.log("");
-  console.log(`  halfsize ${VERSION}`);
-  console.log("");
+  if (showHeader) {
+    console.log(`  halfsize ${VERSION}`);
+    console.log("");
+  }
   console.log(`  ${path.basename(info.file)}`);
   console.log(
     `  ${bytes(info.sizeBytes)}  ${duration(info.duration)}  ${info.video.width}x${info.video.height}  ${info.video.fps.toFixed(2)} fps  ${info.video.codec}`,
   );
   console.log("");
-  if (plan.mode === "size") line("target", bytes(plan.targetBytes));
+  if (plan.mode === "size") line("target", platform ? `${bytes(plan.targetBytes)}  (${platform.label})` : bytes(plan.targetBytes));
   else line("mode", `CRF ${plan.crf}`);
   line(
     "plan",
