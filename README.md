@@ -162,6 +162,25 @@ below 70   clearly degraded
 VMAF is Netflix's perceptual metric; it correlates with human judgement far better than PSNR
 or bitrate. It is not magic, but it is a much better answer than "trust me".
 
+## What each size costs
+
+Same 60-second 1080p clip, default settings, measured on a normal laptop:
+
+| Target | Output | Resolution | Video bitrate | VMAF | Verdict |
+|---|---|---|---|---|---|
+| 20 MB | 19.45 MB | 1280×720 | 2.46 Mbps | 88.3 | slight softening |
+| 16 MB | 15.59 MB | 960×540 | 1.94 Mbps | 84.8 | slight softening |
+| 10 MB | 9.77 MB | 960×540 | 1.17 Mbps | 82.9 | slight softening |
+| 5 MB | 4.93 MB | 640×360 | 0.55 Mbps | 72.0 | visible loss |
+
+Source: 60 s, 1920×1080, 30 fps, 18 Mbps H.264 (136 MB). VMAF is measured against the
+source at the midpoint, SSIM at three points. Real numbers move with content: a talking head
+does much better than confetti.
+
+At 20 MB the tool picked 720p on purpose. Sixty seconds of 1080p at 2.4 Mbps looks worse than
+720p at the same bits. `--no-downscale` overrides that, and `--codec h265` buys roughly 30%
+more quality at the same size if your player supports it.
+
 ## CLI reference
 
 ```
