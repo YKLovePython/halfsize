@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { PLATFORMS } from "../src/cli.mjs";
 
 const BIN = fileURLToPath(new URL("../bin/halfsize.mjs", import.meta.url));
 
@@ -42,6 +43,14 @@ test("--for rejects an unknown platform and lists the choices", () => {
     () => run(["video.mp4", "--for", "myspace"]),
     (err) => err.status === 1 && /Unknown platform/.test(err.stderr) && /discord/.test(err.stderr),
   );
+});
+
+test("platform presets match the current upload caps", () => {
+  assert.equal(PLATFORMS.discord.bytes, 20_000_000);
+  assert.equal(PLATFORMS.whatsapp.bytes, 16_000_000);
+  assert.equal(PLATFORMS.wechat.bytes, 20_000_000);
+  assert.equal(PLATFORMS.email.bytes, 20_000_000);
+  assert.equal(PLATFORMS.twitter.bytes, 512_000_000);
 });
 
 test("--to and --for cannot be combined", () => {

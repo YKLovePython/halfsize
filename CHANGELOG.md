@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5
+
+- `--for discord` now targets 20 MB (Discord raised its free upload cap from 10 MB in August 2026)
+- `--for wechat` now targets 20 MB (WeChat's chat-video cap, per its help center)
+- The web app's presets and copy match the current caps
+- `npx` installs behind a restrictive network can use the npmmirror FFmpeg mirror (see Install notes)
+
 ## 0.1.4
 
 - Batch mode: `halfsize a.mp4 b.mp4 --to 10mb` compresses several files in a row

@@ -26,7 +26,7 @@
 
 ---
 
-WeChat refuses anything over **25 MB**. Discord gives you **10 MB**. Email chokes around **20 MB**.
+WeChat and Discord both stop at **20 MB**. Email chokes around the same.
 So you open a video editor, guess a bitrate, export, check the size, export again, and still
 can't tell whether the picture got worse.
 
@@ -40,7 +40,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.4
+  halfsize 0.1.5
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -51,9 +51,9 @@ the result with **SSIM** and **VMAF** so you know whether it still looks the sam
   estimate   1.94 MB  (12x smaller)
   output     source.2mb.mp4
 
-  measuring quality                                        done in 2s
+  measuring quality                                        done in 1s
 
-  23.2 MB  ->  1.99 MB   12x smaller   0.3% under target
+  23.2 MB  ->  1.99 MB   12x smaller   0.4% under target
   VMAF 84.4   SSIM 0.968   slight softening
 
   -> C:\Videos\source.2mb.mp4
@@ -118,7 +118,7 @@ npm install -g halfsize
 npx halfsize --web
 ```
 
-Opens `http://127.0.0.1:4174` — drag a video in, pick 25 MB / 10 MB / 20 MB / 5 MB or type
+Opens `http://127.0.0.1:4174` — drag a video in, pick 20 MB / 16 MB / 5 MB or type
 your own limit, and watch the encode. The file goes to a temporary folder **on your own
 machine**; nothing is sent anywhere.
 
@@ -187,8 +187,9 @@ halfsize <file> [options]
 
 Sizes accept `b`, `k`/`kb`, `m`/`mb`, `g`/`gb`, with or without a space. No unit means MB.
 
-`--for` uses the current free-tier caps: `discord` 10 MB, `whatsapp` 16 MB, `wechat` 25 MB,
-`email` 20 MB, `twitter` 512 MB. Caps change, so `--to` always overrides.
+`--for` uses the current free-tier caps (checked November 2026): `discord` 20 MB,
+`whatsapp` 16 MB, `wechat` 20 MB, `email` 20 MB, `twitter` 512 MB. Caps change, so `--to`
+always overrides.
 
 Exit codes: `0` success, `1` error. `--json` returns the plan, the measured quality, and the
 target accuracy, which makes it easy to wrap in a script.
@@ -223,7 +224,7 @@ bitrate per pixel sane almost always looks better than keeping 4K and starving i
 
 **Why is the output slightly under the target, not exactly on it?**
 Container overhead and two-pass ABR both vary a little. `halfsize` aims ~3% under so it never
-overshoots a hard platform cap. In the example above it landed 0.3% under.
+overshoots a hard platform cap. In the example above it landed 0.4% under.
 
 **H.264 or H.265?**
 H.264 plays everywhere, including old Android phones and browsers. H.265 is roughly 30% smaller

@@ -7,7 +7,7 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.4";
+const VERSION = "0.1.5";
 
 const HELP = `
   halfsize ${VERSION} - compress a video to an exact size, and prove it still looks the same.
@@ -46,12 +46,13 @@ const HELP = `
 
 const DEFAULTS = { codec: "h264", preset: "medium", verify: true, downscale: true, audio: true };
 
-// Current upload caps as people hit them. Caps change, so --to always wins if a
-// preset is wrong for your account tier.
-const PLATFORMS = {
-  discord: { bytes: 10 * 1_000_000, label: "Discord free (10 MB)" },
+// Current upload caps as people hit them (checked November 2026). Discord raised
+// its free cap to 20 MB in August 2026 and WeChat's chat-video cap is 20 MB.
+// Caps change, so --to always wins if a preset is wrong for your account tier.
+export const PLATFORMS = {
+  discord: { bytes: 20 * 1_000_000, label: "Discord free (20 MB)" },
   whatsapp: { bytes: 16 * 1_000_000, label: "WhatsApp media (16 MB)" },
-  wechat: { bytes: 25 * 1_000_000, label: "WeChat video (25 MB)" },
+  wechat: { bytes: 20 * 1_000_000, label: "WeChat video (20 MB)" },
   email: { bytes: 20 * 1_000_000, label: "Email attachment (20 MB)" },
   twitter: { bytes: 512 * 1_000_000, label: "X / Twitter (512 MB)" },
 };

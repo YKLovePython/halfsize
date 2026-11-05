@@ -26,7 +26,7 @@
 
 ---
 
-微信不让发超过 **25 MB**，Discord 只给 **10 MB**，邮件大多卡在 **20 MB**。
+微信和 Discord 都只让发 **20 MB**，邮件也大多卡在 **20 MB**。
 于是你打开剪辑软件，猜一个码率，导出，看一眼大小，再导一次——最后还是不知道画质到底掉了多少。
 
 `halfsize` 把这件事变成一行命令：
@@ -39,7 +39,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.4
+  halfsize 0.1.5
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -50,9 +50,9 @@ npx halfsize 婚礼.mp4 --to 25mb
   estimate   1.94 MB  (12x smaller)
   output     source.2mb.mp4
 
-  measuring quality                                        done in 2s
+  measuring quality                                        done in 1s
 
-  23.2 MB  ->  1.99 MB   12x smaller   0.3% under target
+  23.2 MB  ->  1.99 MB   12x smaller   0.4% under target
   VMAF 84.4   SSIM 0.968   slight softening
 
   -> C:\Videos\source.2mb.mp4
@@ -115,7 +115,7 @@ npm install -g halfsize
 npx halfsize --web
 ```
 
-打开 `http://127.0.0.1:4174`，把视频拖进去，选 25 MB / 10 MB / 20 MB / 5 MB，或者自己输入一个数，
+打开 `http://127.0.0.1:4174`，把视频拖进去，选 20 MB / 16 MB / 5 MB，或者自己输入一个数，
 然后看着它压。文件只会写进**你自己电脑**的临时目录，不会发到任何地方。
 
 <p align="center">
@@ -177,8 +177,8 @@ halfsize <file> [options]
 
 大小支持 `b`、`k`/`kb`、`m`/`mb`、`g`/`gb`，中间可以有空格。不写单位按 MB 算。
 
-`--for` 用的是当前免费档上限：`discord` 10 MB、`whatsapp` 16 MB、`wechat` 25 MB、
-`email` 20 MB、`twitter` 512 MB。平台上限会变，写死不如随时用 `--to` 覆盖。
+`--for` 用的是当前免费档上限（2026 年 11 月核对）：`discord` 20 MB、`whatsapp` 16 MB、
+`wechat` 20 MB、`email` 20 MB、`twitter` 512 MB。平台上限会变，写死不如随时用 `--to` 覆盖。
 
 退出码：`0` 成功，`1` 出错。`--json` 会返回方案、画质测量和目标误差，方便包进脚本。
 
@@ -218,7 +218,7 @@ $env:FFMPEG_BINARIES_URL="https://registry.npmmirror.com/-/binary/ffmpeg-static"
 
 **为什么输出比目标小一点，而不是刚好等于？**
 容器开销和两遍 ABR 都会有波动。`halfsize` 会刻意瞄准低 3%，保证不会超过平台的硬上限。
-上面那个例子里，最终比目标低 0.3%。
+上面那个例子里，最终比目标低 0.4%。
 
 **H.264 还是 H.265？**
 H.264 到处都能播，包括老安卓机和浏览器。H.265 同画质大约小 30%，但部分剪辑软件和老硬件

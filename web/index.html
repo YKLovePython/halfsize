@@ -150,7 +150,7 @@
   </header>
 
   <h1 data-i18n-html="title">把任何视频，塞进任何限制。<br><em>并且证明画质没变。</em></h1>
-  <p class="sub" data-i18n-html="sub">微信只让发 25 MB，Discord 只让发 10 MB。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。</p>
+  <p class="sub" data-i18n-html="sub">微信和 Discord 都只让发 20 MB，邮件也差不多。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。</p>
 
   <div class="card" id="card">
     <div id="drop" class="drop" role="button" tabindex="0">
@@ -172,9 +172,8 @@
         <div>
           <div class="label" data-i18n="target">目标大小</div>
           <div class="chips" id="presets">
-            <button class="chip on" data-size="25mb">25 MB<small data-i18n="wechat">微信</small></button>
-            <button class="chip" data-size="10mb">10 MB<small>Discord</small></button>
-            <button class="chip" data-size="20mb">20 MB<small data-i18n="email">邮件</small></button>
+            <button class="chip on" data-size="20mb">20 MB<small data-i18n="wechat">微信 / Discord</small></button>
+            <button class="chip" data-size="16mb">16 MB<small>WhatsApp</small></button>
             <button class="chip" data-size="5mb">5 MB<small data-i18n="web">网页</small></button>
           </div>
           <div class="row">
@@ -226,7 +225,7 @@ const I18N = {
   zh: {
     pill: "本地运行 · 不上传 · 无账号",
     title: "把任何视频，塞进任何限制。<br><em>并且证明画质没变。</em>",
-    sub: "微信只让发 25 MB，Discord 只让发 10 MB。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。",
+    sub: "微信和 Discord 都只让发 20 MB，邮件也差不多。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。",
     dropBig: "把视频拖进来，或点击选择",
     dropSmall: "MP4 · MOV · MKV · AVI · WebM · 不超过 8 GB",
     target: "目标大小",
@@ -242,8 +241,7 @@ const I18N = {
     verifying: "正在测画质…",
     done: "完成",
     uploading: "上传中",
-    wechat: "微信",
-    email: "邮件",
+    wechat: "微信 / Discord",
     web: "网页",
     smallerLabel: "更小",
     accuracyUnder: (p) => `比目标小 ${p}%`,
@@ -266,7 +264,7 @@ const I18N = {
   en: {
     pill: "runs locally · no upload · no account",
     title: "Fit any video into any limit.<br><em>And prove nothing changed.</em>",
-    sub: "WeChat caps at 25 MB. Discord caps at 10 MB. Pick the number. It does the rest: bitrate math, resolution, two-pass encoding, then measures the result with <b>VMAF</b>.",
+    sub: "WeChat and Discord both cap videos at 20 MB. Email is about the same. Pick the number. It does the rest: bitrate math, resolution, two-pass encoding, then measures the result with <b>VMAF</b>.",
     dropBig: "Drop a video, or click to choose",
     dropSmall: "MP4 · MOV · MKV · AVI · WebM · up to 8 GB",
     target: "Target size",
@@ -282,8 +280,7 @@ const I18N = {
     verifying: "measuring quality…",
     done: "done",
     uploading: "uploading",
-    wechat: "WeChat",
-    email: "email",
+    wechat: "WeChat / Discord",
     web: "web",
     smallerLabel: "smaller",
     accuracyUnder: (p) => `${p}% under target`,
@@ -320,7 +317,7 @@ const drop = $("drop"), fileInput = $("file"), editor = $("editor"), preview = $
 const meta = $("meta"), fname = $("fname"), go = $("go"), progress = $("progress");
 const fill = $("fill"), pct = $("pct"), speed = $("speed"), result = $("result"), error = $("error");
 
-let state = { id: null, target: "25mb", codec: "h264", data: null };
+let state = { id: null, target: "20mb", codec: "h264", data: null };
 
 function fmtBytes(n) {
   if (!n && n !== 0) return "—";
