@@ -194,6 +194,19 @@ HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe npx halfsize v
 Windows 上 `winget install Gyan.FFmpeg` 就够了；macOS 用 `brew install ffmpeg`；
 Debian/Ubuntu 用 `sudo apt install ffmpeg`。跑一下 `npx halfsize --doctor` 能看到实际用的是哪个。
 
+如果 GitHub 下载慢或被阻断（大陆网络很常见），可以让 `ffmpeg-static` 改从 npmmirror 取二进制：
+
+```bash
+# macOS / Linux
+FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static npx halfsize 视频.mp4 --to 25mb
+
+# Windows PowerShell
+$env:FFMPEG_BINARIES_URL="https://registry.npmmirror.com/-/binary/ffmpeg-static"; npx halfsize 视频.mp4 --to 25mb
+```
+
+`ffprobe` 是随包附带的，不需要单独下载。已经装过系统 FFmpeg 的话，`halfsize` 会优先用它，
+连这一步都可以跳过。
+
 ## 常见问题
 
 **视频会被上传吗？**

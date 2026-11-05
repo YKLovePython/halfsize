@@ -195,11 +195,15 @@ target accuracy, which makes it easy to wrap in a script.
 
 ## Install notes
 
-`ffmpeg-static` and `ffprobe-static` download prebuilt binaries during `npm install`. If you are
-behind a proxy or a TLS-inspecting network, that download can fail. `halfsize` then falls back
-to any `ffmpeg` on your `PATH`, or to a build you point at explicitly:
+`ffmpeg-static` downloads a prebuilt FFmpeg during `npm install`; FFprobe ships inside
+`ffprobe-static`, so it needs no download. If you are behind a proxy or a TLS-inspecting
+network, that download can fail. Point it at a mirror, or use a build you already have:
 
 ```bash
+# use the npmmirror binary mirror (fast in mainland China)
+FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static npx halfsize video.mp4 --to 25mb
+
+# or an FFmpeg already on disk
 HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe npx halfsize video.mp4 --to 25mb
 ```
 
