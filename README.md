@@ -217,8 +217,17 @@ Debian/Ubuntu, `sudo apt install ffmpeg`. Run `npx halfsize --doctor` to see wha
 No. The CLI never touches the network. The web app talks only to `127.0.0.1`, and uploaded
 files go to a temp directory that is deleted when the process exits.
 
+**How do I get a video under Discord's 20 MB limit?**
+`npx halfsize clip.mp4 --for discord` targets the free-tier cap (20 MB as of late 2026) and
+writes a normal MP4 that plays in Discord's preview. Long 1080p clips usually come out at 720p;
+that resolution drop is what buys the size.
+
+**WeChat says the video is too large. What now?**
+`npx halfsize clip.mp4 --for wechat` targets the 20 MB chat-video cap. If you need it smaller
+still, pass `--to 10mb` (or any size) instead.
+
 **Why did it lower my resolution?**
-Because 25 MB of 4K is not enough bits to look good. Lowering resolution and keeping the
+Because 20 MB of 4K is not enough bits to look good. Lowering resolution and keeping the
 bitrate per pixel sane almost always looks better than keeping 4K and starving it. Use
 `--no-downscale` if you want to override that.
 

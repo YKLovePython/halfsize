@@ -1,7 +1,7 @@
 {
   "name": "halfsize",
   "version": "0.1.5",
-  "description": "Compress any video to an exact target size, locally, and prove the quality did not drop.",
+  "description": "Compress any video to an exact size (Discord or WeChat 20 MB, WhatsApp 16 MB) locally with FFmpeg and verify the quality with VMAF/SSIM.",
   "type": "module",
   "bin": {
     "halfsize": "bin/halfsize.mjs"
