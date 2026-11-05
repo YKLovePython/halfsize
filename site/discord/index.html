@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a video to 20 MB for Discord — free and local</title>
+<meta name="description" content="Discord's free upload limit is 20 MB. Compress a video to fit with one command, without uploading it to a website, and see the measured VMAF quality score.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/discord/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/discord/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compress a video to 20 MB for Discord">
+<meta property="og:description" content="One command, no upload, measured quality. Fits Discord's free 20 MB cap.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/discord/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Compress a video to 20 MB for Discord",
+  "description": "Use halfsize to fit a video under Discord's free 20 MB upload limit and check the quality loss with VMAF.",
+  "totalTime": "PT3M",
+  "tool": [{ "@type": "HowToTool", "name": "Node.js 18+" }],
+  "step": [
+    { "@type": "HowToStep", "name": "Install Node.js", "text": "Install Node.js 18 or newer." },
+    { "@type": "HowToStep", "name": "Run halfsize", "text": "Run npx halfsize clip.mp4 --for discord in a terminal." },
+    { "@type": "HowToStep", "name": "Read the quality report", "text": "Check the output size and the VMAF/SSIM verdict." },
+    { "@type": "HowToStep", "name": "Upload the result", "text": "Drag the generated clip.20mb.mp4 file into Discord." }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../whatsapp/">WhatsApp</a>
+    <a href="../wechat/">WeChat</a>
+    <a href="../zh/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Discord</p>
+  <h1>Get a video under Discord's <em>20 MB</em> limit</h1>
+  <p class="lede">
+    Discord's free plan stops at <b>20 MB per file</b>. Paid tiers raise the cap, but most people
+    just need the clip to fit. This takes one command and runs entirely on your computer.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Step by step</h2>
+  <ol>
+    <li>Install <a href="https://nodejs.org">Node.js 18+</a> if you do not have it.</li>
+    <li>Open a terminal in the folder with your video.</li>
+    <li>Run the command below. <code>--for discord</code> sets the cap to 20 MB for you.</li>
+  </ol>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --for discord</span>
+
+  halfsize 0.1.5
+  clip.mp4
+  <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
+
+  target     20.0 MB   (discord)
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  output     clip.20mb.mp4
+
+  measuring quality                                        done in 8s
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+
+  <p>Then drag <code>clip.20mb.mp4</code> into the Discord message box and send. That is it.</p>
+
+  <h2>What 20 MB actually costs in quality</h2>
+  <p>Discord's cap is the same number for everyone, but the quality cost depends on duration and content. Measured on a 60-second 1080p clip:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Resolution chosen</th><th>Video bitrate</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td><td>slight softening</td></tr>
+        <tr><td>10 MB</td><td class="num">960×540</td><td class="num">1.17 Mbps</td><td class="num">82.9</td><td>slight softening</td></tr>
+        <tr><td>5 MB</td><td class="num">640×360</td><td class="num">0.55 Mbps</td><td class="num">72.0</td><td>visible loss</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Source: 60 s, 1920×1080, 30 fps, 18 Mbps. VMAF at the midpoint against the source. A talking head does better; confetti does worse.</p>
+
+  <h2>Why not just use Discord's own compression?</h2>
+  <p>Discord re-encodes videos for inline playback, but it will not take a 200 MB file under a 20 MB upload cap. You have to get the file to the limit first. Doing that with a video editor means guessing a bitrate and exporting repeatedly.</p>
+  <p>halfsize solves the part that is actually annoying: it derives the bitrate from the target and the duration, picks a resolution that fits, and then tells you the measured quality. If the verdict says <code>visible loss</code>, you know to trim the clip or drop to 720p before uploading instead of finding out from your friends.</p>
+
+  <div class="callout">
+    <p><b>Keep H.264 for Discord.</b> The default already is H.264, which plays inline everywhere. H.265 makes a smaller file at the same quality, but browser and mobile support is inconsistent, so it is not worth the risk for a chat upload.</p>
+  </div>
+
+  <h2>Tips that help more than a lower bitrate</h2>
+  <ul>
+    <li><b>Trim first.</b> Removing five boring seconds buys more quality than any encoder setting.</li>
+    <li><b>720p is usually the sweet spot at 20 MB.</b> The tool picks it automatically for a one-minute clip.</li>
+    <li><b>Send as a file if the details matter.</b> Inline playback is convenient; a file attachment avoids the extra playback transcode.</li>
+    <li><b>Batch it.</b> <code>npx halfsize clip1.mp4 clip2.mp4 --for discord</code> handles several files in one run.</li>
+  </ul>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>What is Discord's free upload limit?</summary><p>20 MB per file. Nitro tiers raise it, but the free limit is what halfsize targets with <code>--for discord</code>.</p></details>
+    <details><summary>Does this upload my video to a server?</summary><p>No. It runs FFmpeg locally. The only network access is the one-time FFmpeg download during installation.</p></details>
+    <details><summary>Why is the output 19.45 MB instead of exactly 20 MB?</summary><p>It aims a little under the cap so container overhead and bitrate variance cannot push you over. You can override the target with <code>--to 20mb</code>.</p></details>
+    <details><summary>Can I make it smaller than 20 MB?</summary><p>Yes: <code>--to 10mb</code> or <code>--to 8mb</code>. The report will tell you whether the result still looks acceptable.</p></details>
+    <details><summary>It says "visible loss". What now?</summary><p>Trim the clip, accept 720p, or switch to <code>--codec h265</code> if your audience can play it. The tool is telling you the truth instead of hiding it.</p></details>
+  </div>
+
+  <h2>More size limits</h2>
+  <div class="platforms">
+    <a href="../whatsapp/">WhatsApp <b>16 MB</b></a>
+    <a href="../wechat/">WeChat <b>20 MB</b></a>
+    <a href="../20mb/">Any 20 MB limit</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

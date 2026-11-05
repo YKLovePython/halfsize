@@ -19,6 +19,7 @@
 
 <p align="center">
   <a href="README.zh-CN.md">中文说明</a> ·
+  <a href="https://YKLovePython.github.io/halfsize/">Website &amp; guides</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#faq">FAQ</a>
@@ -128,6 +129,12 @@ machine**; nothing is sent anywhere.
 
 After each run you can download a **share card** (the image at the top of this README) with the
 real numbers on it.
+
+Step-by-step guides with measured quality numbers:
+[Discord 20 MB](https://YKLovePython.github.io/halfsize/discord/) ·
+[WhatsApp 16 MB](https://YKLovePython.github.io/halfsize/whatsapp/) ·
+[WeChat 20 MB](https://YKLovePython.github.io/halfsize/wechat/) ·
+[any 20 MB limit](https://YKLovePython.github.io/halfsize/20mb/).
 
 ### Use it from an agent
 

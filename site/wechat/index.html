@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a video to 20 MB for WeChat — free and local</title>
+<meta name="description" content="WeChat caps chat videos at 20 MB and re-compresses them anyway. Fit a video under 20 MB locally with one command and check the measured VMAF quality score.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/wechat/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/wechat/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/wechat/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compress a video to 20 MB for WeChat">
+<meta property="og:description" content="One command, no upload, measured quality. Fits WeChat's 20 MB chat-video limit.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/wechat/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Compress a video to 20 MB for WeChat",
+  "description": "Use halfsize to fit a video under WeChat's 20 MB chat-video limit and check the quality loss with VMAF.",
+  "totalTime": "PT3M",
+  "step": [
+    { "@type": "HowToStep", "name": "Install Node.js", "text": "Install Node.js 18 or newer." },
+    { "@type": "HowToStep", "name": "Run halfsize", "text": "Run npx halfsize clip.mp4 --for wechat in a terminal." },
+    { "@type": "HowToStep", "name": "Check the report", "text": "Confirm the output is under 20 MB and read the VMAF/SSIM verdict." },
+    { "@type": "HowToStep", "name": "Send it", "text": "Send the generated clip.20mb.mp4 in WeChat." }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../discord/">Discord</a>
+    <a href="../whatsapp/">WhatsApp</a>
+    <a href="../zh/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / WeChat</p>
+  <h1>Send a video on WeChat under <em>20 MB</em></h1>
+  <p class="lede">
+    WeChat's chat video limit is <b>20 MB</b>. Anything larger either will not send or gets
+    re-encoded into a blurry mess. Compress it yourself first, then measure what it cost.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Step by step</h2>
+  <ol>
+    <li>Install <a href="https://nodejs.org">Node.js 18+</a>.</li>
+    <li>Open a terminal in the folder with the video.</li>
+    <li>Run <code>npx halfsize clip.mp4 --for wechat</code>.</li>
+    <li>Send the generated <code>clip.20mb.mp4</code> as a video in WeChat.</li>
+  </ol>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --for wechat</span>
+
+  halfsize 0.1.5
+  clip.mp4
+  <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
+
+  target     20.0 MB   (wechat)
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  output     clip.20mb.mp4
+
+  measuring quality                                        done in 8s
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+
+  <h2>Why compress it yourself?</h2>
+  <p>WeChat applies its own compression when you send a video from the gallery. If you hand it a 200 MB file, its encoder has to throw away 90% of the bits in one pass, and the result looks it. If you hand it a 19.5 MB file that was already carefully encoded, it has almost nothing left to remove.</p>
+  <p>That is the whole trick: spend the bits deliberately before the chat app does it carelessly. halfsize also tells you the quality cost, so you can decide whether to trim the clip instead of accepting mush.</p>
+
+  <h2>What 20 MB buys you</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Resolution chosen</th><th>Video bitrate</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td><td>slight softening</td></tr>
+        <tr><td>16 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td><td>slight softening</td></tr>
+        <tr><td>10 MB</td><td class="num">960×540</td><td class="num">1.17 Mbps</td><td class="num">82.9</td><td>slight softening</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Measured on a 60 s 1920×1080 30 fps source at 18 Mbps. Quality depends on content, not just the number.</p>
+
+  <div class="callout">
+    <p><b>“Original video” is not a size setting.</b> WeChat's original-video option avoids some re-compression but does not raise the 20 MB limit. You still need the file to fit.</p>
+  </div>
+
+  <h2>Tips</h2>
+  <ul>
+    <li><b>Trim first.</b> A 30-second clip at 20 MB looks much better than a 3-minute one.</li>
+    <li><b>Keep the default H.264.</b> It is the most compatible choice for phones and older devices.</li>
+    <li><b>Use the local web UI if you prefer.</b> <code>npx halfsize --web</code> opens a drag-and-drop interface in your browser; the file never leaves your computer.</li>
+    <li><b>Batch several clips.</b> <code>npx halfsize a.mp4 b.mp4 --for wechat</code>.</li>
+  </ul>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>What is WeChat's video size limit?</summary><p>20 MB for videos sent in a chat. halfsize's <code>--for wechat</code> targets that cap.</p></details>
+    <details><summary>Is my video uploaded anywhere?</summary><p>No. Encoding and measurement run locally with FFmpeg. There is no account and no cloud quota.</p></details>
+    <details><summary>Can I keep 1080p?</summary><p>Yes, with <code>--no-downscale</code>. At 20 MB for a one-minute clip it will look softer than 720p, because the same bits are spread over more pixels.</p></details>
+    <details><summary>Does it work with H.265?</summary><p>Yes: <code>--codec h265</code> gets roughly 30% more quality at the same size, but some older Android phones struggle with it. H.264 is safer for a family group chat.</p></details>
+    <details><summary>What does VMAF mean?</summary><p>It is a perceptual quality score from Netflix. Above 90 looks the same, 80–90 is slight softening, 70–80 is visible loss, below 70 is clearly degraded.</p></details>
+  </div>
+
+  <h2>More size limits</h2>
+  <div class="platforms">
+    <a href="../discord/">Discord <b>20 MB</b></a>
+    <a href="../whatsapp/">WhatsApp <b>16 MB</b></a>
+    <a href="../20mb/">Any 20 MB limit</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

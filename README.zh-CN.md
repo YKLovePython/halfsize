@@ -19,6 +19,7 @@
 
 <p align="center">
   <a href="README.md">English</a> ·
+  <a href="https://YKLovePython.github.io/halfsize/zh/">官网与教程</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#它怎么工作">它怎么工作</a> ·
   <a href="#常见问题">常见问题</a>
@@ -123,6 +124,12 @@ npx halfsize --web
 </p>
 
 每次压完可以生成一张**分享图**（就是本文最上面那张），上面是这次真实的数字。
+
+附实测画质的分平台教程：
+[微信 20 MB](https://YKLovePython.github.io/halfsize/zh/wechat/) ·
+[任意 20 MB 限制](https://YKLovePython.github.io/halfsize/zh/20mb/) ·
+[Discord 20 MB](https://YKLovePython.github.io/halfsize/discord/) ·
+[WhatsApp 16 MB](https://YKLovePython.github.io/halfsize/whatsapp/)。
 
 ### 给 agent 用
 

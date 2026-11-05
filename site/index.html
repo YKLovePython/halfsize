@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>halfsize — compress a video to an exact size, locally</title>
+<meta name="description" content="Free open-source CLI that fits any video into an exact limit (Discord 20 MB, WhatsApp 16 MB, email 20 MB) and proves the quality with VMAF and SSIM. No upload, no account.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="halfsize — fit any video into any size limit">
+<meta property="og:description" content="Compress to an exact size and prove the quality with VMAF. Local, free, open source.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.webp">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  .hero-shot { max-width: 760px; }
+</style>
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "halfsize",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "description": "Open-source command-line tool that compresses a video to an exact target size and measures the quality loss with VMAF and SSIM. Files never leave the machine.",
+  "url": "https://yklovepython.github.io/halfsize/",
+  "downloadUrl": "https://www.npmjs.com/package/halfsize",
+  "codeRepository": "https://github.com/YKLovePython/halfsize",
+  "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "softwareVersion": "0.1.5"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does halfsize upload my video anywhere?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Encoding and quality measurement run locally with FFmpeg. The tool makes no network calls with your file, needs no account, and works offline after installation." }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the Discord video size limit?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Discord's free upload limit is 20 MB per file. Use halfsize video.mp4 --for discord to hit that limit automatically." }
+    },
+    {
+      "@type": "Question",
+      "name": "Will compressing a video make it look bad?",
+      "acceptedAnswer": { "@type": "Answer", "text": "halfsize measures VMAF and SSIM after encoding and prints a plain-language verdict, so you can see the quality cost instead of guessing. At 20 MB a 60-second 1080p clip measured VMAF 88.3, described as slight softening." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to install FFmpeg?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. A static FFmpeg build is downloaded on first install. If the download fails, halfsize falls back to an FFmpeg already on your PATH." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="./"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="#how">How it works</a>
+    <a href="#quality">Quality</a>
+    <a href="#guides">Guides</a>
+    <a href="zh/" class="lang">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Fit any video into <em>any size limit</em>.</h1>
+  <p class="lede">
+    One command. It computes the bitrate, picks the resolution that actually fits, encodes twice,
+    then measures the result with <b>VMAF</b> and <b>SSIM</b> so you know whether the picture survived.
+    Everything runs on your machine.
+  </p>
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Install from npm</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">View source on GitHub</a>
+  </div>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize source.mp4 --to 2mb</span>
+
+  halfsize 0.1.5
+
+  source.mp4
+  <span class="out">23.2 MB  8s  1920x1080  30.00 fps  h264</span>
+
+  target     2.00 MB
+  plan       H.264  960x540  1.81 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 960x540
+  estimate   1.94 MB  (12x smaller)
+  output     source.2mb.mp4
+
+  measuring quality                                        done in 1s
+
+  <span class="hl">23.2 MB  →  1.99 MB   12x smaller   0.4% under target</span>
+  <span class="hl">VMAF 84.4   SSIM 0.968   slight softening</span></code></pre>
+
+  <h2 id="limits">Built for the limits you actually hit</h2>
+  <p>Type the size you need, or name the app and let halfsize pick the cap.</p>
+  <div class="platforms">
+    <a href="discord/">Discord <b>20 MB</b></a>
+    <a href="whatsapp/">WhatsApp <b>16 MB</b></a>
+    <a href="wechat/">WeChat <b>20 MB</b></a>
+    <a href="20mb/">Email &amp; forms <b>20 MB</b></a>
+    <a href="20mb/">Any 20 MB form <b>20 MB</b></a>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Exact size, not a guess</h3>
+      <p>Two-pass ABR spends a byte budget derived from the target size and the real duration. No bitrate trial and error.</p>
+    </div>
+    <div class="card">
+      <h3>Resolution that fits</h3>
+      <p>It walks a ladder from your source size down to 240p and picks the largest frame the bits can carry.</p>
+    </div>
+    <div class="card">
+      <h3>Proof, not vibes</h3>
+      <p>SSIM at three points and VMAF at the midpoint, compared against thresholds and printed in plain language.</p>
+    </div>
+    <div class="card">
+      <h3>Nothing uploaded</h3>
+      <p>Local FFmpeg, local files, no account, no quota. The optional web UI is served from your own machine.</p>
+    </div>
+  </div>
+
+  <h2 id="how">How it works</h2>
+  <ol>
+    <li><b>Probe.</b> Duration, resolution, frame rate, audio bitrate, rotation and HDR metadata.</li>
+    <li><b>Budget.</b> Total bitrate = target bytes × 8 ÷ duration, minus audio and container overhead.</li>
+    <li><b>Pick a resolution.</b> The largest rung of the ladder that fits the bits-per-pixel target (H.264 0.072 bpp, H.265 0.045 bpp).</li>
+    <li><b>Encode twice.</b> Two-pass <code>libx264</code> or <code>libx265</code>, <code>yuv420p</code>, AAC, <code>+faststart</code>.</li>
+    <li><b>Prove it.</b> Sample the output and report VMAF and SSIM with a verdict.</li>
+  </ol>
+
+  <h2 id="quality">What each size costs</h2>
+  <p>Same 60-second 1080p clip, default settings, measured on a normal laptop:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>Bitrate</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td><td>slight softening</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td><td>slight softening</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">1.17 Mbps</td><td class="num">82.9</td><td>slight softening</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">0.55 Mbps</td><td class="num">72.0</td><td>visible loss</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Source: 60 s, 1920×1080, 30 fps, 18 Mbps H.264 (136 MB). VMAF is measured at the midpoint against the source; SSIM at three points. Real numbers move with content.</p>
+
+  <div class="callout">
+    <p><b>Why VMAF?</b> It is Netflix's perceptual metric and tracks human judgement far better than PSNR or bitrate. It is not magic, but it is a much better answer than “trust me”.</p>
+  </div>
+
+  <h2 id="web">Prefer a UI? It has one.</h2>
+  <p><code>npx halfsize --web</code> starts a local web app. Drag a file in, pick a target, watch the plan and the quality report. It is served from <code>127.0.0.1</code>; your video never leaves the computer.</p>
+  <img class="shot hero-shot" src="screenshot.webp" width="1120" height="1424" alt="halfsize local web app showing a video compressed from 23.2 MB to 1.99 MB with VMAF 84.4">
+  <p class="small">Real run: 23.2 MB → 1.99 MB (12× smaller), VMAF 84.4, 0.4% under target.</p>
+
+  <h2 id="guides">Step-by-step guides</h2>
+  <div class="grid">
+    <div class="card"><h3><a href="discord/">Discord — 20 MB</a></h3><p>Get under the free upload cap without losing the joke in the details.</p></div>
+    <div class="card"><h3><a href="whatsapp/">WhatsApp — 16 MB</a></h3><p>Stop letting WhatsApp re-compress your video into mush.</p></div>
+    <div class="card"><h3><a href="wechat/">WeChat — 20 MB</a></h3><p>Send the original-looking version instead of the auto-degraded one.</p></div>
+    <div class="card"><h3><a href="20mb/">Any 20 MB limit</a></h3><p>Email, forms, portals and everything else with a 20 MB cap.</p></div>
+  </div>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Does it upload my video anywhere?</summary><p>No. Encoding and measurement run locally with FFmpeg. No account, no quota, and it works offline after installation.</p></details>
+    <details><summary>Do I need to install FFmpeg?</summary><p>No. A static build is downloaded on first install. If that fails, halfsize uses an FFmpeg already on your PATH.</p></details>
+    <details><summary>Can it compress without shrinking the resolution?</summary><p>Yes: add <code>--no-downscale</code>. It will keep the source size and spend the budget there, which is usually softer than letting it downscale.</p></details>
+    <details><summary>Does it work on Windows, macOS and Linux?</summary><p>Yes. Node.js 18+ is the only requirement.</p></details>
+    <details><summary>Can I use it in a script?</summary><p>Yes. <code>--json</code> prints a machine-readable result, and <code>--dry-run</code> shows the plan without encoding.</p></details>
+    <details><summary>Is it really free?</summary><p>MIT licensed, no paid tier. If it saves you time, <a href="https://github.com/YKLovePython/halfsize">a star</a> helps other people find it.</p></details>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="zh/">中文</a> · <a href="sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

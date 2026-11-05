@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>halfsize — 把视频精确压到指定大小，本地完成</title>
+<meta name="description" content="开源命令行工具：一条命令把视频压到指定大小（微信、Discord 20 MB，WhatsApp 16 MB，邮件 20 MB），并用 VMAF/SSIM 测出画质损失。文件不上传，免注册，Windows/macOS/Linux 通用。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="halfsize — 把视频压到指定大小，并告诉你画质掉了多少">
+<meta property="og:description" content="微信 / Discord 20 MB、WhatsApp 16 MB，一条命令搞定。本地压缩，文件不上传。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "halfsize",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "inLanguage": "zh-CN",
+  "description": "开源视频压缩命令行工具：把视频精确压到指定大小，并用 VMAF 和 SSIM 测量画质损失。本地运行，不上传文件。",
+  "url": "https://yklovepython.github.io/halfsize/zh/",
+  "downloadUrl": "https://www.npmjs.com/package/halfsize",
+  "codeRepository": "https://github.com/YKLovePython/halfsize",
+  "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+  "softwareVersion": "0.1.5"
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="./"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="#how">原理</a>
+    <a href="#quality">画质</a>
+    <a href="#guides">教程</a>
+    <a href="../" class="lang">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <h1>把视频压进<em>任意大小限制</em>。</h1>
+  <p class="lede">
+    一条命令。它先算出码率，挑一个真正塞得下的分辨率，编码两遍，最后用 <b>VMAF</b> 和
+    <b>SSIM</b> 测一遍，告诉你画质到底掉了多少。全程在你自己的电脑上完成。
+  </p>
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">从 npm 安装</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 视频.mp4 --to 20mb</span>
+
+  halfsize 0.1.5
+
+  视频.mp4
+  <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     视频.20mb.mp4
+
+  measuring quality                                        done in 8s
+
+  <span class="hl">136 MB  →  19.45 MB   小 7.0 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
+
+  <h2 id="limits">专治你真正会撞上的限制</h2>
+  <p>你可以直接写目标大小，也可以只写平台名，让它自己挑上限。</p>
+  <div class="platforms">
+    <a href="wechat/">微信 <b>20 MB</b></a>
+    <a href="20mb/">任意 20 MB <b>20 MB</b></a>
+    <a href="../discord/">Discord <b>20 MB</b></a>
+    <a href="../whatsapp/">WhatsApp <b>16 MB</b></a>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>精确到目标大小</h3>
+      <p>两遍 ABR，按目标字节数和真实时长反推码率，不靠反复试。</p>
+    </div>
+    <div class="card">
+      <h3>自动选分辨率</h3>
+      <p>从原分辨率一档档往下试，挑出这些比特能撑住的最大画面。</p>
+    </div>
+    <div class="card">
+      <h3>给出证据，不靠感觉</h3>
+      <p>三个采样点算 SSIM，中点算 VMAF，再翻译成一句人话结论。</p>
+    </div>
+    <div class="card">
+      <h3>文件不上传</h3>
+      <p>本地 FFmpeg、本地文件、免账号、无额度。网页界面也跑在本机。</p>
+    </div>
+  </div>
+
+  <h2 id="how">它怎么工作</h2>
+  <ol>
+    <li><b>探测。</b>读取时长、分辨率、帧率、音频码率、旋转信息和 HDR 标记。</li>
+    <li><b>算预算。</b>总码率 = 目标字节 × 8 ÷ 时长，再减掉音频和容器开销。</li>
+    <li><b>选分辨率。</b>按每像素比特数目标（H.264 0.072 bpp，H.265 0.045 bpp）挑最大的一档。</li>
+    <li><b>编码两遍。</b><code>libx264</code> 或 <code>libx265</code>，<code>yuv420p</code>、AAC、<code>+faststart</code>。</li>
+    <li><b>证明。</b>采样测量，给出 VMAF、SSIM 和一句结论。</li>
+  </ol>
+
+  <h2 id="quality">各档大小到底损失多少画质</h2>
+  <p>同一个 60 秒 1080p 视频，默认设置，在普通笔记本上实测：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>视频码率</th><th>VMAF</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td><td>轻微变软</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td><td>轻微变软</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">1.17 Mbps</td><td class="num">82.9</td><td>轻微变软</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">0.55 Mbps</td><td class="num">72.0</td><td>能看出损失</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">源片：60 秒、1920×1080、30fps、18 Mbps H.264（136 MB）。VMAF 在中间点对着源片测量，SSIM 取三个采样点。实际数字随内容变化。</p>
+
+  <div class="callout">
+    <p><b>为什么看 VMAF？</b>它是 Netflix 提出的感知质量指标，比 PSNR 或「码率多少」更接近人眼判断。它不是魔法，但比「相信我」靠谱得多。</p>
+  </div>
+
+  <h2 id="web">不想敲命令？有网页界面</h2>
+  <p><code>npx halfsize --web</code> 会在本机启动一个网页应用。拖进视频、选个目标大小，就能看到压缩方案和画质报告。地址是 <code>127.0.0.1</code>，视频不会离开这台电脑。</p>
+  <img class="shot" src="../screenshot.webp" width="1120" height="1424" alt="halfsize 本地网页界面：把 23.2 MB 的视频压到 1.99 MB，VMAF 84.4">
+  <p class="small">真实运行：23.2 MB → 1.99 MB（小 12 倍），VMAF 84.4，比目标小 0.4%。</p>
+
+  <h2 id="guides">分平台教程</h2>
+  <div class="grid">
+    <div class="card"><h3><a href="wechat/">微信 — 20 MB</a></h3><p>别再让微信把你的视频二次压成一团糊。</p></div>
+    <div class="card"><h3><a href="20mb/">任意 20 MB 限制</a></h3><p>邮件、报名表、企业门户，凡是卡 20 MB 的地方。</p></div>
+    <div class="card"><h3><a href="../discord/">Discord — 20 MB</a></h3><p>免费用户单个文件上限，一条命令压进去。</p></div>
+    <div class="card"><h3><a href="../whatsapp/">WhatsApp — 16 MB</a></h3><p>先压到限制以内，再让它做那一点点二次压缩。</p></div>
+  </div>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>视频会被上传到服务器吗？</summary><p>不会。编码和测量都在本地用 FFmpeg 完成，免账号、无额度，装好之后断网也能用。</p></details>
+    <details><summary>需要自己装 FFmpeg 吗？</summary><p>不用。首次安装会自动下载静态版本；下载失败时会退回使用系统里已有的 FFmpeg。</p></details>
+    <details><summary>能保持原分辨率吗？</summary><p>可以，加 <code>--no-downscale</code>。但同样的比特分给更多像素，画面通常会更软。</p></details>
+    <details><summary>Windows 能用吗？</summary><p>能。Windows、macOS、Linux 都支持，只需要 Node.js 18+。</p></details>
+    <details><summary>可以写进脚本吗？</summary><p>可以。<code>--json</code> 输出机器可读结果，<code>--dry-run</code> 只打印方案不编码。</p></details>
+    <details><summary>真的免费吗？</summary><p>MIT 协议，没有付费版。如果它帮你省了时间，<a href="https://github.com/YKLovePython/halfsize">点个 star</a> 能让更多人找到它。</p></details>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">English</a> · <a href="../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>
