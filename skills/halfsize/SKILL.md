@@ -1,6 +1,6 @@
 ---
 name: halfsize
-description: Compress a video to an exact target size (25 MB, 10 MB, 700k, ...) on the local machine with FFmpeg, then verify quality with VMAF/SSIM. Use when a user needs a video to fit a platform cap, asks to "make this smaller", or wants to know what a size cut costs in quality.
+description: Compress a video to an exact target size (20 MB, 16 MB, 700k, ...) on the local machine with FFmpeg, then verify quality with VMAF/SSIM. Use when a user needs a video to fit a platform cap, asks to "make this smaller", or wants to know what a size cut costs in quality.
 ---
 
 # halfsize

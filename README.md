@@ -61,7 +61,7 @@ the result with **SSIM** and **VMAF** so you know whether it still looks the sam
 
 ## Why this exists
 
-"Make it smaller" is a solved problem. **"Make it fit in exactly 25 MB, and tell me if it
+"Make it smaller" is a solved problem. **"Make it fit in exactly 20 MB, and tell me if it
 still looks right"** is the part every tool makes you guess at.
 
 - HandBrake is excellent, but it asks you to think in codecs, RF values, and presets.
