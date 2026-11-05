@@ -34,12 +34,22 @@
   "keywords": [
     "video",
     "compress",
+    "compress-video",
     "video-compression",
+    "video-compressor",
+    "reduce-video-size",
     "ffmpeg",
     "target-size",
     "vmaf",
+    "ssim",
+    "discord",
+    "wechat",
+    "whatsapp",
     "cli",
-    "windows"
+    "privacy",
+    "windows",
+    "macos",
+    "linux"
   ],
   "license": "MIT",
   "dependencies": {

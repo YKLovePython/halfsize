@@ -138,6 +138,8 @@
   .error.on { display: block; }
 
   footer { margin-top: 46px; color: var(--dim); font-size: 12px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--accent); }
   .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); padding: 3px 7px; border-radius: 6px; }
   .hidden { display: none !important; }
 </style>
@@ -216,7 +218,7 @@
 
   <footer>
     <div><span class="kbd">npx halfsize video.mp4 --to 25mb</span></div>
-    <div data-i18n="footer">本地 ffmpeg · 零上传 · MIT</div>
+    <div><span data-i18n="footer">本地 ffmpeg · 零上传 · MIT</span> · <a href="https://github.com/YKLovePython/halfsize" target="_blank" rel="noopener">GitHub ★</a></div>
   </footer>
 </div>
 
