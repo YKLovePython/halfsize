@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a video without uploading it — free, offline, open source</title>
+<meta name="description" content="Shrink a video locally with FFmpeg: no upload, no account, no quota. Hit an exact target size and get a measured VMAF quality report. Works offline after install.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/offline/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/offline/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/offline/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compress a video without uploading it">
+<meta property="og:description" content="Local FFmpeg, exact target size, measured quality. Nothing leaves your machine.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/offline/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does halfsize upload my video anywhere?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Encoding runs through FFmpeg on your own machine. The only network access is the one-time download of the package and its static FFmpeg build during installation." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I compress a video without internet?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. After the first install, halfsize and its bundled FFmpeg run fully offline, so it works on a plane, in a locked-down office, or on an air-gapped machine." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it really free with no limits?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. halfsize is MIT licensed: no account, no watermark, no file-size or daily quota, and no paid tier." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../discord/">Discord</a>
+    <a href="../zh/offline/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Offline</p>
+  <h1>Compress a video <em>without uploading it</em></h1>
+  <p class="lede">
+    Every “free online video compressor” is a server that receives your file. For a passport scan,
+    an unreleased product demo, or a recording of a child, that is a bad trade for saving five minutes.
+    halfsize runs FFmpeg on your own machine: nothing is uploaded, there is no account, and there is no quota.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize private-demo.mp4 --to 20mb</span>
+
+  halfsize 0.1.5
+  private-demo.mp4
+  <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     private-demo.20mb.mp4
+
+  measuring quality                                        done in 8s
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span>
+
+  <span class="out">Nothing left this machine.</span></code></pre>
+
+  <h2>What “offline” actually means here</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Step</th><th>Online compressor</th><th>halfsize</th></tr></thead>
+      <tbody>
+        <tr><td>Your file</td><td>uploaded to a server</td><td>stays on disk</td></tr>
+        <tr><td>Account</td><td>often required</td><td>none</td></tr>
+        <tr><td>Quota</td><td>2–3 files per day, then pay</td><td>unlimited</td></tr>
+        <tr><td>Watermark</td><td>on the free tier</td><td>never</td></tr>
+        <tr><td>Quality report</td><td>“high quality” badge</td><td>measured VMAF and SSIM</td></tr>
+        <tr><td>Works without internet</td><td>no</td><td>yes, after install</td></tr>
+        <tr><td>Cost</td><td>subscription</td><td>MIT, free</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    The one thing that does touch the network is the first <code>npx halfsize</code>: npm downloads the
+    package, and the package fetches a static FFmpeg binary for your platform. After that, encoding is local.
+    You can confirm it yourself by disconnecting the network and running the same command again.
+  </p>
+
+  <h2>Prefer a UI? The app is local too</h2>
+  <p>
+    The web interface is served from <code>127.0.0.1</code> by the same process. It is not a hosted site —
+    the page and the video never leave your computer.
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize --web</span>
+<span class="out">halfsize web UI on http://127.0.0.1:4174</span></code></pre>
+  <img class="shot" src="../screenshot.webp" width="1120" height="1424" alt="halfsize local web app compressing a video to a target size with a VMAF quality report">
+  <p class="small">Drag a file in, pick a target, get the size and the quality score. All local.</p>
+
+  <h2>Why not just run FFmpeg by hand?</h2>
+  <p>
+    You can, and halfsize is a thin layer over it. The hard part is the arithmetic: for a target size you
+    need a bitrate budget after audio and container overhead, and you need to decide whether dropping to 720p
+    looks better than keeping 1080p at half the bitrate. Then you have to check whether the result actually
+    fits and how much quality it cost. That is the part the tool automates.
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize video.mp4 --to 20mb --dry-run</span>
+<span class="out">plan  H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass  → ~19.4 MB</span></code></pre>
+
+  <h2>Measured quality, not marketing</h2>
+  <p>60-second 1080p30 source at 18 Mbps, encoded locally on a laptop:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">88.3</td><td>slight softening</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">84.8</td><td>slight softening</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>slight softening</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">72.0</td><td>visible loss</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><b>Privacy is not the same as magic.</b> A 10-minute video squeezed into 20 MB has 0.25 Mbps and will look soft no matter which tool does it. If quality matters, cut the clip first, then compress.</p>
+  </div>
+
+  <h2>Where people use it</h2>
+  <ul>
+    <li>Client demos and internal recordings that cannot go to a third-party server</li>
+    <li>Government, school and job portals with a hard 20 MB limit</li>
+    <li>Machines on a restricted network where uploads are blocked</li>
+    <li>Large batches where a per-file web uploader is unusable</li>
+  </ul>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Does it phone home?</summary><p>No analytics, no telemetry, no update check. The source is on GitHub; you can read it or run it behind a firewall.</p></details>
+    <details><summary>Does it need Node.js?</summary><p>Yes, Node.js 18 or newer. FFmpeg itself is bundled, so you do not need to install or configure it.</p></details>
+    <details><summary>Which platforms?</summary><p>Windows 10/11, macOS and Linux. The same command works on all three.</p></details>
+    <details><summary>Can I use it in a script or CI?</summary><p>Yes. <code>--json</code> prints a machine-readable result and <code>--dry-run</code> prints the plan without encoding.</p></details>
+    <details><summary>Is the web UI a cloud service?</summary><p>No. <code>npx halfsize --web</code> starts a server on 127.0.0.1 that only your machine can reach.</p></details>
+  </div>
+
+  <h2>Related guides</h2>
+  <div class="platforms">
+    <a href="../20mb/">Any 20 MB limit</a>
+    <a href="../discord/">Discord <b>20 MB</b></a>
+    <a href="../whatsapp/">WhatsApp <b>16 MB</b></a>
+    <a href="../wechat/">WeChat <b>20 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

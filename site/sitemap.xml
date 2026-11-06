@@ -61,4 +61,20 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/20mb/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/20mb/"/>
   </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/offline/</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/offline/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/offline/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/offline/</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/offline/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/offline/"/>
+  </url>
 </urlset>

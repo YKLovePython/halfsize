@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频压缩不上传：本地运行、断网可用、免费开源</title>
+<meta name="description" content="不用把视频传到网盘或在线压缩站。halfsize 在本机调用 FFmpeg，压到指定大小（20 MB / 16 MB），并给出 VMAF 画质报告。装好后断网也能用。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/offline/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/offline/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/offline/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频压缩不上传：本地运行、断网可用">
+<meta property="og:description" content="本机 FFmpeg、精确目标大小、实测画质。文件不出电脑。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/offline/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "halfsize 会把视频上传到服务器吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不会。压缩由本机的 FFmpeg 完成。唯一的联网行为是第一次安装时下载 npm 包和对应的静态 FFmpeg 二进制文件。" }
+    },
+    {
+      "@type": "Question",
+      "name": "断网还能压缩视频吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "可以。首次安装完成后，halfsize 和内置的 FFmpeg 完全离线运行，飞机上、内网机器、隔离环境都能用。" }
+    },
+    {
+      "@type": "Question",
+      "name": "真的免费、没有次数限制吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "是。MIT 开源协议，不需要账号，没有水印，没有每日次数或文件大小限制，也没有付费版。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../wechat/">微信</a>
+    <a href="../../offline/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 本地压缩</p>
+  <h1>压缩视频，<em>不用上传</em></h1>
+  <p class="lede">
+    所有“免费在线视频压缩”本质上都是把文件传到别人的服务器。如果视频里是身份证、还没发布的产品演示、
+    孩子的演出录像，为了省五分钟把它传上去并不划算。halfsize 在本机调用 FFmpeg：不上传、不要账号、没有次数限制。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 点 star</a>
+  </div>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 客户演示.mp4 --to 20mb</span>
+
+  halfsize 0.1.5
+  客户演示.mp4
+  <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     客户演示.20mb.mp4
+
+  measuring quality                                        done in 8s
+
+  <span class="hl">136 MB  →  19.45 MB   小了 7.0 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span>
+
+  <span class="out">文件没有离开这台电脑。</span></code></pre>
+
+  <h2>“本地”具体指什么</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>环节</th><th>在线压缩站</th><th>halfsize</th></tr></thead>
+      <tbody>
+        <tr><td>你的文件</td><td>上传到服务器</td><td>留在本机磁盘</td></tr>
+        <tr><td>账号</td><td>通常要注册</td><td>不需要</td></tr>
+        <tr><td>次数</td><td>每天 2–3 个，之后付费</td><td>无限制</td></tr>
+        <tr><td>水印</td><td>免费版有</td><td>没有</td></tr>
+        <tr><td>画质说明</td><td>一个“高清”标签</td><td>实测 VMAF 和 SSIM</td></tr>
+        <tr><td>断网可用</td><td>不行</td><td>装好后可以</td></tr>
+        <tr><td>价格</td><td>订阅制</td><td>MIT，免费</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    唯一一次联网是第一次执行 <code>npx halfsize</code>：npm 下载安装包，安装包再下载对应平台的静态 FFmpeg。
+    之后编码全部在本机完成。你可以直接断网再跑一次同样的命令来验证。
+  </p>
+
+  <h2>不想敲命令？网页界面也是本地的</h2>
+  <p>
+    网页由本机进程在 <code>127.0.0.1</code> 上提供，不是托管网站。页面和视频都不会离开你的电脑。
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize --web</span>
+<span class="out">halfsize web UI on http://127.0.0.1:4174</span></code></pre>
+  <img class="shot" src="../../screenshot.webp" width="1120" height="1424" alt="halfsize 本地网页界面：把视频压到目标大小并显示 VMAF 画质报告">
+  <p class="small">拖入文件、选目标大小，得到体积和画质分数。全程本地。</p>
+
+  <h2>为什么不直接手写 FFmpeg 命令？</h2>
+  <p>
+    当然可以，halfsize 本身就是 FFmpeg 外面的一层薄封装。麻烦的是算术：给定目标体积，要扣掉音频和容器开销
+    反推视频码率，还要判断“降到 720p”和“保持 1080p 但码率减半”哪个更好看，最后确认文件真的没超标、
+    画质损失了多少。这些就是工具替你做的部分。
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 视频.mp4 --to 20mb --dry-run</span>
+<span class="out">plan  H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass  → ~19.4 MB</span></code></pre>
+
+  <h2>实测画质，不是宣传语</h2>
+  <p>60 秒 1080p30、源码率 18 Mbps，在笔记本上本地编码：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>VMAF</th><th>观感</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">88.3</td><td>轻微变软</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">84.8</td><td>轻微变软</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>轻微变软</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">72.0</td><td>明显损失</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><b>不上传不等于无损。</b> 10 分钟的视频压到 20 MB 只有 0.25 Mbps，换什么工具都会糊。在意画质就先剪短，再压。</p>
+  </div>
+
+  <h2>适合这些场景</h2>
+  <ul>
+    <li>不能传到第三方服务器的客户演示、内部录屏</li>
+    <li>硬性限制 20 MB 的政务、学校、招聘网站</li>
+    <li>禁止上传、只能本地处理的内网电脑</li>
+    <li>几十个文件要批量压，网页版一个个传不现实</li>
+  </ul>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>会偷偷联网吗？</summary><p>没有统计、没有遥测、没有更新检查。源码在 GitHub，可以自己审计，也可以在防火墙后面运行。</p></details>
+    <details><summary>需要装 Node.js 吗？</summary><p>需要 Node.js 18 或更高版本。FFmpeg 已经内置，不用自己编译或配置。</p></details>
+    <details><summary>支持哪些系统？</summary><p>Windows 10/11、macOS、Linux，命令完全一样。</p></details>
+    <details><summary>能写进脚本或 CI 吗？</summary><p>可以。<code>--json</code> 输出机器可读结果，<code>--dry-run</code> 只打印方案不编码。</p></details>
+    <details><summary>网页界面是云服务吗？</summary><p>不是。<code>npx halfsize --web</code> 只在 127.0.0.1 起一个本机服务，外网访问不到。</p></details>
+  </div>
+
+  <h2>相关教程</h2>
+  <div class="platforms">
+    <a href="../20mb/">任意 20 MB 限制</a>
+    <a href="../wechat/">微信 <b>20 MB</b></a>
+    <a href="../../discord/">Discord <b>20 MB</b></a>
+    <a href="../../whatsapp/">WhatsApp <b>16 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>
