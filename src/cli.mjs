@@ -89,6 +89,8 @@ const HELP = `
 
 const DEFAULTS = { codec: "h264", preset: "medium", verify: true, downscale: true, audio: true };
 
+const PRESETS = ["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"];
+
 // Current upload caps as people hit them (checked November 2026). Discord raised
 // its free cap to 20 MB in August 2026 and WeChat's chat-video cap is 20 MB.
 // Caps change, so --to always wins if a preset is wrong for your account tier.
@@ -122,17 +124,44 @@ function parseArgs(argv) {
     else if (a === "--no-audio") args.flags.audio = false;
     else if (a === "--web") args.flags.web = true;
     else if (a === "--doctor") args.flags.doctor = true;
-    else if (a === "--port") args.flags.port = Number(argv[++i]);
-    else if (a === "--to") args.flags.to = argv[++i];
-    else if (a === "--for") args.flags.for = argv[++i];
-    else if (a === "--crf") args.flags.crf = Number(argv[++i]);
-    else if (a === "--codec") args.flags.codec = argv[++i];
-    else if (a === "--preset") args.flags.preset = argv[++i];
-    else if (a === "--out") args.flags.out = argv[++i];
+    else if (a === "--port") {
+      const raw = required(argv, ++i, "--port");
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value < 0 || value > 65535) {
+        throw new Error(`--port needs a number between 0 and 65535, not "${raw}".`);
+      }
+      args.flags.port = value;
+    }
+    else if (a === "--to") args.flags.to = required(argv, ++i, "--to");
+    else if (a === "--for") args.flags.for = required(argv, ++i, "--for");
+    else if (a === "--crf") {
+      const raw = required(argv, ++i, "--crf");
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value < 0 || value > 51) {
+        throw new Error(`--crf needs a whole number between 0 and 51, not "${raw}".`);
+      }
+      args.flags.crf = value;
+    } else if (a === "--codec") {
+      const value = required(argv, ++i, "--codec").toLowerCase();
+      if (value !== "h264" && value !== "h265") throw new Error(`--codec must be h264 or h265, not "${value}".`);
+      args.flags.codec = value;
+    } else if (a === "--preset") {
+      const value = required(argv, ++i, "--preset").toLowerCase();
+      if (!PRESETS.includes(value)) {
+        throw new Error(`Unknown preset "${value}". Use one of: ${PRESETS.join(", ")}.`);
+      }
+      args.flags.preset = value;
+    } else if (a === "--out") args.flags.out = required(argv, ++i, "--out");
     else if (a.startsWith("-")) throw new Error(`Unknown option ${a}`);
     else args._.push(a);
   }
   return args;
+}
+
+function required(argv, index, flag) {
+  const value = argv[index];
+  if (value === undefined || String(value).startsWith("-")) throw new Error(`Missing value for ${flag}.`);
+  return value;
 }
 
 export async function main(argv) {
@@ -213,6 +242,9 @@ async function processFile(input, flags, targetBytes, platform, batch) {
   });
 
   const outPath = flags.out ? path.resolve(flags.out) : defaultOutput(input, flags, plan);
+  if (flags.out && samePath(input, outPath)) {
+    throw new Error("--out points at the input file. halfsize never overwrites the original; pick another name.");
+  }
 
   if (!flags.json) printPlan(info, plan, flags, outPath, platform, !batch);
 
@@ -285,6 +317,14 @@ function defaultOutput(input, flags, plan) {
   return path.join(dir, `${base}.${tag}.mp4`);
 }
 
+function samePath(a, b) {
+  const normalize = (p) => {
+    const resolved = path.resolve(p);
+    return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+  };
+  return normalize(a) === normalize(b);
+}
+
 function line(label, value) {
   console.log(`  ${label.padEnd(10)} ${value}`);
 }
@@ -312,7 +352,7 @@ function printPlan(info, plan, flags, outPath, platform, showHeader = true) {
     line("estimate", `${bytes(est)}  (${ratio(info.sizeBytes, est)} smaller)`);
   }
   line("output", path.basename(outPath));
-  for (const warning of plan.warnings) console.log(`  ! ${warning}`);
+  for (const warning of plan.warnings) console.log(`  ! ${warning.message}`);
   console.log("");
 }
 
@@ -443,7 +483,7 @@ async function startWeb(port) {
     return;
   }
   const { startServer } = await import("./server.mjs");
-  const url = await startServer(port ? { port } : {});
+  const { url } = await startServer(Number.isInteger(port) ? { port } : {});
   console.log("");
   console.log(`  halfsize is running at ${url}`);
   console.log("  Drop a video in - nothing leaves this machine.");

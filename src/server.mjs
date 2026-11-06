@@ -29,15 +29,31 @@ function jobDir() {
         // best effort
       }
     };
+
+    // Ctrl+C used to call process.exit() straight away, which left the running
+    // FFmpeg child orphaned. Stop the jobs first, give them a moment to remove
+    // their .part files, then clean the work directory and leave.
+    let shuttingDown = false;
+    const shutdown = async () => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      for (const job of jobs.values()) {
+        if (job.status === "running" && job.controller) {
+          job.cancelRequested = true;
+          job.controller.abort();
+        }
+      }
+      const deadline = Date.now() + 3000;
+      while (Date.now() < deadline && [...jobs.values()].some((job) => job.status === "running")) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      cleanup();
+      process.exit(0);
+    };
+
     process.once("exit", cleanup);
-    process.once("SIGINT", () => {
-      cleanup();
-      process.exit(0);
-    });
-    process.once("SIGTERM", () => {
-      cleanup();
-      process.exit(0);
-    });
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
   }
   return workDir;
 }
@@ -58,6 +74,79 @@ function cancelledJob() {
   return err;
 }
 
+// The browser sends the file name; never trust it. Strip directories, control
+// characters, and anything that would break a Content-Disposition header.
+function safeName(raw) {
+  const base = path.basename(String(raw || "").replace(/\\/g, "/"));
+  const cleaned = base
+    .replace(/[\u0000-\u001f\u007f"\\/:*?<>|]/g, "_")
+    .trim()
+    .slice(0, 180);
+  return cleaned || "video.mp4";
+}
+
+async function removeFile(file) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      fs.rmSync(file, { force: true });
+      return;
+    } catch {
+      // Windows keeps the handle for a moment after a destroyed stream.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+}
+
+function saveUpload(req, file, limit = 8 * 1024 ** 3) {
+  return new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(file);
+    let size = 0;
+    let settled = false;
+    const fail = (err) => {
+      if (settled) return;
+      settled = true;
+      req.unpipe(out);
+      out.destroy();
+      req.destroy();
+      reject(err);
+    };
+    req.pipe(out);
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > limit) {
+        const err = new Error("File is too large for the local app. Use the CLI for files over 8 GB.");
+        err.code = "TOO_LARGE";
+        fail(err);
+      }
+    });
+    // A browser that closes mid-upload never sends "end". Without this the
+    // promise would stay pending and the half-written file would stay open.
+    req.on("close", () => {
+      if (!settled && !req.readableEnded) fail(new Error("The upload was interrupted. Try again."));
+    });
+    out.on("finish", () => {
+      if (settled) return;
+      settled = true;
+      resolve(size);
+    });
+    out.on("error", fail);
+    req.on("error", fail);
+  });
+}
+
+// A malformed body is a 400, not a 500 with a stack trace about JSON.
+async function readJson(req, limit) {
+  try {
+    const text = (await readBody(req, limit)).toString();
+    return text ? JSON.parse(text) : {};
+  } catch (err) {
+    const problem = new Error("Could not read this request. Reload the page and try again.");
+    problem.status = 400;
+    problem.cause = err;
+    throw problem;
+  }
+}
+
 function readBody(req, limit = 8 * 1024 ** 3) {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -73,6 +162,9 @@ function readBody(req, limit = 8 * 1024 ** 3) {
     });
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
+    req.on("close", () => {
+      if (!req.readableEnded) reject(new Error("The request was interrupted."));
+    });
   });
 }
 
@@ -90,7 +182,8 @@ function emit(id, event, data) {
 }
 
 export async function startServer(options = {}) {
-  const port = options.port || Number(process.env.HALFSIZE_PORT) || 4174;
+  const envPort = Number(process.env.HALFSIZE_PORT);
+  const port = options.port ?? (Number.isInteger(envPort) && envPort > 0 ? envPort : 4174);
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, "http://local");
@@ -103,35 +196,46 @@ export async function startServer(options = {}) {
       }
 
       if (req.method === "GET" && pathname.startsWith("/assets/")) {
-        const file = path.join(WEB_DIR, pathname.replace("/assets/", ""));
-        if (!file.startsWith(WEB_DIR) || !fs.existsSync(file)) return send(res, 404, { error: "not found" });
+        const file = path.join(WEB_DIR, pathname.slice("/assets/".length));
+        const inside = path.relative(WEB_DIR, file);
+        if (!inside || inside.startsWith("..") || path.isAbsolute(inside)) return send(res, 404, { error: "not found" });
+        if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return send(res, 404, { error: "not found" });
         res.writeHead(200, { "content-type": contentType(file) });
         return fs.createReadStream(file).pipe(res);
       }
 
       if (req.method === "POST" && pathname === "/api/upload") {
-        const name = decodeURIComponent(req.headers["x-filename"] || "video.mp4");
+        let name = "video.mp4";
+        try {
+          name = safeName(decodeURIComponent(req.headers["x-filename"] || "video.mp4"));
+        } catch {
+          // Malformed percent-encoding; the fallback name is enough.
+        }
         const id = crypto.randomBytes(8).toString("hex");
-        const ext = path.extname(name) || ".mp4";
+        const ext = (path.extname(name) || ".mp4").slice(0, 12);
         const dir = jobDir();
         const file = path.join(dir, `${id}${ext}`);
-        await new Promise((resolve, reject) => {
-          const out = fs.createWriteStream(file);
-          let size = 0;
-          req.on("data", (chunk) => {
-            size += chunk.length;
-            if (size > 8 * 1024 ** 3) {
-              req.destroy();
-              out.destroy();
-              reject(new Error("File is too large for the local app. Use the CLI for files over 8 GB."));
-            }
-          });
-          req.pipe(out);
-          out.on("finish", resolve);
-          out.on("error", reject);
-          req.on("error", reject);
-        });
-        const info = await probe(file);
+
+        try {
+          await saveUpload(req, file);
+        } catch (err) {
+          await removeFile(file);
+          return send(res, err.code === "TOO_LARGE" ? 413 : 400, { error: err.message });
+        }
+
+        if (!fs.statSync(file).size) {
+          await removeFile(file);
+          return send(res, 400, { error: "That file is empty.", code: "empty" });
+        }
+
+        let info;
+        try {
+          info = await probe(file);
+        } catch (err) {
+          await removeFile(file);
+          return send(res, 400, { error: err.message, code: "not_video" });
+        }
+
         jobs.set(id, { id, input: file, originalName: name, info, status: "ready" });
         return send(res, 200, {
           id,
@@ -156,6 +260,9 @@ export async function startServer(options = {}) {
         res.write(": connected\n\n");
         if (!clients.has(id)) clients.set(id, new Set());
         clients.get(id).add(res);
+        // Without this, a socket error after the tab closes becomes an
+        // unhandled 'error' event on the response and can kill the server.
+        res.on("error", () => clients.get(id)?.delete(res));
         const job = jobs.get(id);
         if (job?.status === "done") emit(id, "done", job.result);
         if (job?.status === "error") emit(id, "failed", { message: job.error });
@@ -165,11 +272,14 @@ export async function startServer(options = {}) {
           // EventSource a moment to reconnect first, then stop the job.
           const job = jobs.get(id);
           if (!job || job.status !== "running" || !job.controller) return;
+          // Capture this run's controller. Without it, a timer left over from
+          // a previous run would abort the *next* encode started in the tab.
+          const controller = job.controller;
           const timer = setTimeout(() => {
             if ((clients.get(id)?.size ?? 0) > 0) return;
-            if (job.status !== "running" || !job.controller) return;
+            if (job.controller !== controller || controller.signal.aborted) return;
             job.cancelRequested = true;
-            job.controller.abort();
+            controller.abort();
           }, 10000);
           timer.unref?.();
         });
@@ -177,7 +287,7 @@ export async function startServer(options = {}) {
       }
 
       if (req.method === "POST" && pathname === "/api/compress") {
-        const body = JSON.parse((await readBody(req, 1024 * 1024)).toString());
+        const body = await readJson(req, 1024 * 1024);
         const job = jobs.get(body.id);
         if (!job) return send(res, 404, { error: "Unknown upload" });
         if (job.status === "running") return send(res, 409, { error: "Already running" });
@@ -199,7 +309,9 @@ export async function startServer(options = {}) {
         const out = job.input.replace(/(\.[^.]+)$/, `.halfsize.mp4`);
         job.status = "running";
         job.plan = plan;
-        job.output = out;
+        job.output = null;
+        job.result = null;
+        job.error = null;
         job.wroteOutput = false;
         job.controller = new AbortController();
 
@@ -215,6 +327,9 @@ export async function startServer(options = {}) {
             if (job.controller.signal.aborted) throw cancelledJob();
             emit(job.id, "phase", { phase: "verify" });
             const quality = await measureQuality(job.input, out, job.info.duration);
+            // Cancel can land while the metrics run; the file is complete by
+            // then, but the user asked to stop, so remove it and say cancelled.
+            if (job.controller.signal.aborted) throw cancelledJob();
             job.result = {
               id: job.id,
               inputBytes: job.info.sizeBytes,
@@ -230,12 +345,13 @@ export async function startServer(options = {}) {
               download: `/api/download/${job.id}`,
             };
             job.status = "done";
+            job.output = out;
             emit(job.id, "done", job.result);
           } catch (err) {
             if (err.code === "HALFSIZE_CANCELLED" || err.code === "HALFSIZE_INTERRUPTED") {
               if (job.wroteOutput) {
                 try {
-                  fs.rmSync(job.output, { force: true });
+                  fs.rmSync(out, { force: true });
                 } catch {
                   // best effort
                 }
@@ -255,7 +371,7 @@ export async function startServer(options = {}) {
       }
 
       if (req.method === "POST" && pathname === "/api/cancel") {
-        const body = JSON.parse((await readBody(req, 1024 * 1024)).toString());
+        const body = await readJson(req, 1024 * 1024);
         const job = jobs.get(body.id);
         if (!job) return send(res, 404, { error: "Unknown upload" });
         if (job.status !== "running" || !job.controller) return send(res, 409, { error: "Not running" });
@@ -268,10 +384,12 @@ export async function startServer(options = {}) {
         const id = pathname.split("/").pop();
         const job = jobs.get(id);
         if (!job?.output || !fs.existsSync(job.output)) return send(res, 404, { error: "not ready" });
-        const name = job.originalName.replace(/(\.[^.]+)$/, "") + ".halfsize.mp4";
+        const base = safeName(job.originalName).replace(/\.[^.]+$/, "") || "video";
+        const name = `${base}.halfsize.mp4`;
+        const ascii = name.replace(/[^\x20-\x7e]/g, "_");
         res.writeHead(200, {
           "content-type": "video/mp4",
-          "content-disposition": `attachment; filename="${name.replace(/[^\x20-\x7e]/g, "_").replace(/"/g, "")}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+          "content-disposition": `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`,
           "content-length": fs.statSync(job.output).size,
         });
         return fs.createReadStream(job.output).pipe(res);
@@ -287,35 +405,95 @@ export async function startServer(options = {}) {
 
       return send(res, 404, { error: "not found" });
     } catch (err) {
-      return send(res, 500, { error: err.message });
+      if (res.headersSent) {
+        try {
+          res.end();
+        } catch {
+          // The socket is already gone.
+        }
+        return;
+      }
+      return send(res, err.status || 500, { error: err.message });
     }
   });
 
   await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(port, "127.0.0.1", resolve);
+    const onError = (err) => {
+      server.removeListener("listening", onListening);
+      if (err.code === "EADDRINUSE") {
+        reject(
+          new Error(
+            `Port ${port} is already in use. Close the other halfsize window, or run: npx halfsize --web --port ${port + 1}`,
+          ),
+        );
+        return;
+      }
+      reject(err);
+    };
+    const onListening = () => {
+      server.removeListener("error", onError);
+      resolve();
+    };
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, "127.0.0.1");
   });
 
-  return `http://127.0.0.1:${port}`;
+  const actualPort = server.address().port;
+  return {
+    url: `http://127.0.0.1:${actualPort}`,
+    server,
+    close: () =>
+      new Promise((resolve) => {
+        server.closeAllConnections?.();
+        server.close(() => resolve());
+      }),
+  };
 }
 
 function streamVideo(req, res, file) {
   const stat = fs.statSync(file);
+  const size = stat.size;
   const range = req.headers.range;
-  if (range) {
-    const [startRaw, endRaw] = range.replace("bytes=", "").split("-");
-    const start = Number(startRaw) || 0;
-    const end = endRaw ? Number(endRaw) : stat.size - 1;
-    res.writeHead(206, {
-      "content-range": `bytes ${start}-${end}/${stat.size}`,
-      "accept-ranges": "bytes",
-      "content-length": end - start + 1,
-      "content-type": "video/mp4",
-    });
-    return fs.createReadStream(file, { start, end }).pipe(res);
+  if (!range) {
+    res.writeHead(200, { "content-length": size, "content-type": "video/mp4", "accept-ranges": "bytes" });
+    return fs.createReadStream(file).pipe(res);
   }
-  res.writeHead(200, { "content-length": stat.size, "content-type": "video/mp4", "accept-ranges": "bytes" });
-  return fs.createReadStream(file).pipe(res);
+
+  // Only the single-range form browsers actually send. Anything else gets a
+  // 416 instead of a negative content-length and a crashed stream.
+  const match = /^bytes=(\d*)-(\d*)$/.exec(String(range).trim());
+  if (!match || (match[1] === "" && match[2] === "")) return unsatisfiable(res, size);
+
+  let start;
+  let end;
+  if (match[1] === "") {
+    const suffix = Number(match[2]);
+    if (!suffix) return unsatisfiable(res, size);
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] === "" ? size - 1 : Number(match[2]);
+  }
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start >= size || start > end) {
+    return unsatisfiable(res, size);
+  }
+  end = Math.min(end, size - 1);
+
+  res.writeHead(206, {
+    "content-range": `bytes ${start}-${end}/${size}`,
+    "accept-ranges": "bytes",
+    "content-length": end - start + 1,
+    "content-type": "video/mp4",
+  });
+  return fs.createReadStream(file, { start, end }).pipe(res);
+}
+
+function unsatisfiable(res, size) {
+  res.writeHead(416, { "content-range": `bytes */${size}`, "content-length": 0 });
+  res.end();
 }
 
 function contentType(file) {

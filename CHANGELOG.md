@@ -15,6 +15,18 @@ Failure modes, mostly. The kind that leave you with a file you think is fine.
   and keeps the finished file, instead of deleting it
 - The version now comes from `package.json` alone. `scripts/bump-site.mjs` syncs
   the site and READMEs, and a test fails if they drift
+- The local app refuses a text file, an image, or an empty file with a readable
+  message, instead of accepting it and failing later with a path to ffprobe
+- Uploaded file names are reduced to a bare file name, so nothing like
+  `../../evil.mp4` can reach the download header
+- Malformed request bodies return 400 instead of 500, and impossible byte ranges
+  return 416 instead of a broken stream
+- Both the CLI and the web app now say when tracks are dropped: extra audio tracks,
+  subtitles, surround audio downmixed to stereo, and frame rates above 60 fps
+- `--out` refuses to overwrite the input file, and `--crf`, `--preset`, `--codec`,
+  and `--port` are validated before encoding starts
+- Low-frame-rate sources are left alone. A 5 fps timelapse used to be forced up to
+  10 fps, which duplicated frames and inflated the bitrate the planner assumed
 
 ## 0.1.7
 

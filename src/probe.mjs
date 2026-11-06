@@ -4,21 +4,40 @@ import { resolveBinaries } from "./ffmpeg.mjs";
 
 const run = promisify(execFile);
 
+// Demuxers that happily "read" things which are not videos. FFmpeg's tty
+// demuxer turns a .txt file into an ANSI-art video stream, and image2 turns a
+// single JPEG into a one-frame movie. Both used to sail through as valid input.
+const NOT_VIDEO = new Set(["tty", "image2", "lavfi"]);
+
 export async function probe(file) {
   const { ffprobe } = await resolveBinaries();
-  const { stdout } = await run(
-    ffprobe,
-    ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", file],
-    { maxBuffer: 32 * 1024 * 1024, windowsHide: true },
-  );
+  let stdout;
+  try {
+    ({ stdout } = await run(
+      ffprobe,
+      ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", file],
+      { maxBuffer: 32 * 1024 * 1024, windowsHide: true },
+    ));
+  } catch (err) {
+    // The raw execFile error is a full local path plus a command line. Nobody
+    // needs that in a UI; keep it behind HALFSIZE_DEBUG.
+    const detail = process.env.HALFSIZE_DEBUG ? `\n${err.stderr || err.message}` : "";
+    throw new Error(`FFmpeg could not read this file as a video.${detail}`);
+  }
+
   const json = JSON.parse(stdout);
+  const format = json.format || {};
+  const container = String(format.format_name || "").split(",")[0];
+  if (NOT_VIDEO.has(container)) {
+    throw new Error("This file is not a video. Pick an MP4, MOV, MKV, AVI, or WebM file.");
+  }
 
   const video = json.streams.find((s) => s.codec_type === "video" && s.disposition?.attached_pic !== 1);
   if (!video) throw new Error("No video stream found in this file.");
 
   const audio = json.streams.find((s) => s.codec_type === "audio");
-  const duration = Number(json.format.duration || video.duration || 0);
-  const sizeBytes = Number(json.format.size || 0);
+  const duration = Number(format.duration || video.duration || 0);
+  const sizeBytes = Number(format.size || 0);
 
   const rotation = readRotation(video);
   const width = rotation % 180 === 0 ? video.width : video.height;
@@ -28,8 +47,8 @@ export async function probe(file) {
     file,
     duration,
     sizeBytes,
-    container: (json.format.format_name || "").split(",")[0],
-    bitrate: Number(json.format.bit_rate || 0),
+    container,
+    bitrate: Number(format.bit_rate || 0),
     video: {
       codec: video.codec_name,
       profile: video.profile,
@@ -49,6 +68,10 @@ export async function probe(file) {
           bitrate: Number(audio.bit_rate || 0),
         }
       : null,
+    // Everything below the first video/audio stream is dropped at encode time.
+    // The plan warns about it instead of losing it silently.
+    audioTracks: json.streams.filter((s) => s.codec_type === "audio").length,
+    subtitleTracks: json.streams.filter((s) => s.codec_type === "subtitle").length,
   };
 }
 

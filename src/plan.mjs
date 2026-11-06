@@ -17,6 +17,12 @@ const TIERS = [
 
 const even = (n) => Math.max(2, Math.round(n / 2) * 2);
 
+// Warnings carry a machine-readable code so the web UI can say the same thing
+// in Chinese without re-parsing English sentences.
+function warn(list, code, message, params = {}) {
+  list.push({ code, message, params });
+}
+
 function fitTier(video, tier) {
   const portrait = video.height > video.width;
   const [tw, th] = portrait ? [tier[1], tier[0]] : tier;
@@ -62,6 +68,44 @@ export function planEncode(info, options = {}) {
 
   if (!info.duration) throw new Error("Could not read the duration of this file.");
 
+  const fps = capFps(info.video.fps);
+
+  // Everything past the first video/audio stream is dropped by -map. Say so.
+  if (info.audioTracks > 1) {
+    warn(
+      warnings,
+      "audio-tracks",
+      `This file has ${info.audioTracks} audio tracks; only the first one is kept.`,
+      { count: info.audioTracks },
+    );
+  }
+  if (info.subtitleTracks > 0) {
+    warn(
+      warnings,
+      "subtitles",
+      info.subtitleTracks === 1
+        ? "The subtitle track is not carried over to the MP4."
+        : `${info.subtitleTracks} subtitle tracks are not carried over to the MP4.`,
+      { count: info.subtitleTracks },
+    );
+  }
+  if (info.audio?.channels > 2) {
+    warn(
+      warnings,
+      "downmix",
+      `Audio has ${info.audio.channels} channels and is downmixed to stereo.`,
+      { channels: info.audio.channels },
+    );
+  }
+  if (info.video.fps > 60.001) {
+    warn(
+      warnings,
+      "fps-capped",
+      `Frame rate is capped at 60 fps (the source is ${Math.round(info.video.fps)} fps).`,
+      { from: info.video.fps, to: 60 },
+    );
+  }
+
   const audioChannels = info.audio?.channels === 1 ? 1 : 2;
 
   if (options.crf !== undefined) {
@@ -74,7 +118,7 @@ export function planEncode(info, options = {}) {
       crf: Number(options.crf),
       width: info.video.width,
       height: info.video.height,
-      fps: capFps(info.video.fps),
+      fps,
       videoKbps: null,
       audioKbps: options.audio === false ? 0 : audioBitrate(info, 2000),
       audioChannels,
@@ -92,7 +136,6 @@ export function planEncode(info, options = {}) {
   const totalKbps = ((options.targetBytes * 8) / info.duration / 1000) * 0.97;
   const audioKbps = options.audio === false ? 0 : audioBitrate(info, totalKbps);
   const videoKbps = Math.max(40, Math.round(totalKbps - audioKbps));
-  const fps = capFps(info.video.fps);
 
   const sizes = candidateSizes(info);
   const original = sizes[0];
@@ -107,17 +150,29 @@ export function planEncode(info, options = {}) {
 
   const requiredAtChosen = (chosen.w * chosen.h * fps * codec.bpp) / 1000;
   if (chosen.w === original.w && chosen.h === original.h && requiredAtChosen > videoKbps) {
-    warnings.push("The target is aggressive for this resolution; keeping full size will look soft.");
+    warn(
+      warnings,
+      "aggressive",
+      "The target is aggressive for this resolution; keeping full size will look soft.",
+    );
   }
   if (!allowDownscale && (chosen.w !== original.w || chosen.h !== original.h)) {
     chosen = { w: original.w, h: original.h };
-    warnings.push("Downscaling is disabled, so the target may be missed. Quality will suffer.");
+    warn(
+      warnings,
+      "no-downscale",
+      "Downscaling is disabled, so the target may be missed. Quality will suffer.",
+    );
   }
   if (videoKbps < 120) {
-    warnings.push("Very low bitrate. Consider a larger target or H.265.");
+    warn(warnings, "low-bitrate", "Very low bitrate. Consider a larger target or H.265.");
   }
   if (info.video.hdr) {
-    warnings.push("HDR source detected. HDR-to-SDR conversion is not implemented yet, so colors may look washed out.");
+    warn(
+      warnings,
+      "hdr",
+      "HDR source detected. HDR-to-SDR conversion is not implemented yet, so colors may look washed out.",
+    );
   }
 
   const downscaled = chosen.w !== original.w || chosen.h !== original.h;
@@ -144,9 +199,11 @@ export function planEncode(info, options = {}) {
   };
 }
 
+// Cap, never floor. A 5 fps timelapse used to be forced to 10 fps, which
+// duplicated frames and inflated the bitrate the planner assumed it had.
 function capFps(fps) {
   if (!fps || !Number.isFinite(fps)) return 30;
-  return Math.min(60, Math.max(10, Math.round(fps * 1000) / 1000));
+  return Math.min(60, Math.round(fps * 1000) / 1000);
 }
 
 export function estimateBytes(info, plan) {
