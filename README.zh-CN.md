@@ -5,7 +5,7 @@
 <h1 align="center">halfsize</h1>
 
 <p align="center">
-  <b>把任何视频塞进任何大小限制。全程本地。并且证明画质没垮。</b>
+  <b>把任何视频压缩成任意大小，并且画质不变。全程本地。</b>
 </p>
 
 <p align="center">

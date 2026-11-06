@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>halfsize — fit any video into any limit</title>
+<title>halfsize — compress any video to any size</title>
 <style>
   :root {
     --bg: #07080a;
@@ -174,7 +174,7 @@ button.cancel:disabled { opacity: .5; cursor: default; }
     <div class="pill" data-i18n="pill">本地运行 · 不上传 · 无账号</div>
   </header>
 
-  <h1 data-i18n-html="title">把任何视频，塞进任何限制。<br><em>并且证明画质没变。</em></h1>
+  <h1 data-i18n-html="title">把任何视频压缩成任意大小，<br><em>并且画质不变。</em></h1>
   <p class="sub" data-i18n-html="sub">微信和 Discord 都只让发 20 MB，邮件也差不多。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。</p>
 
   <div class="card" id="card">
@@ -263,7 +263,7 @@ button.cancel:disabled { opacity: .5; cursor: default; }
 const I18N = {
   zh: {
     pill: "本地运行 · 不上传 · 无账号",
-    title: "把任何视频，塞进任何限制。<br><em>并且证明画质没变。</em>",
+    title: "把任何视频压缩成任意大小，<br><em>并且画质不变。</em>",
     sub: "微信和 Discord 都只让发 20 MB，邮件也差不多。选一个数字，剩下的交给它：算码率、降分辨率、两遍编码，最后用 <b>VMAF</b> 告诉你画质掉没掉。",
     dropBig: "把视频拖进来，或点击选择",
     dropSmall: "MP4 · MOV · MKV · AVI · WebM · 不超过 8 GB",
@@ -325,7 +325,7 @@ const I18N = {
   },
   en: {
     pill: "runs locally · no upload · no account",
-    title: "Fit any video into any limit.<br><em>And prove nothing changed.</em>",
+    title: "Compress any video to any size.<br><em>Keep the quality.</em>",
     sub: "WeChat and Discord both cap videos at 20 MB. Email is about the same. Pick the number. It does the rest: bitrate math, resolution, two-pass encoding, then measures the result with <b>VMAF</b>.",
     dropBig: "Drop a video, or click to choose",
     dropSmall: "MP4 · MOV · MKV · AVI · WebM · up to 8 GB",
@@ -726,7 +726,7 @@ $("share").addEventListener("click", () => {
   x.fillStyle = "#b6f36a"; x.font = "700 26px ui-sans-serif, system-ui, sans-serif";
   x.fillText("halfsize", 80, 96);
   x.fillStyle = "#8b93a7"; x.font = "400 20px ui-sans-serif, system-ui, sans-serif";
-  x.fillText("fit any video into any limit", 80, 132);
+  x.fillText("compress any video to any size", 80, 132);
 
   x.fillStyle = "#eef1f6"; x.font = "800 150px ui-sans-serif, system-ui, sans-serif";
   const ratioText = `${r.ratio >= 10 ? Math.round(r.ratio) : r.ratio.toFixed(1)}×`;

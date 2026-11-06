@@ -5,7 +5,7 @@
 <h1 align="center">halfsize</h1>
 
 <p align="center">
-  <b>Fit any video into any size limit. Locally. And prove the quality survived.</b>
+  <b>Compress any video to any size. Locally. And keep the quality.</b>
 </p>
 
 <p align="center">
