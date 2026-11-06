@@ -246,8 +246,17 @@ FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static npx ha
 HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe npx halfsize video.mp4 --to 25mb
 ```
 
-On Windows, `winget install Gyan.FFmpeg` is enough. On macOS, `brew install ffmpeg`. On
-Debian/Ubuntu, `sudo apt install ffmpeg`. Run `npx halfsize --doctor` to see what was found.
+If npm says `unable to verify the first certificate`, a proxy or antivirus is inspecting
+TLS. On Node 22.15+ use the system certificate store:
+
+```powershell
+$env:NODE_OPTIONS="--use-system-ca"; npx halfsize video.mp4 --to 25mb
+```
+
+A failed binary download no longer aborts the install: halfsize still starts and tells you
+which of these fixes to apply. On Windows, `winget install Gyan.FFmpeg` is enough. On
+macOS, `brew install ffmpeg`. On Debian/Ubuntu, `sudo apt install ffmpeg`. Run
+`npx halfsize --doctor` to see what was found.
 
 ## FAQ
 

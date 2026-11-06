@@ -7,7 +7,7 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.6";
+const VERSION = "0.1.7";
 const REPO_URL = "https://github.com/YKLovePython/halfsize";
 
 let starPromptShown = false;

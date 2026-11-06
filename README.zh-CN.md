@@ -239,6 +239,14 @@ FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static npx ha
 $env:FFMPEG_BINARIES_URL="https://registry.npmmirror.com/-/binary/ffmpeg-static"; npx halfsize 视频.mp4 --to 25mb
 ```
 
+如果 npm 报 `unable to verify the first certificate`，说明代理或杀毒软件在拦截 TLS。
+Node 22.15 以上可以改用系统证书库：
+
+```powershell
+$env:NODE_OPTIONS="--use-system-ca"; npx halfsize 视频.mp4 --to 25mb
+```
+
+FFmpeg 下载失败**不会再让整个安装失败**：`halfsize` 仍会装上，运行时会直接告诉你要用上面哪一种修法。
 `ffprobe` 是随包附带的，不需要单独下载。已经装过系统 FFmpeg 的话，`halfsize` 会优先用它，
 连这一步都可以跳过。
 

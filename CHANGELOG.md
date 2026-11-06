@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7
+
+- The bundled FFmpeg and FFprobe are now optional dependencies, so a blocked binary
+  download no longer aborts `npm install` or `npx`. halfsize still starts and explains
+  how to fix the binary instead of failing inside npm
+- First-run guidance adds `NODE_OPTIONS=--use-system-ca` for TLS-inspecting proxies and
+  antivirus, alongside the npmmirror binary mirror
+- Verified with a fresh install on a network that rejects the GitHub certificate
+
 ## 0.1.6
 
 - A missing FFmpeg now explains the three fixes: rebuild the bundled binary, use a
