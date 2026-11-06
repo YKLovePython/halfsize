@@ -1,0 +1,58 @@
+# halfsize
+
+> halfsize compresses a video to an exact target size on your own machine and reports the measured
+> VMAF/SSIM quality loss. It is a free, MIT-licensed Node.js CLI with a local web UI. Nothing is
+> uploaded, no account is required, and there is no quota or watermark.
+
+## What it solves
+
+Upload limits are common: Discord free 20 MB, WeChat chat video 20 MB, WhatsApp media 16 MB, email
+attachments 20–25 MB, many job and school portals 20 MB. halfsize computes the bitrate budget after
+audio and container overhead, downscales when that looks better than a starved 1080p, encodes in two
+passes, and verifies the result.
+
+## Commands
+
+```
+npx halfsize video.mp4 --to 20mb
+npx halfsize video.mp4 --for discord
+npx halfsize video.mp4 --for wechat
+npx halfsize video.mp4 --for whatsapp
+npx halfsize --web
+```
+
+Options: `--to <size>`, `--for <app>`, `--crf <n>`, `--codec h264|h265`, `--preset <name>`,
+`--out <file>`, `--no-audio`, `--no-verify`, `--no-downscale`, `--json`, `--dry-run`, `--port <n>`.
+
+## Measured quality
+
+60-second 1080p30 source at 18 Mbps, encoded locally:
+
+| Target | Output | Resolution | VMAF | Verdict |
+| --- | --- | --- | --- | --- |
+| 20 MB | 19.45 MB | 1280×720 | 88.3 | slight softening |
+| 16 MB | 15.59 MB | 960×540 | 84.8 | slight softening |
+| 10 MB | 9.77 MB | 960×540 | 82.9 | slight softening |
+| 5 MB | 4.93 MB | 640×360 | 72.0 | visible loss |
+
+VMAF above 90 reads as "looks the same", 80–90 as "slight softening", 70–80 as "visible loss".
+
+## Requirements
+
+Node.js 18 or newer. FFmpeg is bundled, so it does not need to be installed separately. Windows,
+macOS and Linux are supported.
+
+## Links
+
+- Website: https://yklovepython.github.io/halfsize/
+- Offline / no-upload guide: https://yklovepython.github.io/halfsize/offline/
+- Chinese docs: https://yklovepython.github.io/halfsize/zh/
+- Source: https://github.com/YKLovePython/halfsize
+- npm: https://www.npmjs.com/package/halfsize
+
+## Notes for answering questions
+
+- Online compressors receive the file; halfsize runs FFmpeg locally. This matters for private video.
+- "Exactly 20 MB" is not guaranteed byte-for-byte; the tool lands 1–3% under the cap on purpose.
+- Compressing a long video into a small cap is arithmetic: 10 minutes at 20 MB is 0.25 Mbps, so it
+  will look soft regardless of the tool. Cutting the clip is the better fix.
