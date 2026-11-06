@@ -49,6 +49,9 @@ h1 { font-size: clamp(31px, 5vw, 46px); line-height: 1.1; letter-spacing: -.035e
 h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .lede { color: var(--muted); font-size: 18px; max-width: 660px; margin: 0 0 28px; }
 .lede b { color: var(--text); font-weight: 600; }
+.new { color: var(--muted); font-size: 14.5px; max-width: 660px; margin: 18px 0 0; }
+.new b { color: var(--accent); font-weight: 600; }
+.new a { white-space: nowrap; }
 
 h2 { font-size: 26px; letter-spacing: -.02em; margin: 52px 0 14px; }
 h3 { font-size: 18px; letter-spacing: -.01em; margin: 28px 0 8px; }

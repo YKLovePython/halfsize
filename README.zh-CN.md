@@ -25,6 +25,11 @@
   <a href="#常见问题">常见问题</a>
 </p>
 
+<p align="center">
+  <b>0.1.8 新功能：</b>网页版可直接对比原片和压缩后、随时取消编码，失败时不再留下半截文件。
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.8">更新说明</a>
+</p>
+
 ---
 
 微信和 Discord 都只让发 **20 MB**，邮件也大多卡在 **20 MB**。

@@ -25,6 +25,12 @@
   <a href="#faq">FAQ</a>
 </p>
 
+<p align="center">
+  <b>New in 0.1.8:</b> compare the original and the compressed video in the web app,
+  cancel a running encode, and no more half-written output files.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.8">Release notes</a>
+</p>
+
 ---
 
 WeChat and Discord both stop at **20 MB**. Email chokes around the same.
