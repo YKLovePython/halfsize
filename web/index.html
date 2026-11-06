@@ -72,6 +72,12 @@
 
   .video-box { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #000; aspect-ratio: 16/9; display: grid; place-items: center; }
   .video-box video { width: 100%; height: 100%; object-fit: contain; }
+  .compare { display: flex; gap: 6px; margin-bottom: 10px; }
+  .seg { border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+  .seg:hover { border-color: #39404e; }
+  .seg.on { border-color: var(--accent); color: var(--accent); background: rgba(182,243,106,.08); }
+  .hint { display: none; margin-top: 10px; color: var(--warn); font-size: 12.5px; }
+  .hint.on { display: block; }
   .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .tag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); background: var(--panel-2); padding: 5px 9px; border-radius: 7px; font-variant-numeric: tabular-nums; }
   .fname { font-size: 13px; color: var(--dim); margin-top: 12px; word-break: break-all; }
@@ -184,7 +190,12 @@ button.cancel:disabled { opacity: .5; cursor: default; }
     <div id="editor" class="hidden">
       <div class="layout">
         <div>
+          <div class="compare hidden" id="compare">
+            <button class="seg on" data-which="in" data-i18n="original">原片</button>
+            <button class="seg" data-which="out" data-i18n="compressed">压缩后</button>
+          </div>
           <div class="video-box"><video id="preview" controls playsinline></video></div>
+          <div class="hint" id="hint"></div>
           <div class="meta" id="meta"></div>
           <div class="fname" id="fname"></div>
         </div>
@@ -289,6 +300,10 @@ const I18N = {
     emptyFile: "这个文件是空的。",
     notVideo: "这个文件看起来不是视频。",
     tooLarge: "文件超过 8 GB，请改用命令行：npx halfsize 视频.mp4 --to 25mb",
+    original: "原片",
+    compressed: "压缩后",
+    h265Hint: "浏览器不一定能解码 H.265。如果播放器是黑的，下载后用本地播放器打开。",
+    playFailed: "这个浏览器放不了这个文件。下载后用本地播放器打开。",
     warnings: {
       aggressive: "这个目标对这个分辨率很紧，保持原尺寸会有点软。",
       "no-downscale": "关闭了降分辨率，可能压不到目标，画质会下降。",
@@ -347,6 +362,10 @@ const I18N = {
     emptyFile: "That file is empty.",
     notVideo: "That file doesn't look like a video.",
     tooLarge: "That file is over 8 GB. Use the CLI instead: npx halfsize video.mp4 --to 25mb",
+    original: "Original",
+    compressed: "Compressed",
+    h265Hint: "Browsers can't always decode H.265. If the player stays black, download the file and open it in a local player.",
+    playFailed: "This browser can't play this file. Download it and open it in a local player.",
     warnings: {
       aggressive: "The target is aggressive for this resolution; keeping full size will look soft.",
       "no-downscale": "Downscaling is off, so the target may be missed and quality will suffer.",
@@ -383,9 +402,9 @@ const $ = (id) => document.getElementById(id);
 const drop = $("drop"), fileInput = $("file"), editor = $("editor"), preview = $("preview");
 const meta = $("meta"), fname = $("fname"), go = $("go"), progress = $("progress");
 const fill = $("fill"), pct = $("pct"), speed = $("speed"), result = $("result"), error = $("error");
-const notes = $("notes");
+const notes = $("notes"), compare = $("compare"), hint = $("hint");
 
-let state = { id: null, target: "20mb", codec: "h264", data: null };
+let state = { id: null, target: "20mb", codec: "h264", data: null, result: null, which: "in" };
 
 function fmtBytes(n) {
   if (!n && n !== 0) return "—";
@@ -401,6 +420,54 @@ function fmtDur(s) {
 }
 function showError(msg) { error.classList.remove("notice"); error.textContent = msg; error.classList.add("on"); }
 function showNotice(msg) { error.classList.add("notice"); error.textContent = msg; error.classList.add("on"); }
+
+// Keep a finished result around while the user compares it with the source.
+// The switch stays manual: auto-playing the output can show a black box when
+// the browser cannot decode H.265.
+function setPreview(which) {
+  if (!state.id) return;
+  state.which = which;
+  compare.querySelectorAll(".seg").forEach((b) => b.classList.toggle("on", b.dataset.which === which));
+  hint.dataset.kind = "";
+  preview.src = `/api/media/${state.id}/${which}`;
+  updateHint();
+}
+function updateHint() {
+  const codec = state.result?.plan?.codec || state.codec;
+  const showH265 = state.which === "out" && codec === "h265";
+  hint.textContent = showH265 ? t("h265Hint") : "";
+  hint.dataset.kind = showH265 ? "h265" : "";
+  hint.classList.toggle("on", showH265);
+}
+function resetPreview() {
+  state.result = null;
+  compare.classList.add("hidden");
+  hint.classList.remove("on");
+  hint.dataset.kind = "";
+  hint.textContent = "";
+  preview.pause?.();
+  if (state.id) setPreview("in");
+}
+preview.addEventListener("loadedmetadata", () => {
+  // A replaced source can fire a stale error; a successful load clears it.
+  if (hint.dataset.kind !== "error") return;
+  hint.classList.remove("on");
+  hint.dataset.kind = "";
+  hint.textContent = "";
+  updateHint();
+});
+preview.addEventListener("error", () => {
+  // Ignore the stale error from a source that was replaced a moment ago.
+  if (!state.id || !(preview.getAttribute("src") || "").includes(state.id)) return;
+  hint.textContent = t("playFailed");
+  hint.dataset.kind = "error";
+  hint.classList.add("on");
+});
+compare.addEventListener("click", (e) => {
+  const btn = e.target.closest(".seg");
+  if (!btn || !state.result || btn.dataset.which === state.which) return;
+  setPreview(btn.dataset.which);
+});
 
 function warningText(warning) {
   const localized = strings.warnings[warning.code];
@@ -444,6 +511,8 @@ fileInput.addEventListener("change", () => { if (fileInput.files[0]) upload(file
 function upload(file) {
   error.classList.remove("on");
   showNotes([]);
+  result.classList.remove("on");
+  resetPreview();
   if (file.size > 8 * 1024 ** 3) {
     showError(t("tooLarge"));
     return;
@@ -485,7 +554,7 @@ function upload(file) {
 function enterEditor(data) {
   drop.classList.add("hidden");
   editor.classList.remove("hidden");
-  preview.src = `/api/media/${data.id}/in`;
+  resetPreview();
   fname.textContent = data.name;
   meta.innerHTML = [
     fmtBytes(data.size),
@@ -539,6 +608,7 @@ go.addEventListener("click", async () => {
 
   result.classList.remove("on");
   showNotes([]);
+  resetPreview();
   progress.classList.add("on");
   go.disabled = true;
   $("cancel").disabled = false;
@@ -589,6 +659,7 @@ go.addEventListener("click", async () => {
     fill.style.width = "0%";
     pct.textContent = "0%";
     speed.textContent = "";
+    resetPreview();
     showNotice(t("cancelled"));
   });
   es.addEventListener("failed", (ev) => {
@@ -596,6 +667,7 @@ go.addEventListener("click", async () => {
     progress.classList.remove("on");
     go.disabled = false;
     $("cancel").disabled = false;
+    resetPreview();
     try { showError(JSON.parse(ev.data).message); } catch { showError(t("failed")); }
   });
 });
@@ -619,6 +691,7 @@ $("cancel").addEventListener("click", async () => {
 function renderResult(r) {
   state.result = r;
   result.classList.add("on");
+  compare.classList.remove("hidden");
   $("ratio").textContent = `${r.ratio >= 10 ? Math.round(r.ratio) : r.ratio.toFixed(1)}×`;
   $("sizes").innerHTML = `${t("smallerLabel")} · <b>${fmtBytes(r.inputBytes)}</b> → <b>${fmtBytes(r.outputBytes)}</b>`;
   const v = $("verdict");

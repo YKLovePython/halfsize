@@ -11,6 +11,10 @@ Failure modes, mostly. The kind that leave you with a file you think is fine.
   `cancelled` with exit code 130
 - The local web app has a Cancel button, and closing the tab stops the encode
   after a ten-second grace period instead of letting FFmpeg run to completion
+- The web app can switch the player between the original and the compressed file,
+  and warns when the browser cannot decode H.265
+- The web app retires the oldest uploads past the tenth, so a tab left open all
+  day does not fill the temp directory
 - Replacing an output that another program has open now fails with a clear message
   and keeps the finished file, instead of deleting it
 - The version now comes from `package.json` alone. `scripts/bump-site.mjs` syncs

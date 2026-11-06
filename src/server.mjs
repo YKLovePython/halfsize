@@ -15,6 +15,7 @@ const WEB_DIR = path.resolve(__dirname, "..", "web");
 
 const jobs = new Map();
 const clients = new Map();
+const MAX_JOBS = 10;
 
 let workDir = "";
 
@@ -94,6 +95,22 @@ async function removeFile(file) {
       // Windows keeps the handle for a moment after a destroyed stream.
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
+  }
+}
+
+// Every upload keeps a source and, after a run, an output in the temp
+// directory. Retire the oldest idle jobs once there are too many so a tab left
+// open all day cannot fill the disk. A running encode is never touched, and
+// the few most recent results stay available for preview and download.
+function pruneJobs(keepId) {
+  if (jobs.size <= MAX_JOBS) return;
+  for (const [id, job] of jobs) {
+    if (jobs.size <= MAX_JOBS) break;
+    if (id === keepId || job.status === "running") continue;
+    jobs.delete(id);
+    clients.delete(id);
+    void removeFile(job.input);
+    if (job.output) void removeFile(job.output);
   }
 }
 
@@ -237,6 +254,7 @@ export async function startServer(options = {}) {
         }
 
         jobs.set(id, { id, input: file, originalName: name, info, status: "ready" });
+        pruneJobs(id);
         return send(res, 200, {
           id,
           name,
@@ -365,6 +383,8 @@ export async function startServer(options = {}) {
             }
           } finally {
             job.controller = null;
+            // A burst of uploads can pass the cap while they are all running.
+            pruneJobs(job.id);
           }
         })();
         return;

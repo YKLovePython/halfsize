@@ -128,6 +128,26 @@ test("a path in the uploaded name never reaches the download header", () =>
     await download.body?.cancel();
   }));
 
+test("old uploads are pruned instead of growing the temp directory forever", () =>
+  withServer(async (base) => {
+    const file = await clip();
+    const body = fs.readFileSync(file);
+    const ids = [];
+    for (let i = 0; i < 12; i++) {
+      const res = await upload(base, `prune-${i}.mp4`, body);
+      assert.equal(res.status, 200, `upload ${i}`);
+      ids.push((await res.json()).id);
+    }
+
+    const oldest = await fetch(`${base}/api/media/${ids[0]}/in`);
+    assert.equal(oldest.status, 404, "the oldest upload should be gone");
+    await oldest.body?.cancel();
+
+    const newest = await fetch(`${base}/api/media/${ids.at(-1)}/in`, { headers: { Range: "bytes=0-0" } });
+    assert.equal(newest.status, 206, "the newest upload must still play");
+    await newest.body?.cancel();
+  }));
+
 test("impossible byte ranges return 416 instead of a broken stream", () =>
   withServer(async (base) => {
     const file = await clip();
