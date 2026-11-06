@@ -29,5 +29,8 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      # The artifact listing can lag a moment behind the upload. Deploying
+      # immediately has been seen to find zero artifacts and fail.
+      - run: sleep 5
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
