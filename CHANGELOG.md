@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.8
+
+Failure modes, mostly. The kind that leave you with a file you think is fine.
+
+- A failed, cancelled, or interrupted encode no longer leaves a half-written video
+  at the output path. It writes a hidden `.part` file next to the destination and
+  only renames it once FFmpeg exits cleanly
+- `Ctrl+C` stops the running FFmpeg instead of leaving it behind, and prints
+  `cancelled` with exit code 130
+- The local web app has a Cancel button, and closing the tab stops the encode
+  after a ten-second grace period instead of letting FFmpeg run to completion
+- Replacing an output that another program has open now fails with a clear message
+  and keeps the finished file, instead of deleting it
+- The version now comes from `package.json` alone. `scripts/bump-site.mjs` syncs
+  the site and READMEs, and a test fails if they drift
+
 ## 0.1.7
 
 - The bundled FFmpeg and FFprobe are now optional dependencies, so a blocked binary

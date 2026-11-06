@@ -52,6 +52,12 @@ function send(res, status, body, headers = {}) {
   res.end(payload);
 }
 
+function cancelledJob() {
+  const err = new Error("Cancelled.");
+  err.code = "HALFSIZE_CANCELLED";
+  return err;
+}
+
 function readBody(req, limit = 8 * 1024 ** 3) {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -155,6 +161,17 @@ export async function startServer(options = {}) {
         if (job?.status === "error") emit(id, "failed", { message: job.error });
         req.on("close", () => {
           clients.get(id)?.delete(res);
+          // A closed tab used to leave ffmpeg running to completion. Give
+          // EventSource a moment to reconnect first, then stop the job.
+          const job = jobs.get(id);
+          if (!job || job.status !== "running" || !job.controller) return;
+          const timer = setTimeout(() => {
+            if ((clients.get(id)?.size ?? 0) > 0) return;
+            if (job.status !== "running" || !job.controller) return;
+            job.cancelRequested = true;
+            job.controller.abort();
+          }, 10000);
+          timer.unref?.();
         });
         return;
       }
@@ -183,6 +200,8 @@ export async function startServer(options = {}) {
         job.status = "running";
         job.plan = plan;
         job.output = out;
+        job.wroteOutput = false;
+        job.controller = new AbortController();
 
         send(res, 202, { ok: true, plan });
 
@@ -191,7 +210,9 @@ export async function startServer(options = {}) {
           try {
             const result = await encode(job.input, out, plan, job.info, (p) => {
               emit(job.id, "progress", { ...p, eta: p.ratio > 0.01 ? ((Date.now() - started) / 1000 / p.ratio) * (1 - p.ratio) : 0 });
-            });
+            }, { signal: job.controller.signal });
+            job.wroteOutput = true;
+            if (job.controller.signal.aborted) throw cancelledJob();
             emit(job.id, "phase", { phase: "verify" });
             const quality = await measureQuality(job.input, out, job.info.duration);
             job.result = {
@@ -211,12 +232,36 @@ export async function startServer(options = {}) {
             job.status = "done";
             emit(job.id, "done", job.result);
           } catch (err) {
-            job.status = "error";
-            job.error = err.message;
-            emit(job.id, "failed", { message: err.message });
+            if (err.code === "HALFSIZE_CANCELLED" || err.code === "HALFSIZE_INTERRUPTED") {
+              if (job.wroteOutput) {
+                try {
+                  fs.rmSync(job.output, { force: true });
+                } catch {
+                  // best effort
+                }
+              }
+              job.status = "cancelled";
+              emit(job.id, "cancelled", { message: "cancelled" });
+            } else {
+              job.status = "error";
+              job.error = err.message;
+              emit(job.id, "failed", { message: err.message });
+            }
+          } finally {
+            job.controller = null;
           }
         })();
         return;
+      }
+
+      if (req.method === "POST" && pathname === "/api/cancel") {
+        const body = JSON.parse((await readBody(req, 1024 * 1024)).toString());
+        const job = jobs.get(body.id);
+        if (!job) return send(res, 404, { error: "Unknown upload" });
+        if (job.status !== "running" || !job.controller) return send(res, 409, { error: "Not running" });
+        job.cancelRequested = true;
+        job.controller.abort();
+        return send(res, 202, { ok: true });
       }
 
       if (req.method === "GET" && pathname.startsWith("/api/download/")) {

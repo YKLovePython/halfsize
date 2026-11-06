@@ -114,7 +114,11 @@
   .progress.on { display: block; }
   .bar { height: 8px; border-radius: 99px; background: #171b22; overflow: hidden; }
   .bar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s ease; }
-  .pmeta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .pmeta { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.pmeta #speed { margin-right: auto; }
+button.cancel { border: 1px solid #2a3038; background: transparent; color: #c7ccd8; border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+button.cancel:hover { border-color: #3a4250; }
+button.cancel:disabled { opacity: .5; cursor: default; }
 
   .result { display: none; margin-top: 26px; }
   .result.on { display: block; }
@@ -145,6 +149,7 @@
 
   .error { display: none; margin-top: 16px; border: 1px solid rgba(255,107,107,.3); background: rgba(255,107,107,.07); color: #ffb3b3; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
   .error.on { display: block; }
+.error.notice { border-color: rgba(182,243,106,.3); background: rgba(182,243,106,.06); color: #cfe8a8; }
 
   footer { margin-top: 46px; color: var(--dim); font-size: 12px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   footer a { color: var(--muted); }
@@ -201,7 +206,11 @@
 
           <div class="progress" id="progress">
             <div class="bar"><i id="fill"></i></div>
-            <div class="pmeta"><span id="pct">0%</span><span id="speed"></span></div>
+            <div class="pmeta">
+              <span id="pct">0%</span>
+              <span id="speed"></span>
+              <button class="cancel" id="cancel" data-i18n="cancel">取消</button>
+            </div>
           </div>
         </div>
       </div>
@@ -249,6 +258,9 @@ const I18N = {
     compat: "兼容性最好",
     smaller: "再小 30%",
     go: "开始压缩",
+    cancel: "取消",
+    cancelled: "已取消，没有留下任何文件。",
+    cancelPending: "正在停止…",
     time: "耗时",
     download: "下载压缩后的视频",
     share: "生成分享图",
@@ -290,6 +302,9 @@ const I18N = {
     compat: "best compatibility",
     smaller: "30% smaller",
     go: "Compress",
+    cancel: "Cancel",
+    cancelled: "Cancelled. Nothing was left behind.",
+    cancelPending: "stopping…",
     time: "Time",
     download: "Download the smaller file",
     share: "Share card",
@@ -350,7 +365,8 @@ function fmtDur(s) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.round(s % 60);
   return h ? `${h}h ${String(m).padStart(2, "0")}m` : m ? `${m}m ${String(x).padStart(2, "0")}s` : `${x}s`;
 }
-function showError(msg) { error.textContent = msg; error.classList.add("on"); }
+function showError(msg) { error.classList.remove("notice"); error.textContent = msg; error.classList.add("on"); }
+function showNotice(msg) { error.classList.add("notice"); error.textContent = msg; error.classList.add("on"); }
 
 function parseTarget(value) {
   const match = String(value).trim().toLowerCase().match(/^([0-9]*\.?[0-9]+)\s*(b|kb|k|mb|m|gb|g)?$/);
@@ -457,6 +473,7 @@ go.addEventListener("click", async () => {
   result.classList.remove("on");
   progress.classList.add("on");
   go.disabled = true;
+  $("cancel").disabled = false;
   fill.style.width = "0%";
   pct.textContent = "0%";
   speed.textContent = "";
@@ -490,15 +507,43 @@ go.addEventListener("click", async () => {
     es.close();
     progress.classList.remove("on");
     go.disabled = false;
+    $("cancel").disabled = false;
     pct.textContent = "100%";
     renderResult(JSON.parse(ev.data));
+  });
+  es.addEventListener("cancelled", () => {
+    es.close();
+    progress.classList.remove("on");
+    go.disabled = false;
+    $("cancel").disabled = false;
+    fill.style.width = "0%";
+    pct.textContent = "0%";
+    speed.textContent = "";
+    showNotice(t("cancelled"));
   });
   es.addEventListener("failed", (ev) => {
     es.close();
     progress.classList.remove("on");
     go.disabled = false;
+    $("cancel").disabled = false;
     try { showError(JSON.parse(ev.data).message); } catch { showError(t("failed")); }
   });
+});
+
+$("cancel").addEventListener("click", async () => {
+  if (!state.id) return;
+  $("cancel").disabled = true;
+  speed.textContent = t("cancelPending");
+  try {
+    await fetch("/api/cancel", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: state.id }),
+    });
+  } catch {
+    speed.textContent = "";
+    $("cancel").disabled = false;
+  }
 });
 
 function renderResult(r) {

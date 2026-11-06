@@ -1,10 +1,39 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import { resolveBinaries } from "./ffmpeg.mjs";
 
 const NULL_DEVICE = process.platform === "win32" ? "NUL" : "/dev/null";
+
+// Set while a child ffmpeg is running, so Ctrl+C can stop it instead of
+// orphaning the process and leaving a half-written file behind.
+let activeChild = null;
+let interrupted = false;
+let handlersInstalled = false;
+
+function installSignalHandlers() {
+  if (handlersInstalled) return;
+  handlersInstalled = true;
+  for (const signal of ["SIGINT", "SIGTERM"]) {
+    process.on(signal, () => {
+      if (!activeChild) {
+        // Nothing to clean up: behave like the default handler.
+        process.exit(signal === "SIGINT" ? 130 : 143);
+        return;
+      }
+      interrupted = true;
+      activeChild.kill("SIGTERM");
+    });
+  }
+}
+
+function cancelled(code, message) {
+  const err = new Error(message);
+  err.code = code;
+  return err;
+}
 
 function buildFilters(plan) {
   const filters = [];
@@ -35,12 +64,43 @@ function audioArgs(plan) {
   return ["-c:a", "aac", "-b:a", `${plan.audioKbps}k`, "-ac", String(plan.audioChannels === 1 ? 1 : 2)];
 }
 
-export async function encode(input, output, plan, info, onProgress = () => {}) {
+// Write next to the destination so the final rename stays on one filesystem,
+// and keep the real extension so ffmpeg still infers the container.
+function tempPathFor(output) {
+  const dir = path.dirname(output);
+  const ext = path.extname(output);
+  const base = path.basename(output, ext);
+  return path.join(dir, `.${base}.part-${crypto.randomBytes(4).toString("hex")}${ext}`);
+}
+
+async function removeQuietly(file) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      fs.rmSync(file, { force: true });
+      return;
+    } catch {
+      // Windows can keep a handle for a moment after ffmpeg exits.
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    }
+  }
+}
+
+export async function encode(input, output, plan, info, onProgress = () => {}, options = {}) {
   const { ffmpeg } = await resolveBinaries();
-  const passlog = path.join(os.tmpdir(), `halfsize-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  installSignalHandlers();
+  interrupted = false;
+
+  const dir = path.dirname(output);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const temp = tempPathFor(output);
+  const passlog = path.join(os.tmpdir(), `halfsize-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`);
+  const signal = options.signal;
   const started = Date.now();
 
   try {
+    if (signal?.aborted) throw cancelled("HALFSIZE_CANCELLED", "Cancelled.");
+
     if (plan.mode === "size" && plan.twoPass) {
       const pass1 = [
         ...baseArgs(input, plan, passlog),
@@ -50,16 +110,16 @@ export async function encode(input, output, plan, info, onProgress = () => {}) {
         "-f", "null",
         NULL_DEVICE,
       ];
-      await runFfmpeg(ffmpeg, pass1, info.duration, (p) => onProgress({ ...p, ratio: p.ratio * 0.5, pass: 1, passes: 2 }));
+      await runFfmpeg(ffmpeg, pass1, info.duration, (p) => onProgress({ ...p, ratio: p.ratio * 0.5, pass: 1, passes: 2 }), signal);
       const pass2 = [
         ...baseArgs(input, plan, passlog),
         "-b:v", `${plan.videoKbps}k`,
         "-pass", "2",
         ...audioArgs(plan),
         "-movflags", "+faststart",
-        output,
+        temp,
       ];
-      await runFfmpeg(ffmpeg, pass2, info.duration, (p) => onProgress({ ...p, ratio: 0.5 + p.ratio * 0.5, pass: 2, passes: 2 }));
+      await runFfmpeg(ffmpeg, pass2, info.duration, (p) => onProgress({ ...p, ratio: 0.5 + p.ratio * 0.5, pass: 2, passes: 2 }), signal);
     } else {
       const args = [...baseArgs(input, plan, null)];
       if (plan.mode === "size") {
@@ -67,11 +127,28 @@ export async function encode(input, output, plan, info, onProgress = () => {}) {
       } else {
         args.push("-crf", String(plan.crf));
       }
-      args.push(...audioArgs(plan), "-movflags", "+faststart", output);
-      await runFfmpeg(ffmpeg, args, info.duration, (p) => onProgress({ ...p, pass: 1, passes: 1 }));
+      args.push(...audioArgs(plan), "-movflags", "+faststart", temp);
+      await runFfmpeg(ffmpeg, args, info.duration, (p) => onProgress({ ...p, pass: 1, passes: 1 }), signal);
     }
+  } catch (err) {
+    await removeQuietly(temp);
+    throw err;
   } finally {
+    interrupted = false;
     cleanup(passlog);
+  }
+
+  // The encode is only real once the file has its final name. A crash, a
+  // cancel, or a killed ffmpeg can never leave a plausible-looking .mp4 here.
+  try {
+    fs.renameSync(temp, output);
+  } catch (err) {
+    const reason = err.code === "EPERM" || err.code === "EBUSY" ? "it is open in another program" : err.message;
+    const problem = new Error(
+      `Compressed, but could not replace ${path.basename(output)} (${reason}). The result is saved as ${path.basename(temp)}.`,
+    );
+    problem.code = "HALFSIZE_RENAME_FAILED";
+    throw problem;
   }
 
   return {
@@ -92,17 +169,28 @@ function cleanup(passlog) {
   }
 }
 
-function runFfmpeg(bin, args, duration, onProgress) {
+function runFfmpeg(bin, args, duration, onProgress, signal) {
   if (process.env.HALFSIZE_DEBUG_FFMPEG) console.error(`\n[ffmpeg] ${bin} ${args.join(" ")}\n`);
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(cancelled("HALFSIZE_CANCELLED", "Cancelled."));
+
     const child = spawn(bin, ["-progress", "pipe:1", "-nostats", ...args], {
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
+    activeChild = child;
 
     let stderr = "";
     let buffer = "";
     let last = {};
+
+    const onAbort = () => child.kill("SIGTERM");
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    const release = () => {
+      activeChild = null;
+      signal?.removeEventListener("abort", onAbort);
+    };
 
     child.stdout.on("data", (chunk) => {
       buffer += chunk.toString();
@@ -117,7 +205,7 @@ function runFfmpeg(bin, args, duration, onProgress) {
           onProgress({
             seconds,
             total: duration,
-            ratio: duration ? Math.min(1, seconds / duration) : 0,
+            ratio: duration && Number.isFinite(seconds) ? Math.min(1, seconds / duration) : 0,
             speed: last.speed || "",
           });
         }
@@ -129,8 +217,14 @@ function runFfmpeg(bin, args, duration, onProgress) {
       if (stderr.length > 20000) stderr = stderr.slice(-20000);
     });
 
-    child.on("error", reject);
+    child.on("error", (err) => {
+      release();
+      reject(err);
+    });
     child.on("close", (code) => {
+      release();
+      if (interrupted) return reject(cancelled("HALFSIZE_INTERRUPTED", "Cancelled."));
+      if (signal?.aborted) return reject(cancelled("HALFSIZE_CANCELLED", "Cancelled."));
       if (code === 0) return resolve();
       const tail = stderr.split(/\r?\n/).filter(Boolean).slice(-12).join("\n");
       reject(new Error(`FFmpeg exited with code ${code}\n${tail}`));
@@ -142,5 +236,6 @@ function parseTime(value) {
   if (!value) return 0;
   const [hms, frac = "0"] = value.split(".");
   const [h, m, s] = hms.split(":").map(Number);
+  if (![h, m, s].every(Number.isFinite)) return 0;
   return h * 3600 + m * 60 + s + Number(`0.${frac}`);
 }

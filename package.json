@@ -1,6 +1,6 @@
 {
   "name": "halfsize",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Compress any video to an exact size (Discord or WeChat 20 MB, WhatsApp 16 MB) locally with FFmpeg and verify the quality with VMAF/SSIM.",
   "type": "module",
   "bin": {
@@ -29,7 +29,7 @@
   "scripts": {
     "start": "node bin/halfsize.mjs",
     "web": "node bin/halfsize.mjs --web",
-    "test": "node --test test/human.test.mjs test/plan.test.mjs test/quality.test.mjs test/cli.test.mjs test/e2e.test.mjs"
+    "test": "node --test test/human.test.mjs test/plan.test.mjs test/quality.test.mjs test/cli.test.mjs test/version.test.mjs test/encode.test.mjs test/e2e.test.mjs"
   },
   "keywords": [
     "video",

@@ -40,7 +40,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.5
+  halfsize 0.1.8
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264

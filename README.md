@@ -41,7 +41,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.5
+  halfsize 0.1.8
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264

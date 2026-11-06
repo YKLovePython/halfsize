@@ -1,13 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { probe } from "./probe.mjs";
 import { planEncode, estimateBytes } from "./plan.mjs";
 import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.7";
+// package.json is the single source of truth, so `--version`, the help banner,
+// and the published tarball can never disagree.
+const pkg = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"));
+const VERSION = pkg.version;
 const REPO_URL = "https://github.com/YKLovePython/halfsize";
 
 let starPromptShown = false;
@@ -165,6 +169,10 @@ export async function main(argv) {
     try {
       results.push(await processFile(input, flags, targetBytes, platform, batch));
     } catch (err) {
+      if (err?.code === "HALFSIZE_INTERRUPTED") {
+        if (!flags.json) console.error("\n  cancelled. The input file was not modified.\n");
+        process.exit(130);
+      }
       failed++;
       results.push({ input: { file: input }, error: err?.message || String(err) });
       if (!flags.json) console.error(`\n  x ${path.basename(input)}: ${err?.message || err}`);
