@@ -7,7 +7,42 @@ import { encode } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
-const VERSION = "0.1.5";
+const VERSION = "0.1.6";
+const REPO_URL = "https://github.com/YKLovePython/halfsize";
+
+let starPromptShown = false;
+
+function prefersChinese() {
+  const forced = String(process.env.HALFSIZE_LANG || "").toLowerCase();
+  if (forced === "zh" || forced === "en") return forced === "zh";
+  try {
+    return String(Intl.DateTimeFormat().resolvedOptions().locale || "").toLowerCase().startsWith("zh");
+  } catch {
+    return false;
+  }
+}
+
+function shouldShowStarPrompt() {
+  if (starPromptShown) return false;
+  if (process.env.HALFSIZE_NO_PROMO) return false;
+  if (process.env.CI) return false;
+  return Boolean(process.stdout.isTTY) || process.env.HALFSIZE_PROMO === "1";
+}
+
+// One quiet ask after a successful encode, never in --json/--dry-run output and
+// never more than once per run. Set HALFSIZE_NO_PROMO=1 to silence it.
+function printStarPrompt() {
+  if (!shouldShowStarPrompt()) return;
+  starPromptShown = true;
+  console.log("");
+  console.log(
+    prefersChinese()
+      ? "  如果这次帮你省掉了重新上传，点个 star 能让更多人找到它："
+      : "  If this saved you a failed upload, a star helps others find it:",
+  );
+  console.log(`  ${REPO_URL}`);
+  console.log("");
+}
 
 const HELP = `
   halfsize ${VERSION} - compress a video to an exact size, and prove it still looks the same.
@@ -42,6 +77,10 @@ const HELP = `
     "Just make it smaller" is easy. "Make it fit in 25 MB and still look identical"
     is the part everyone gets wrong. halfsize computes the bitrate, picks the
     resolution, encodes twice, then measures the result with SSIM and VMAF.
+
+  Environment
+    HALFSIZE_FFMPEG   Path to a specific FFmpeg binary
+    HALFSIZE_NO_PROMO Set to 1 to hide the post-run repository link
 `;
 
 const DEFAULTS = { codec: "h264", preset: "medium", verify: true, downscale: true, audio: true };
@@ -206,7 +245,7 @@ async function processFile(input, flags, targetBytes, platform, batch) {
     elapsedMs: result.elapsedMs,
   };
 
-  if (!flags.json) printResult(summary, outPath);
+  if (!flags.json) printResult(summary, outPath, { promo: !batch });
   return summary;
 }
 
@@ -223,6 +262,7 @@ function printBatch(results) {
   if (skipped.length) console.log(`  ${skipped.length} skipped (already under target)`);
   if (errors.length) console.log(`  ${errors.length} failed`);
   console.log("");
+  if (done.length) printStarPrompt();
 }
 
 function defaultOutput(input, flags, plan) {
@@ -299,7 +339,7 @@ class Progress {
   }
 }
 
-function printResult(summary, outPath) {
+function printResult(summary, outPath, { promo = true } = {}) {
   const accuracy =
     summary.accuracy === null ? "" : `${Math.abs(summary.accuracy * 100).toFixed(1)}% ${summary.accuracy > 0 ? "over" : "under"} target`;
   console.log(`  done in ${duration(summary.elapsedMs / 1000)}`);
@@ -316,8 +356,15 @@ function printResult(summary, outPath) {
   }
   console.log("");
   console.log(`  -> ${outPath}`);
-  console.log("");
+  if (promo) printStarPrompt();
+  else console.log("");
 }
+
+const SOURCE_LABEL = {
+  env: "HALFSIZE_FFMPEG",
+  path: "system PATH",
+  bundled: "bundled with halfsize",
+};
 
 async function doctor() {
   const { resolveBinaries } = await import("./ffmpeg.mjs");
@@ -328,39 +375,70 @@ async function doctor() {
   console.log("");
   console.log(`  halfsize ${VERSION} doctor`);
   console.log("");
+  console.log(`  node       ${process.version}   ${process.platform} ${process.arch}`);
+  console.log(`  npm        ${process.env.npm_config_user_agent || "not running under npm/npx"}`.slice(0, 120));
+
+  let bins;
   try {
-    const bins = await resolveBinaries();
-    const { stdout } = await run(bins.ffmpeg, ["-version"]);
-    console.log(`  ffmpeg     ${bins.ffmpeg}`);
-    console.log(`  source     ${bins.source}`);
-    console.log(`  version    ${stdout.split("\n")[0].replace("ffmpeg version ", "")}`);
+    bins = await resolveBinaries();
   } catch (err) {
-    console.log(`  ffmpeg     missing`);
-    console.log(`  ${err.message.split("\n")[0]}`);
+    console.log("");
+    console.log(err.message.replace(/^/gm, "  "));
+    console.log("");
+    process.exitCode = 1;
     return;
   }
 
+  const { stdout } = await run(bins.ffmpeg, ["-version"]);
+  console.log("");
+  console.log(`  ffmpeg     ${bins.ffmpeg}`);
+  console.log(`  ffprobe    ${bins.ffprobe}`);
+  console.log(`  source     ${SOURCE_LABEL[bins.source] || bins.source}`);
+  console.log(`  version    ${stdout.split("\n")[0].replace("ffmpeg version ", "")}`);
+
+  let hasVmaf = null;
   try {
-    const bins = await resolveBinaries();
-    const { stdout } = await run(bins.ffmpeg, ["-hide_banner", "-encoders"]);
+    const { stdout: encodersOut } = await run(bins.ffmpeg, ["-hide_banner", "-encoders"]);
     const encoders = ["libx264", "libx265", "h264_nvenc", "hevc_nvenc", "h264_qsv", "h264_amf"];
     console.log("");
     for (const name of encoders) {
-      console.log(`  encoder   ${name.padEnd(12)} ${stdout.includes(name) ? "yes" : "no"}`);
+      console.log(`  encoder   ${name.padEnd(12)} ${encodersOut.includes(name) ? "yes" : "no"}`);
     }
     const { stdout: filters } = await run(bins.ffmpeg, ["-hide_banner", "-filters"]);
-    console.log(`  filter    ${"libvmaf".padEnd(12)} ${/\blibvmaf\b/.test(filters) ? "yes" : "no"}`);
+    hasVmaf = /\blibvmaf\b/.test(filters);
+    console.log(`  filter    ${"libvmaf".padEnd(12)} ${hasVmaf ? "yes" : "no"}`);
   } catch {
-    // ignore
+    // Encoder listing is a bonus; the version check above already proved FFmpeg runs.
+  }
+
+  console.log("");
+  if (bins.source === "bundled") {
+    console.log("  ready. No system FFmpeg install is needed.");
+  } else {
+    console.log(`  ready. Using ${SOURCE_LABEL[bins.source] || bins.source}.`);
+  }
+  if (hasVmaf === false) {
+    console.log("  note: this build has no libvmaf, so quality checks fall back to SSIM.");
+    console.log("        A full build enables VMAF: https://ffmpeg.org/download.html");
   }
   console.log("");
 }
 
 async function startWeb(port) {
+  const { resolveBinaries } = await import("./ffmpeg.mjs");
+  try {
+    await resolveBinaries();
+  } catch (err) {
+    console.error(`\n  x ${err.message}`);
+    console.error("\n  Fix FFmpeg first, then run `npx halfsize@latest --doctor` to confirm.\n");
+    process.exitCode = 1;
+    return;
+  }
   const { startServer } = await import("./server.mjs");
   const url = await startServer(port ? { port } : {});
   console.log("");
   console.log(`  halfsize is running at ${url}`);
+  console.log("  Drop a video in - nothing leaves this machine.");
   console.log("  Press Ctrl+C to stop.");
   console.log("");
   if (!process.env.HALFSIZE_NO_OPEN) openBrowser(url);

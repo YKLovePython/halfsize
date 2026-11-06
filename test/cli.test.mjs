@@ -72,3 +72,17 @@ test("help documents --for and --no-audio", () => {
   assert.match(out, /--for <app>/);
   assert.match(out, /--no-audio/);
 });
+
+test("help documents the promo opt-out", () => {
+  const out = run(["--help"]);
+  assert.match(out, /HALFSIZE_NO_PROMO/);
+});
+
+test("--doctor reports the runtime, both binaries, and VMAF support", () => {
+  const out = run(["--doctor"]);
+  assert.match(out, /halfsize \d+\.\d+\.\d+ doctor/);
+  assert.match(out, /node\s+v\d+/);
+  assert.match(out, /ffmpeg\s+\S/);
+  assert.match(out, /ffprobe\s+\S/);
+  assert.match(out, /filter\s+libvmaf\s+(yes|no)/);
+});

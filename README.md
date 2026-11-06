@@ -223,6 +223,17 @@ target accuracy, which makes it easy to wrap in a script.
 
 ## Install notes
 
+Needs Node.js 18 or newer. The first `npx` run downloads both the package and a
+prebuilt FFmpeg, so it can pause for a minute. If you will use it more than once,
+install it globally and skip that wait on every run:
+
+```bash
+npm install -g halfsize
+halfsize video.mp4 --to 25mb
+```
+
+If `npx` keeps starting an old cached version, pin it: `npx halfsize@latest ...`.
+
 `ffmpeg-static` downloads a prebuilt FFmpeg during `npm install`; FFprobe ships inside
 `ffprobe-static`, so it needs no download. If you are behind a proxy or a TLS-inspecting
 network, that download can fail. Point it at a mirror, or use a build you already have:

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.6
+
+- A missing FFmpeg now explains the three fixes: rebuild the bundled binary, use a
+  system FFmpeg, or point at your own build, with the npmmirror mirror for slow networks
+- `--doctor` reports Node, both binary paths, where FFmpeg came from, and whether
+  libvmaf is available, so a first run can be diagnosed in one command
+- `--web` checks FFmpeg before starting instead of failing on the first upload
+- After a successful compression the CLI (TTY only) and the local web app show one
+  quiet repository link; `HALFSIZE_NO_PROMO=1` hides it
+- Install notes cover `npx` cache, global install, and China mirrors
+
 ## 0.1.5
 
 - `--for discord` now targets 20 MB (Discord raised its free upload cap from 10 MB in August 2026)

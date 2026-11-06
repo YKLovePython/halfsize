@@ -209,6 +209,16 @@ halfsize <file> [options]
 
 ## 安装说明
 
+需要 Node.js 18 或更高版本。第一次 `npx` 会同时下载包和一个预编译的 FFmpeg，可能要等一会儿。
+如果你会反复用，直接全局安装，之后每次启动都不用再等：
+
+```bash
+npm install -g halfsize
+halfsize video.mp4 --to 25mb
+```
+
+如果 `npx` 总是启动旧缓存，用 `npx halfsize@latest ...` 指定最新版。
+
 `ffmpeg-static` 和 `ffprobe-static` 会在 `npm install` 时下载预编译二进制。如果你在公司代理或
 会拦截 TLS 的网络后面，这一步可能失败。`halfsize` 会退回到 `PATH` 里的 `ffmpeg`，或者你手动指定的版本：
 

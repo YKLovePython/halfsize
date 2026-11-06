@@ -134,6 +134,15 @@
   .actions button { flex: 1 1 0; min-width: 0; white-space: nowrap; }
   .actions button.primary { width: auto; margin: 0; flex-grow: 1.6; }
 
+  .star {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    margin-top: 18px; padding: 12px 15px; flex-wrap: wrap;
+    border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    border-radius: 10px; background: rgba(182,243,106,.045);
+    color: var(--muted); font-size: 13px;
+  }
+  .star a { font-weight: 600; white-space: nowrap; }
+
   .error { display: none; margin-top: 16px; border: 1px solid rgba(255,107,107,.3); background: rgba(255,107,107,.07); color: #ffb3b3; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
   .error.on { display: block; }
 
@@ -210,6 +219,10 @@
           <button class="primary" id="download" data-i18n="download">下载压缩后的视频</button>
           <button class="ghost" id="share" data-i18n="share">生成分享图</button>
         </div>
+        <div class="star">
+          <span data-i18n="starText">如果这次帮你省掉了重新上传，点个 star 能让更多人找到它。</span>
+          <a href="https://github.com/YKLovePython/halfsize" target="_blank" rel="noopener" data-i18n="starCta">★ 在 GitHub 上 star</a>
+        </div>
       </div>
 
       <div class="error" id="error"></div>
@@ -239,6 +252,8 @@ const I18N = {
     time: "耗时",
     download: "下载压缩后的视频",
     share: "生成分享图",
+    starText: "如果这次帮你省掉了重新上传，点个 star 能让更多人找到它。",
+    starCta: "★ 在 GitHub 上 star",
     footer: "本地 ffmpeg · 零上传 · MIT",
     verifying: "正在测画质…",
     done: "完成",
@@ -278,6 +293,8 @@ const I18N = {
     time: "Time",
     download: "Download the smaller file",
     share: "Share card",
+    starText: "Saved you a failed upload? A star helps others find it.",
+    starCta: "★ Star on GitHub",
     footer: "local ffmpeg · zero upload · MIT",
     verifying: "measuring quality…",
     done: "done",
