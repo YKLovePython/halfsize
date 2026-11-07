@@ -6,7 +6,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { probe } from "./probe.mjs";
 import { planEncode } from "./plan.mjs";
-import { encode } from "./encode.mjs";
+import { encodeToSize } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { parseSize, bytes as fmt } from "./human.mjs";
 
@@ -324,6 +324,13 @@ export async function startServer(options = {}) {
           preset: body.preset || "medium",
           downscale: true,
         });
+        if (plan.infeasible && !body.force) {
+          return send(res, 400, {
+            error: plan.warnings.find((w) => w.code === "infeasible")?.message || "Target is too small for this duration.",
+            code: "infeasible",
+            minimumBytes: plan.minimumBytes,
+          });
+        }
         const out = job.input.replace(/(\.[^.]+)$/, `.halfsize.mp4`);
         job.status = "running";
         job.plan = plan;
@@ -338,13 +345,16 @@ export async function startServer(options = {}) {
         (async () => {
           const started = Date.now();
           try {
-            const result = await encode(job.input, out, plan, job.info, (p) => {
+            const result = await encodeToSize(job.input, out, plan, job.info, (p) => {
               emit(job.id, "progress", { ...p, eta: p.ratio > 0.01 ? ((Date.now() - started) / 1000 / p.ratio) * (1 - p.ratio) : 0 });
             }, { signal: job.controller.signal });
             job.wroteOutput = true;
             if (job.controller.signal.aborted) throw cancelledJob();
             emit(job.id, "phase", { phase: "verify" });
-            const quality = await measureQuality(job.input, out, job.info.duration);
+            const quality = await measureQuality(job.input, out, job.info.duration, {
+              sourceHdr: job.info.video.hdr,
+              sourceTransfer: job.info.video.hdrTransfer || job.info.video.colorTransfer,
+            });
             // Cancel can land while the metrics run; the file is complete by
             // then, but the user asked to stop, so remove it and say cancelled.
             if (job.controller.signal.aborted) throw cancelledJob();
@@ -356,6 +366,8 @@ export async function startServer(options = {}) {
               accuracy: targetBytes ? result.outputBytes / targetBytes - 1 : null,
               ratio: job.info.sizeBytes / result.outputBytes,
               elapsedMs: result.elapsedMs,
+              attempts: result.attempts,
+              missedTarget: Boolean(result.missedTarget),
               quality,
               verdict: verdict(quality),
               plan,

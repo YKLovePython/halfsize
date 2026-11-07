@@ -293,6 +293,7 @@ const I18N = {
     passLabel: (n) => `第 ${n}/2 遍`,
     alreadySmall: (a, b) => `这个文件已经只有 ${a}，小于 ${b} 的目标。换一个更小的目标。`,
     badSize: "看不懂这个大小。试试 25mb、700k 或 1.5gb。",
+    infeasible: (min, target) => `这个时长压不到 ${target}：按最低码率，最小也要约 ${min}。换更大的目标、剪短视频，或在命令行加 --force。`,
     failed: "压缩失败",
     audioLabel: "有声音",
     silentLabel: "无声音",
@@ -308,7 +309,8 @@ const I18N = {
       aggressive: "这个目标对这个分辨率很紧，保持原尺寸会有点软。",
       "no-downscale": "关闭了降分辨率，可能压不到目标，画质会下降。",
       "low-bitrate": "码率很低了，可以试试更大的目标或 H.265。",
-      hdr: "检测到 HDR 片源：暂不支持 HDR→SDR 转换，颜色可能发灰。",
+      hdr: "检测到 HDR 片源：会自动转成 SDR（BT.709），颜色不会发灰。",
+      infeasible: ({ minimumBytes }) => `这个目标比该时长能压到的最小值（约 ${fmtBytes(minimumBytes)}）还小。换更大的目标、剪短视频，或在命令行加 --force。`,
       "fps-capped": ({ from, to }) => `帧率从 ${Math.round(from)} 降到 ${to} fps。`,
       "audio-tracks": ({ count }) => `这个文件有 ${count} 条音轨，只保留第一条。`,
       subtitles: ({ count }) => `${count} 条字幕不会保留。`,
@@ -355,6 +357,7 @@ const I18N = {
     passLabel: (n) => `pass ${n}/2`,
     alreadySmall: (a, b) => `This file is already ${a}, smaller than the ${b} target. Pick a smaller target.`,
     badSize: "Can't read that size. Try 25mb, 700k or 1.5gb.",
+    infeasible: (min, target) => `This duration can't fit in ${target}: the minimum is about ${min}. Pick a larger target, trim the video, or use --force in the CLI.`,
     failed: "compression failed",
     audioLabel: "audio",
     silentLabel: "silent",
@@ -370,7 +373,8 @@ const I18N = {
       aggressive: "The target is aggressive for this resolution; keeping full size will look soft.",
       "no-downscale": "Downscaling is off, so the target may be missed and quality will suffer.",
       "low-bitrate": "Very low bitrate. Try a larger target or H.265.",
-      hdr: "HDR source: HDR-to-SDR conversion isn't implemented, so colors may look washed out.",
+      hdr: "HDR source: converted to SDR (BT.709) automatically, so colors don't wash out.",
+      infeasible: ({ minimumBytes }) => `This target is below what this duration can hold (about ${fmtBytes(minimumBytes)}). Pick a larger target, trim the video, or use --force in the CLI.`,
       "fps-capped": ({ from, to }) => `Frame rate drops from ${Math.round(from)} to ${to} fps.`,
       "audio-tracks": ({ count }) => `This file has ${count} audio tracks; only the first is kept.`,
       subtitles: ({ count }) => `${count} subtitle track(s) are not carried over.`,
@@ -623,7 +627,11 @@ go.addEventListener("click", async () => {
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok) {
-    showError(payload.error || t("failed"));
+    if (payload.code === "infeasible" && payload.minimumBytes) {
+      showError(strings.infeasible(fmtBytes(payload.minimumBytes), fmtBytes(targetBytes)));
+    } else {
+      showError(payload.error || t("failed"));
+    }
     go.disabled = false;
     progress.classList.remove("on");
     return;

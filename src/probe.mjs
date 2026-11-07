@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { resolveBinaries } from "./ffmpeg.mjs";
+import { hdrKind } from "./hdr.mjs";
 
 const run = promisify(execFile);
 
@@ -42,6 +43,8 @@ export async function probe(file) {
   const rotation = readRotation(video);
   const width = rotation % 180 === 0 ? video.width : video.height;
   const height = rotation % 180 === 0 ? video.height : video.width;
+  const colorTransfer = video.color_transfer || null;
+  const hdrTransfer = hdrKind(colorTransfer);
 
   return {
     file,
@@ -57,7 +60,11 @@ export async function probe(file) {
       fps: parseFps(video.avg_frame_rate) || parseFps(video.r_frame_rate) || 30,
       pixFmt: video.pix_fmt,
       bitrate: Number(video.bit_rate || 0),
-      hdr: isHdr(video),
+      // Only PQ and HLG need tone mapping. BT.2020 primaries with an SDR
+      // transfer are wide-gamut, not HDR, and re-encoding them is harmless.
+      hdr: Boolean(hdrTransfer),
+      colorTransfer,
+      hdrTransfer,
       rotation,
     },
     audio: audio
@@ -87,9 +94,4 @@ function readRotation(stream) {
   if (side) return Math.abs(Number(side.rotation)) % 360;
   const tag = stream.tags?.rotate;
   return tag ? Math.abs(Number(tag)) % 360 : 0;
-}
-
-function isHdr(stream) {
-  const t = `${stream.color_transfer || ""} ${stream.color_primaries || ""}`;
-  return /smpte2084|arib-std-b67|bt2020/i.test(t);
 }

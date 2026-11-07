@@ -147,6 +147,59 @@ test("end to end: a Matroska source still lands on target", async (t) => {
   );
 });
 
+test("end to end: an HDR source is tone-mapped to SDR, not left washed out", async (t) => {
+  const { ffmpeg } = await resolveBinaries();
+  const source = path.join(WORK, "hdr-hlg.mp4");
+  try {
+    execFileSync(
+      ffmpeg,
+      [
+        "-hide_banner", "-loglevel", "error", "-y",
+        "-f", "lavfi", "-i", "testsrc2=size=320x240:rate=24",
+        "-t", "2",
+        "-vf", "zscale=tin=bt709:min=bt709:pin=bt709:t=arib-std-b67:m=bt2020nc:p=bt2020,format=yuv420p10le",
+        "-c:v", "libx265", "-x265-params", "log-level=error",
+        "-color_trc", "arib-std-b67", "-color_primaries", "bt2020", "-colorspace", "bt2020nc",
+        "-an",
+        source,
+      ],
+      { windowsHide: true, stdio: "ignore" },
+    );
+  } catch {
+    t.skip("this ffmpeg cannot generate an HLG clip");
+    return;
+  }
+
+  const info = await probe(source);
+  assert.equal(info.video.hdr, true, "HLG must be detected");
+  assert.equal(info.video.hdrTransfer, "hlg");
+
+  const targetBytes = 120_000;
+  const plan = planEncode(info, { targetBytes });
+  assert.match(plan.toneMap, /tonemap=hable/);
+  assert.equal(plan.infeasible, false);
+
+  const output = path.join(WORK, "hdr-out.mp4");
+  const result = await encode(source, output, plan, info);
+  assert.ok(result.outputBytes > 0);
+  assert.ok(result.outputBytes <= targetBytes * 1.08, `HDR output overshot: ${result.outputBytes}`);
+
+  const outInfo = await probe(output);
+  assert.equal(outInfo.video.hdr, false, "the SDR output must not keep HDR tags");
+  assert.equal(outInfo.video.colorTransfer, "bt709");
+
+  // The reference gets the same tone map; a comparison against the untouched
+  // HDR source would score the transfer curve as compression loss.
+  const quality = await measureQuality(source, output, info.duration, {
+    samples: 1,
+    seconds: 1,
+    sourceHdr: true,
+    sourceTransfer: "hlg",
+  });
+  assert.equal(typeof quality.ssim, "number");
+  assert.ok(quality.ssim > 0.5, `SSIM was ${quality.ssim}`);
+});
+
 test("batch: several files in one command, one JSON document", async (t) => {
   const { ffmpeg } = await resolveBinaries();
   const files = [];

@@ -26,9 +26,10 @@
 </p>
 
 <p align="center">
-  <b>New in 0.1.8:</b> compare the original and the compressed video in the web app,
-  cancel a running encode, and no more half-written output files.
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.8">Release notes</a>
+  <b>New in 0.1.9:</b> HDR clips (iPhone HLG, HDR10) are tone-mapped to SDR instead of
+  looking washed out, a target that cannot fit now fails before the encode with the real
+  minimum, and the email presets account for the base64 attachment tax.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">Release notes</a>
 </p>
 
 ---
@@ -47,7 +48,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.8
+  halfsize 0.1.9
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -171,7 +172,8 @@ compression plus a measured quality report, instead of guessing a bitrate.
    the encoder gets to spend its bits on fewer pixels.
 4. **Encode twice.** Two-pass ABR with `libx264` or `libx265`. Pass one learns where the bits
    are needed; pass two spends them. Output is `yuv420p`, AAC audio, `+faststart`, and tagged
-   `hvc1` for H.265 so it plays on Apple devices.
+   `hvc1` for H.265 so it plays on Apple devices. HLG/PQ sources are tone-mapped to SDR BT.709
+   in the same pass; without that, 8-bit pixels keep their HDR tags and look grey.
 5. **Prove it.** Sample three points in the video, compute SSIM at each, and VMAF at the
    midpoint. Compare against thresholds and print a verdict in plain language.
 
@@ -211,7 +213,7 @@ more quality at the same size if your player supports it.
 halfsize <file> [options]
 
   --to <size>       Target size: 25mb, 700k, 1.5gb
-  --for <app>       Target cap for discord, whatsapp, wechat, email, twitter
+  --for <app>       Target cap for discord, whatsapp, wechat, gmail, outlook, email, twitter
   --crf <n>         Quality mode instead of size mode (18 best, 23 balanced, 28 small)
   --codec <name>    h264 (default, maximum compatibility) or h265 (about 30% smaller)
   --preset <name>   ultrafast .. veryslow (default: medium)
@@ -219,6 +221,7 @@ halfsize <file> [options]
   --no-audio        Drop the audio track
   --no-verify       Skip SSIM/VMAF
   --no-downscale    Never reduce resolution (the target may then be missed)
+  --force           Encode even when the target is below the minimum for this duration
   --json            Machine-readable result
   --dry-run         Print the plan, do not encode
   --web             Start the local web app
@@ -231,8 +234,9 @@ halfsize <file> [options]
 Sizes accept `b`, `k`/`kb`, `m`/`mb`, `g`/`gb`, with or without a space. No unit means MB.
 
 `--for` uses the current free-tier caps (checked November 2026): `discord` 20 MB,
-`whatsapp` 16 MB, `wechat` 20 MB, `email` 20 MB, `twitter` 512 MB. Caps change, so `--to`
-always overrides.
+`whatsapp` 16 MB, `wechat` 20 MB, `gmail`/`email` 18 MB, `outlook` 15 MB, `twitter`
+512 MB. Email caps apply to the base64-encoded message, so an 18 MB file is the largest
+that stays under Gmail's 25 MB. Caps change, so `--to` always overrides.
 
 Exit codes: `0` success, `1` error. `--json` returns the plan, the measured quality, and the
 target accuracy, which makes it easy to wrap in a script.
@@ -324,7 +328,6 @@ more than half". The tool reports the real number either way.
 - Hardware encoding (NVENC / QSV / VideoToolbox) as an opt-in fast path
 - A folder watcher that compresses new files as they appear
 - Subtitle and multiple audio track passthrough
-- HDR-to-SDR tonemapping, so iPhone HDR clips keep their colors
 - AV1 (`libsvtav1`) when the source is already AV1-friendly
 - A single-file binary, so Node.js is not required
 

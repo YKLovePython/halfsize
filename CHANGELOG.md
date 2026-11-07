@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.9
+
+- HDR sources (iPhone HLG, HDR10/PQ) are converted to SDR BT.709 inside the same
+  encode. Before, the output kept HDR tags on 8-bit pixels, so iPhone videos
+  looked washed out after compression
+- Quality checks tone-map the reference frame too, so VMAF and SSIM measure
+  compression loss instead of the HDR-to-SDR transfer curve
+- A target below the minimum bitrate for the video's duration now fails before
+  encoding and reports the smallest achievable size, instead of spending an
+  encode that cannot fit. `--force` still runs it
+- When a two-pass encode lands more than 0.5% over target, halfsize re-encodes
+  once with a corrected bitrate instead of handing back an oversized file
+- `--for email` now targets 18 MB, because base64 makes a 20 MB attachment a
+  26.7 MB message that bounces at Gmail's 25 MB limit. New `--for outlook`
+  targets 15 MB for the 20 MB message cap
+
 ## 0.1.8
 
 Failure modes, mostly. The kind that leave you with a file you think is fine.

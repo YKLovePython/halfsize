@@ -26,8 +26,8 @@
 </p>
 
 <p align="center">
-  <b>0.1.8 新功能：</b>网页版可直接对比原片和压缩后、随时取消编码，失败时不再留下半截文件。
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.8">更新说明</a>
+  <b>0.1.9 新功能：</b>iPhone 拍的 HDR 视频会自动转成 SDR，压完不再发灰；压不到的目标在编码前就报出真实最小值；邮件预设按 base64 后的实际上限来算。
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">更新说明</a>
 </p>
 
 ---
@@ -45,7 +45,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.8
+  halfsize 0.1.9
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -161,6 +161,7 @@ npx skills add YKLovePython/halfsize
    让编码器把有限的比特花在更少的像素上，而不是硬撑 4K。
 4. **压两遍。** `libx264` 或 `libx265` 两遍 ABR。第一遍找出哪里需要比特，第二遍把比特花在那里。
    输出 `yuv420p`、AAC 音频、`+faststart`，H.265 额外打 `hvc1` 标签，保证苹果设备能播。
+   HLG/PQ 片源会在同一次编码里转成 SDR BT.709；不转的话，8-bit 像素还带着 HDR 标签，播出来就发灰。
 5. **证明。** 在视频里取三个采样点算 SSIM，在中间点算 VMAF，对照阈值给一句人话结论。
 
 ```
@@ -197,7 +198,7 @@ SSIM 取三个采样点。实际数字会随内容变化：新闻口播会好很
 halfsize <file> [options]
 
   --to <size>       目标大小：25mb、700k、1.5gb
-  --for <app>       按平台上限：discord、whatsapp、wechat、email、twitter
+  --for <app>       按平台上限：discord、whatsapp、wechat、gmail、outlook、email、twitter
   --crf <n>         质量模式，不按大小（18 最好，23 均衡，28 更小）
   --codec <name>    h264（默认，兼容性最好）或 h265（大约再小 30%）
   --preset <name>   ultrafast .. veryslow（默认 medium）
@@ -205,6 +206,7 @@ halfsize <file> [options]
   --no-audio        去掉音轨
   --no-verify       跳过 SSIM/VMAF 检测
   --no-downscale    绝不降分辨率（可能会压不到目标）
+  --force           目标低于该时长的最小值时仍然编码
   --json            机器可读结果
   --dry-run         只打印方案，不编码
   --web             启动本地网页版
@@ -217,7 +219,9 @@ halfsize <file> [options]
 大小支持 `b`、`k`/`kb`、`m`/`mb`、`g`/`gb`，中间可以有空格。不写单位按 MB 算。
 
 `--for` 用的是当前免费档上限（2026 年 11 月核对）：`discord` 20 MB、`whatsapp` 16 MB、
-`wechat` 20 MB、`email` 20 MB、`twitter` 512 MB。平台上限会变，写死不如随时用 `--to` 覆盖。
+`wechat` 20 MB、`gmail`/`email` 18 MB、`outlook` 15 MB、`twitter` 512 MB。邮件的上限算的是
+base64 编码后的整封邮件，所以 18 MB 的文件才是 Gmail 25 MB 限制下真正塞得进去的大小。
+平台上限会变，写死不如随时用 `--to` 覆盖。
 
 退出码：`0` 成功，`1` 出错。`--json` 会返回方案、画质测量和目标误差，方便包进脚本。
 
@@ -310,7 +314,6 @@ npx halfsize *.mp4 --to 25mb
 - 硬件编码（NVENC / QSV / VideoToolbox）作为可选的快速路径
 - 文件夹监听，新文件一出现就自动压
 - 字幕和多音轨原样保留
-- HDR 转 SDR（让 iPhone 拍的 HDR 视频保住颜色）
 - 源已经是 AV1 时改用 AV1（`libsvtav1`）
 - 单文件二进制，不依赖 Node.js
 

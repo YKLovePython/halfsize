@@ -4,6 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import { resolveBinaries } from "./ffmpeg.mjs";
+import { tighterPlan } from "./plan.mjs";
 
 const NULL_DEVICE = process.platform === "win32" ? "NUL" : "/dev/null";
 
@@ -37,6 +38,9 @@ function cancelled(code, message) {
 
 function buildFilters(plan) {
   const filters = [];
+  // Tone mapping must happen before scaling: zscale expects the source
+  // transfer curve, not a resampled approximation of it.
+  if (plan.toneMap) filters.push(plan.toneMap);
   if (plan.scaleFilter) filters.push(plan.scaleFilter);
   if (plan.fps) filters.push(`fps=${plan.fps}`);
   return filters.length ? filters.join(",") : null;
@@ -155,6 +159,40 @@ export async function encode(input, output, plan, info, onProgress = () => {}, o
     outputBytes: fs.statSync(output).size,
     elapsedMs: Date.now() - started,
   };
+}
+
+// Encode once, and if the result missed the target, tighten the video bitrate
+// and try again. two-pass is normally accurate, but short clips, audio, and
+// container overhead can still overshoot; retrying is cheaper than making the
+// user guess another number.
+export async function encodeToSize(input, output, plan, info, onProgress = () => {}, options = {}) {
+  let current = plan;
+  let elapsedMs = 0;
+
+  for (let attempt = 1; ; attempt++) {
+    const result = await encode(input, output, current, info, onProgress, options);
+    elapsedMs += result.elapsedMs;
+
+    if (plan.mode !== "size" || !plan.targetBytes) {
+      return { ...result, elapsedMs, attempts: attempt };
+    }
+    if (result.outputBytes <= plan.targetBytes * 1.005) {
+      return { ...result, elapsedMs, attempts: attempt, missedTarget: false };
+    }
+
+    const next = attempt < 3 ? tighterPlan(current, info, result.outputBytes, plan.targetBytes) : null;
+    if (!next) {
+      return {
+        ...result,
+        elapsedMs,
+        attempts: attempt,
+        missedTarget: result.outputBytes > plan.targetBytes * 1.005,
+      };
+    }
+
+    options.onRetry?.(attempt + 1, next, result.outputBytes);
+    current = { ...current, videoKbps: next.videoKbps };
+  }
 }
 
 function cleanup(passlog) {

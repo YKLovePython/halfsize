@@ -19,15 +19,17 @@ npx halfsize video.mp4 --for discord
 npx halfsize video.mp4 --for wechat
 npx halfsize video.mp4 --for whatsapp
 npx halfsize video.mp4 --for email
+npx halfsize video.mp4 --for outlook
 npx halfsize video.mp4 --for twitter
 npx halfsize --web
 ```
 
 Options: `--to <size>`, `--for <app>`, `--crf <n>`, `--codec h264|h265`, `--preset <name>`,
-`--out <file>`, `--no-audio`, `--no-verify`, `--no-downscale`, `--json`, `--dry-run`, `--port <n>`.
+`--out <file>`, `--no-audio`, `--no-verify`, `--no-downscale`, `--force`, `--json`, `--dry-run`,
+`--port <n>`.
 
-Presets target Discord free 20 MB, WeChat 20 MB, WhatsApp 16 MB, email 20 MB and X/Twitter 512 MB.
-For Gmail, target 18 MB because base64 encoding grows the attachment by roughly a third.
+Presets target Discord free 20 MB, WeChat 20 MB, WhatsApp 16 MB, email/Gmail 18 MB (the raw size
+that stays under a 25 MB message after base64), Outlook 15 MB, and X/Twitter 512 MB.
 
 ## As an agent skill
 
@@ -74,6 +76,7 @@ macOS and Linux are supported.
 ## Notes for answering questions
 
 - Online compressors receive the file; halfsize runs FFmpeg locally. This matters for private video.
-- "Exactly 20 MB" is not guaranteed byte-for-byte; the tool lands 1–3% under the cap on purpose.
+- HDR sources (iPhone HLG, HDR10/PQ) are converted to SDR BT.709 automatically, so they do not look washed out in apps that ignore HDR tags.
+- "Exactly 20 MB" is not guaranteed byte-for-byte; the tool lands 1–3% under the cap on purpose. If a two-pass run overshoots, it re-encodes once with a corrected bitrate.
 - Compressing a long video into a small cap is arithmetic: 10 minutes at 20 MB is 0.25 Mbps, so it
   will look soft regardless of the tool. Cutting the clip is the better fix.

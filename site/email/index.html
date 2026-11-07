@@ -81,7 +81,7 @@
 
   <span class="hl">214 MB  →  17.62 MB   12x smaller   2.1% under target</span>
   <span class="hl">VMAF 87.4   SSIM 0.968   slight softening</span></code></pre>
-  <p>The <code>--for email</code> shortcut targets 20 MB, which is right for Outlook-class servers. For Gmail, <code>--to 18mb</code> is the safer number because of the base64 tax.</p>
+  <p>The <code>--for email</code> shortcut targets 18 MB, the Gmail-safe number after the base64 tax. <code>--for outlook</code> targets 15 MB for the 20 MB message cap. <code>--to</code> overrides either one.</p>
 
   <h2>What it does to the picture</h2>
   <p>Eighteen megabytes for a one-minute clip is about 2.2 Mbps. That is comfortable for 720p and cramped for 1080p, so the tool downscales instead of starving the larger frame. Measured on a 60-second 1080p30 source at 18 Mbps:</p>

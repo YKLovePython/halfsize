@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planEncode, estimateBytes } from "../src/plan.mjs";
+import { planEncode, estimateBytes, tighterPlan } from "../src/plan.mjs";
 
 function info(overrides = {}) {
   return {
@@ -140,4 +140,59 @@ test("estimate lands just under the target", () => {
   const bytes = estimateBytes(i, plan);
   assert.ok(bytes < target(25));
   assert.ok(bytes > target(25) * 0.95);
+});
+
+test("HDR sources get a tone map and a reassuring warning, not a dead end", () => {
+  const plan = planEncode(
+    info({ video: { width: 1920, height: 1080, fps: 30, hdr: true, hdrTransfer: "hlg", colorTransfer: "arib-std-b67" } }),
+    { targetBytes: target(25) },
+  );
+  assert.match(plan.toneMap, /tonemap=hable:desat=0/);
+  assert.match(plan.toneMap, /tin=arib-std-b67/);
+  assert.match(plan.toneMap, /npl=100/);
+  const warning = plan.warnings.find((w) => w.code === "hdr");
+  assert.ok(warning);
+  assert.match(warning.message, /SDR/);
+  assert.doesNotMatch(warning.message, /not implemented/);
+});
+
+test("PQ sources use the HDR10 nominal peak instead of the HLG one", () => {
+  const plan = planEncode(
+    info({ video: { width: 1920, height: 1080, fps: 30, hdr: true, hdrTransfer: "pq", colorTransfer: "smpte2084" } }),
+    { targetBytes: target(25) },
+  );
+  assert.match(plan.toneMap, /npl=1000/);
+});
+
+test("a target below the bitrate floor is marked impossible before encoding", () => {
+  const i = info({ duration: 60 });
+  const plan = planEncode(i, { targetBytes: 100_000 });
+  assert.equal(plan.infeasible, true);
+  assert.ok(plan.minimumBytes >= 500_000, `floor was ${plan.minimumBytes}`);
+  const warning = plan.warnings.find((w) => w.code === "infeasible");
+  assert.ok(warning);
+  assert.equal(warning.params.minimumBytes, plan.minimumBytes);
+
+  const hour = planEncode(info({ duration: 3600 }), { targetBytes: target(20) });
+  assert.equal(hour.infeasible, true);
+  assert.ok(hour.minimumBytes > target(30), "a one-hour video cannot fit in 20 MB at the floor");
+});
+
+test("a normal target is not marked impossible", () => {
+  const plan = planEncode(info(), { targetBytes: target(25) });
+  assert.equal(plan.infeasible, false);
+  assert.equal(plan.minimumBytes, null);
+});
+
+test("an overshoot produces a tighter bitrate, but never below the floor", () => {
+  const i = info();
+  const plan = planEncode(i, { targetBytes: target(25) });
+  const tighter = tighterPlan(plan, i, target(26), target(25));
+  assert.ok(tighter);
+  assert.ok(tighter.videoKbps < plan.videoKbps);
+  assert.ok(tighter.videoKbps >= 40);
+
+  const floor = { ...plan, videoKbps: 40 };
+  assert.equal(tighterPlan(floor, i, target(25.5), target(25)), null);
+  assert.equal(tighterPlan(plan, i, target(24), target(25)), null);
 });
