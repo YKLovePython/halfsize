@@ -35,7 +35,7 @@
   "codeRepository": "https://github.com/YKLovePython/halfsize",
   "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "softwareVersion": "0.1.8"
+  "softwareVersion": "0.1.9"
 }
 </script>
 <script type="application/ld+json">
@@ -103,14 +103,15 @@
     <a class="button ghost" href="https://github.com/YKLovePython/halfsize">View source on GitHub</a>
   </div>
   <p class="new">
-    <b>New in 0.1.8</b> — compare the original and the compressed video in the web app,
-    cancel a running encode, and no more half-written output files.
-    <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.8">Release notes</a>
+    <b>New in 0.1.9</b> — HDR clips (iPhone HLG, HDR10) are tone-mapped to SDR instead of
+    looking washed out, impossible targets fail before the encode, and the email presets
+    account for the base64 attachment tax.
+    <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">Release notes</a>
   </p>
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize source.mp4 --to 2mb</span>
 
-  halfsize 0.1.8
+  halfsize 0.1.9
 
   source.mp4
   <span class="out">23.2 MB  8s  1920x1080  30.00 fps  h264</span>

@@ -80,7 +80,7 @@
 
   <span class="hl">214 MB  →  17.62 MB   小 12 倍   比目标小 2.1%</span>
   <span class="hl">VMAF 87.4   SSIM 0.968   轻微变软</span></code></pre>
-  <p><code>--for email</code> 直接按 20 MB 算，适合 Outlook 这类邮箱；Gmail 建议用 <code>--to 18mb</code>，把 base64 的份额留出来。</p>
+  <p><code>--for email</code> 直接按 18 MB 算，已经替 Gmail 留出 base64 的份额；<code>--for outlook</code> 按 15 MB 算，对应 20 MB 的邮件上限。要自己定就加 <code>--to</code>。</p>
 
   <h2>画质会变成什么样</h2>
   <p>一分钟的片子 18 MB，视频码率大约 2.2 Mbps。720p 够用，1080p 就显得紧，所以工具会主动降分辨率，而不是把 1080p 饿死。60 秒 1080p30、源 18 Mbps 的实测：</p>

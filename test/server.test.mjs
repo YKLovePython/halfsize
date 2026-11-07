@@ -104,6 +104,24 @@ test("malformed JSON is a 400, not a 500", () =>
     }
   }));
 
+test("a target below the duration floor is refused before encoding", () =>
+  withServer(async (base) => {
+    const file = await clip();
+    const res = await upload(base, "floor.mp4", fs.readFileSync(file));
+    const job = await res.json();
+
+    const start = await fetch(`${base}/api/compress`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: job.id, target: "1k" }),
+    });
+    assert.equal(start.status, 400);
+    const body = await start.json();
+    assert.equal(body.code, "infeasible");
+    assert.ok(body.minimumBytes > 1000, `minimumBytes was ${body.minimumBytes}`);
+    assert.match(body.error, /below|minimum|lowest/i);
+  }));
+
 test("a path in the uploaded name never reaches the download header", () =>
   withServer(async (base) => {
     const file = await clip();

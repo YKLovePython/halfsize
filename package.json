@@ -1,6 +1,6 @@
 {
   "name": "halfsize",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Compress any video to an exact size (Discord or WeChat 20 MB, WhatsApp 16 MB) locally with FFmpeg and verify the quality with VMAF/SSIM.",
   "type": "module",
   "bin": {

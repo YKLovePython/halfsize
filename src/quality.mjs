@@ -1,7 +1,16 @@
 import { spawn } from "node:child_process";
 import { resolveBinaries } from "./ffmpeg.mjs";
+import { toneMapFilter } from "./hdr.mjs";
 
 const NULL_DEVICE = process.platform === "win32" ? "NUL" : "/dev/null";
+
+// The output is SDR, but the source may still be HDR. Comparing them directly
+// scores the transfer-curve difference as "bad quality", so the reference gets
+// the same tone map the encoder used.
+function metricGraph(options, metric) {
+  if (!options.sourceHdr) return `[0:v][1:v]scale2ref[a][b];[a][b]${metric}`;
+  return `[1:v]${toneMapFilter(options.sourceTransfer)}[ref];[0:v][ref]scale2ref[a][b];[a][b]${metric}`;
+}
 
 export async function measureQuality(source, output, duration, options = {}) {
   const { ffmpeg } = await resolveBinaries();
@@ -18,7 +27,7 @@ export async function measureQuality(source, output, duration, options = {}) {
     const value = await runMetric(ffmpeg, [
       "-ss", String(at), "-t", String(seconds), "-i", output,
       "-ss", String(at), "-t", String(seconds), "-i", source,
-      "-lavfi", "[0:v][1:v]scale2ref[a][b];[a][b]ssim",
+      "-lavfi", metricGraph(options, "ssim"),
       "-f", "null", NULL_DEVICE,
     ], /All:\s*([0-9.]+)/);
     if (value !== null) ssims.push(value);
@@ -30,7 +39,7 @@ export async function measureQuality(source, output, duration, options = {}) {
     vmaf = await runMetric(ffmpeg, [
       "-ss", String(at), "-t", "3", "-i", output,
       "-ss", String(at), "-t", "3", "-i", source,
-      "-lavfi", "[0:v][1:v]scale2ref[a][b];[a][b]libvmaf=n_threads=2",
+      "-lavfi", metricGraph(options, "libvmaf=n_threads=2"),
       "-f", "null", NULL_DEVICE,
     ], /VMAF score:\s*([0-9.]+)/);
   }

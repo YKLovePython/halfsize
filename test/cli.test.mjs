@@ -49,7 +49,11 @@ test("platform presets match the current upload caps", () => {
   assert.equal(PLATFORMS.discord.bytes, 20_000_000);
   assert.equal(PLATFORMS.whatsapp.bytes, 16_000_000);
   assert.equal(PLATFORMS.wechat.bytes, 20_000_000);
-  assert.equal(PLATFORMS.email.bytes, 20_000_000);
+  // Email limits count the base64-encoded message, so the raw file has to be
+  // about 27% smaller than the advertised cap.
+  assert.equal(PLATFORMS.gmail.bytes, 18_000_000);
+  assert.equal(PLATFORMS.outlook.bytes, 15_000_000);
+  assert.equal(PLATFORMS.email.bytes, 18_000_000);
   assert.equal(PLATFORMS.twitter.bytes, 512_000_000);
 });
 
@@ -71,6 +75,8 @@ test("help documents --for and --no-audio", () => {
   const out = run(["--help"]);
   assert.match(out, /--for <app>/);
   assert.match(out, /--no-audio/);
+  assert.match(out, /--force/);
+  assert.match(out, /outlook/);
 });
 
 test("help documents the promo opt-out", () => {

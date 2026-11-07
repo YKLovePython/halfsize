@@ -1,3 +1,6 @@
+import { bytes as fmtBytes, duration as fmtDuration } from "./human.mjs";
+import { toneMapFilter, hdrKind } from "./hdr.mjs";
+
 export const CODECS = {
   h264: { label: "H.264", encoder: "libx264", bpp: 0.072, twoPass: true },
   h265: { label: "H.265", encoder: "libx265", bpp: 0.045, twoPass: true },
@@ -108,6 +111,22 @@ export function planEncode(info, options = {}) {
 
   const audioChannels = info.audio?.channels === 1 ? 1 : 2;
 
+  // HLG/PQ sources get converted to BT.709 SDR in the same encode. Without it,
+  // an iPhone clip keeps HDR tags on 8-bit pixels and looks grey everywhere the
+  // player does not tone-map HDR itself.
+  const toneMap = info.video?.hdr
+    ? toneMapFilter(info.video.hdrTransfer || info.video.colorTransfer)
+    : null;
+  if (toneMap) {
+    const kind = info.video.hdrTransfer || hdrKind(info.video.colorTransfer);
+    warn(
+      warnings,
+      "hdr",
+      `HDR source (${kind === "pq" ? "PQ" : kind === "hlg" ? "HLG" : "HDR"}) will be converted to SDR (BT.709) so it does not look washed out.`,
+      { transfer: info.video.hdrTransfer || null },
+    );
+  }
+
   if (options.crf !== undefined) {
     return {
       mode: "quality",
@@ -127,6 +146,9 @@ export function planEncode(info, options = {}) {
       downscaled: false,
       scaleFilter: null,
       fpsFilter: null,
+      toneMap,
+      infeasible: false,
+      minimumBytes: null,
       warnings,
     };
   }
@@ -167,11 +189,18 @@ export function planEncode(info, options = {}) {
   if (videoKbps < 120) {
     warn(warnings, "low-bitrate", "Very low bitrate. Consider a larger target or H.265.");
   }
-  if (info.video.hdr) {
+
+  // The planner floors video at 40 kbps and audio at 32 kbps. For a long video
+  // and a small target those floors alone exceed the target, so the encode can
+  // never land where the user asked. Say so before spending the encode.
+  const minimumBytes = Math.round(((videoKbps + audioKbps) * 1000 * info.duration) / 8);
+  const infeasible = minimumBytes > options.targetBytes;
+  if (infeasible) {
     warn(
       warnings,
-      "hdr",
-      "HDR source detected. HDR-to-SDR conversion is not implemented yet, so colors may look washed out.",
+      "infeasible",
+      `${fmtBytes(options.targetBytes)} is below the ${fmtBytes(minimumBytes)} this ${fmtDuration(info.duration)} video needs at the lowest bitrate. Use a larger target, trim it, or --force.`,
+      { minimumBytes, targetBytes: options.targetBytes },
     );
   }
 
@@ -195,6 +224,9 @@ export function planEncode(info, options = {}) {
     downscaled,
     scaleFilter: downscaled ? `scale=${chosen.w}:${chosen.h}:flags=lanczos` : null,
     fpsFilter: fps < info.video.fps - 0.01 ? `fps=${fps}` : null,
+    toneMap,
+    infeasible,
+    minimumBytes: infeasible ? minimumBytes : null,
     warnings,
   };
 }
@@ -210,4 +242,20 @@ export function estimateBytes(info, plan) {
   if (plan.mode !== "size") return null;
   const kbps = plan.videoKbps + plan.audioKbps;
   return Math.round((kbps * 1000 * info.duration) / 8);
+}
+
+// Two-pass ABR usually lands within a percent of the target, but container
+// overhead, very short clips, and VBV constraints can still push it over. When
+// that happens the caller re-encodes once with this tighter video bitrate.
+// Returns null when the plan is already at the 40 kbps floor, because another
+// pass cannot make the file any smaller.
+export function tighterPlan(plan, info, actualBytes, targetBytes) {
+  if (!plan || plan.mode !== "size" || !plan.videoKbps || !info?.duration || !targetBytes || !actualBytes) {
+    return null;
+  }
+  if (actualBytes <= targetBytes) return null;
+  const wanted = Math.floor(plan.videoKbps * ((targetBytes * 0.98) / actualBytes));
+  const next = Math.max(40, Math.min(plan.videoKbps - 1, wanted));
+  if (next >= plan.videoKbps) return null;
+  return { videoKbps: next };
 }

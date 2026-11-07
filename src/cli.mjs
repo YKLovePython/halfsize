@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { probe } from "./probe.mjs";
 import { planEncode, estimateBytes } from "./plan.mjs";
-import { encode } from "./encode.mjs";
+import { encodeToSize } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
 
@@ -63,7 +63,7 @@ const HELP = `
 
   Options
     --to <size>       Target size: 25mb, 700k, 1.5gb
-    --for <app>       Target cap for discord, whatsapp, wechat, email, twitter
+    --for <app>       Target cap for discord, whatsapp, wechat, gmail, outlook, email, twitter
     --crf <n>         Quality mode (18 best / 23 balanced / 28 small)
     --codec <name>    h264 (default, compatible) or h265 (smaller)
     --preset <name>   ultrafast..veryslow (default: medium)
@@ -71,6 +71,7 @@ const HELP = `
     --no-audio        Drop the audio track
     --no-verify       Skip the SSIM/VMAF check
     --no-downscale    Never reduce resolution
+    --force           Encode even when the target is below the minimum for this duration
     --json            Machine-readable result
     --dry-run         Print the plan, do not encode
     --port <n>        Port for --web (default 4174)
@@ -94,11 +95,18 @@ const PRESETS = ["ultrafast", "superfast", "veryfast", "faster", "fast", "medium
 // Current upload caps as people hit them (checked November 2026). Discord raised
 // its free cap to 20 MB in August 2026 and WeChat's chat-video cap is 20 MB.
 // Caps change, so --to always wins if a preset is wrong for your account tier.
+//
+// Email limits apply to the encoded message, and base64 adds ~33% to a binary
+// attachment: a 20 MB file becomes a 26.7 MB message and bounces at Gmail's
+// 25 MB. 18 MB raw is the safe number for Gmail; Outlook's 20 MB message limit
+// works out to about 15 MB raw.
 export const PLATFORMS = {
   discord: { bytes: 20 * 1_000_000, label: "Discord free (20 MB)" },
   whatsapp: { bytes: 16 * 1_000_000, label: "WhatsApp media (16 MB)" },
   wechat: { bytes: 20 * 1_000_000, label: "WeChat video (20 MB)" },
-  email: { bytes: 20 * 1_000_000, label: "Email attachment (20 MB)" },
+  gmail: { bytes: 18 * 1_000_000, label: "Gmail (25 MB message)" },
+  outlook: { bytes: 15 * 1_000_000, label: "Outlook.com (20 MB message)" },
+  email: { bytes: 18 * 1_000_000, label: "Email, Gmail-safe (18 MB file)" },
   twitter: { bytes: 512 * 1_000_000, label: "X / Twitter (512 MB)" },
 };
 
@@ -122,6 +130,7 @@ function parseArgs(argv) {
     else if (a === "--no-verify") args.flags.verify = false;
     else if (a === "--no-downscale") args.flags.downscale = false;
     else if (a === "--no-audio") args.flags.audio = false;
+    else if (a === "--force") args.flags.force = true;
     else if (a === "--web") args.flags.web = true;
     else if (a === "--doctor") args.flags.doctor = true;
     else if (a === "--port") {
@@ -257,10 +266,15 @@ async function processFile(input, flags, targetBytes, platform, batch) {
     };
   }
 
+  if (plan.infeasible && !flags.force) {
+    const message = plan.warnings.find((w) => w.code === "infeasible")?.message;
+    throw new Error(message || "This target is below the minimum for this duration.");
+  }
+
   const progress = new Progress(Boolean(process.stdout.isTTY) && !flags.json, info.duration);
   let result;
   try {
-    result = await encode(input, outPath, plan, info, (p) => progress.update(p));
+    result = await encodeToSize(input, outPath, plan, info, (p) => progress.update(p));
   } finally {
     progress.finish();
   }
@@ -268,7 +282,10 @@ async function processFile(input, flags, targetBytes, platform, batch) {
   let quality = { ssim: null, vmaf: null };
   if (flags.verify) {
     if (!flags.json) process.stdout.write(`  measuring quality `);
-    quality = await measureQuality(input, outPath, info.duration);
+    quality = await measureQuality(input, outPath, info.duration, {
+      sourceHdr: info.video.hdr,
+      sourceTransfer: info.video.hdrTransfer || info.video.colorTransfer,
+    });
     if (!flags.json) process.stdout.write(`\r${" ".repeat(40)}\r`);
   }
 
@@ -279,6 +296,8 @@ async function processFile(input, flags, targetBytes, platform, batch) {
     accuracy: targetBytes ? result.outputBytes / targetBytes - 1 : null,
     ratio: info.sizeBytes / result.outputBytes,
     saved: info.sizeBytes - result.outputBytes,
+    attempts: result.attempts,
+    missedTarget: Boolean(result.missedTarget),
     plan,
     quality,
     verdict: verdict(quality),
@@ -347,6 +366,7 @@ function printPlan(info, plan, flags, outPath, platform, showHeader = true) {
     `${plan.label}  ${plan.width}x${plan.height}  ${plan.videoKbps ? bitrate(plan.videoKbps) : "auto"}  audio ${plan.audioKbps || 0} kbps  ${plan.twoPass ? "2-pass" : "1-pass"}`,
   );
   if (plan.downscaled) line("scale", `${info.video.width}x${info.video.height} -> ${plan.width}x${plan.height}`);
+  if (plan.toneMap) line("hdr", `${info.video.hdrTransfer === "pq" ? "PQ" : "HLG"} -> SDR BT.709`);
   if (plan.mode === "size") {
     const est = estimateBytes(info, plan);
     line("estimate", `${bytes(est)}  (${ratio(info.sizeBytes, est)} smaller)`);
@@ -391,6 +411,9 @@ function printResult(summary, outPath, { promo = true } = {}) {
   const accuracy =
     summary.accuracy === null ? "" : `${Math.abs(summary.accuracy * 100).toFixed(1)}% ${summary.accuracy > 0 ? "over" : "under"} target`;
   console.log(`  done in ${duration(summary.elapsedMs / 1000)}`);
+  if (summary.attempts > 1) {
+    console.log(`  re-encoded ${summary.attempts - 1} time${summary.attempts > 2 ? "s" : ""} to fit the target`);
+  }
   console.log("");
   console.log(
     `  ${bytes(summary.input.bytes)}  ->  ${bytes(summary.output.bytes)}   ${ratio(summary.input.bytes, summary.output.bytes)} smaller   ${accuracy}`,

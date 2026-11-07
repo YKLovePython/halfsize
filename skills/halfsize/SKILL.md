@@ -22,6 +22,8 @@ npx halfsize input.mp4 --to 25mb
 
 # let a platform cap pick the size
 npx halfsize input.mp4 --for discord
+npx halfsize input.mp4 --for gmail     # 18 MB, safe under the 25 MB message cap
+npx halfsize input.mp4 --for outlook   # 15 MB, safe under the 20 MB message cap
 
 # several files, one command
 npx halfsize a.mp4 b.mp4 c.mp4 --to 10mb
@@ -58,6 +60,7 @@ If `npx halfsize` is unavailable, use `npx github:YKLovePython/halfsize` with th
 - Do not upload the user's video anywhere, and do not suggest an online compressor as a first step.
 - Do not promise "no quality loss". Report the measured VMAF/SSIM and the verdict.
 - If the source is already smaller than the target, stop and tell the user instead of re-encoding.
-- If the source is HDR, warn that colors may shift; HDR-to-SDR is not implemented yet.
+- HDR sources (iPhone HLG, HDR10/PQ) are tone-mapped to SDR automatically. Do not warn about washed-out colors unless the user asks to keep HDR.
+- If the target is below the minimum the duration can hold, the CLI exits with the smallest achievable size. Report that number and suggest a larger target or trimming, instead of rerunning with `--force`.
 - Prefer H.264 unless the user asks for smaller files or accepts H.265 compatibility tradeoffs.
 - Write the output next to the input unless the user asks for a specific `--out` path.
