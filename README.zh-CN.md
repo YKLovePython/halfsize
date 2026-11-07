@@ -133,6 +133,9 @@ npx halfsize --web
 附实测画质的分平台教程：
 [微信 20 MB](https://YKLovePython.github.io/halfsize/zh/wechat/) ·
 [任意 20 MB 限制](https://YKLovePython.github.io/halfsize/zh/20mb/) ·
+[邮件附件](https://YKLovePython.github.io/halfsize/zh/email/) ·
+[X / Twitter](https://YKLovePython.github.io/halfsize/zh/twitter/) ·
+[ffmpeg 指定大小](https://YKLovePython.github.io/halfsize/zh/ffmpeg-compress-to-size/) ·
 [Discord 20 MB](https://YKLovePython.github.io/halfsize/discord/) ·
 [WhatsApp 16 MB](https://YKLovePython.github.io/halfsize/whatsapp/) ·
 [本地压缩不上传](https://YKLovePython.github.io/halfsize/zh/offline/)。

@@ -140,7 +140,10 @@ Step-by-step guides with measured quality numbers:
 [Discord 20 MB](https://YKLovePython.github.io/halfsize/discord/) ·
 [WhatsApp 16 MB](https://YKLovePython.github.io/halfsize/whatsapp/) ·
 [WeChat 20 MB](https://YKLovePython.github.io/halfsize/wechat/) ·
+[email attachments](https://YKLovePython.github.io/halfsize/email/) ·
+[X / Twitter](https://YKLovePython.github.io/halfsize/twitter/) ·
 [any 20 MB limit](https://YKLovePython.github.io/halfsize/20mb/) ·
+[FFmpeg target size](https://YKLovePython.github.io/halfsize/ffmpeg-compress-to-size/) ·
 [compress without uploading](https://YKLovePython.github.io/halfsize/offline/).
 
 ### Use it from an agent
