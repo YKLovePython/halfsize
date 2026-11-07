@@ -18,11 +18,25 @@ npx halfsize video.mp4 --to 20mb
 npx halfsize video.mp4 --for discord
 npx halfsize video.mp4 --for wechat
 npx halfsize video.mp4 --for whatsapp
+npx halfsize video.mp4 --for email
+npx halfsize video.mp4 --for twitter
 npx halfsize --web
 ```
 
 Options: `--to <size>`, `--for <app>`, `--crf <n>`, `--codec h264|h265`, `--preset <name>`,
 `--out <file>`, `--no-audio`, `--no-verify`, `--no-downscale`, `--json`, `--dry-run`, `--port <n>`.
+
+Presets target Discord free 20 MB, WeChat 20 MB, WhatsApp 16 MB, email 20 MB and X/Twitter 512 MB.
+For Gmail, target 18 MB because base64 encoding grows the attachment by roughly a third.
+
+## As an agent skill
+
+The repository ships `skills/halfsize/SKILL.md`, so a coding agent can do the compression and read
+the quality report itself:
+
+```
+npx skills add YKLovePython/halfsize
+```
 
 ## Measured quality
 
@@ -45,6 +59,13 @@ macOS and Linux are supported.
 ## Links
 
 - Website: https://yklovepython.github.io/halfsize/
+- 20 MB limit guide: https://yklovepython.github.io/halfsize/20mb/
+- Email attachment guide: https://yklovepython.github.io/halfsize/email/
+- X (Twitter) guide: https://yklovepython.github.io/halfsize/twitter/
+- FFmpeg target-size guide: https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/
+- Discord 20 MB: https://yklovepython.github.io/halfsize/discord/
+- WeChat 20 MB: https://yklovepython.github.io/halfsize/wechat/
+- WhatsApp 16 MB: https://yklovepython.github.io/halfsize/whatsapp/
 - Offline / no-upload guide: https://yklovepython.github.io/halfsize/offline/
 - Chinese docs: https://yklovepython.github.io/halfsize/zh/
 - Source: https://github.com/YKLovePython/halfsize
