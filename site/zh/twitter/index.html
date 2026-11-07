@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频压到能发 X（Twitter）：512 MB 上限，画质别糊</title>
+<meta name="description" content="X 单个视频上限 512 MB，但上传后会再压一次。这里讲它喜欢的格式、怎么本地把大文件压小，以及上传后还能保持清晰的原因。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/twitter/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/twitter/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/twitter/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频压到能发 X（Twitter）">
+<meta property="og:description" content="512 MB 不是真正的瓶颈，上传速度和第二次编码才是。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/twitter/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "把视频压到适合发 X（Twitter）",
+  "description": "按 X 的上限选择目标大小，用它会重新编码的格式输出。",
+  "totalTime": "PT5M",
+  "tool": [{ "@type": "HowToTool", "name": "Node.js 18+" }],
+  "step": [
+    { "@type": "HowToStep", "name": "选目标", "text": "X 单个视频上限 512 MB。用 --for twitter，或者 --to 100mb 让上传更快。" },
+    { "@type": "HowToStep", "name": "压缩", "text": "运行 npx halfsize 视频.mp4 --for twitter，输出 H.264、AAC、1080p、带 faststart。" },
+    { "@type": "HowToStep", "name": "看报告", "text": "确认输出大小和 VMAF 结论。" },
+    { "@type": "HowToStep", "name": "上传", "text": "发布生成的 MP4，竖屏视频保持竖屏。" }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../twitter/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / X（Twitter）</p>
+  <h1>视频压到能发 <em>X（Twitter）</em></h1>
+  <p class="lede">
+    X 单个视频最多收 <b>512 MB</b>，然后几乎都会重新编码一遍。真正卡人的通常不是上限，
+    而是上传速度和那第二次压缩。这里讲怎么给它一个不会被压糊的文件。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>512 MB 不是真正的瓶颈</h2>
+  <p>手机拍的 4K 三分钟素材，本身就可能超过 512 MB；但更多人先撞上的是带宽：10 Mbps 上传传 400 MB 要五分半，断一次就得从头再来。</p>
+  <p>X 还会自己转码。与其丢一个巨大的 4K 源进去，不如先输出成它想要的样子：H.264 视频、AAC 音频、1080p、<code>+faststart</code>。这样平台能丢掉的东西更少。</p>
+
+  <h2>一条命令</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 片段.mp4 --for twitter</span>
+
+  target     512 MB
+  plan       H.264  1920x1080  21.8 Mbps  audio 128 kbps  2-pass
+  output     片段.512mb.mp4
+
+  <span class="hl">1.24 GB  →  498 MB   小 2.5 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 96.1   SSIM 0.992   看着一样</span></code></pre>
+  <p>想几十秒传完，就自己定一个更小的数。一分钟的片子根本用不到 512 MB：</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 片段.mp4 --to 80mb</span></code></pre>
+
+  <h2>竖屏视频</h2>
+  <p>手机素材通常是 1080×1920 加一个旋转标记。工具会读这个标记，输出真正的竖屏文件，而不是一条横屏视频再靠元数据转过来——后者在部分播放器里会直接横着放。不补黑边。</p>
+
+  <h2>重新编码会损失多少画质</h2>
+  <p>60 秒 1080p30、源 18 Mbps，默认设置的实测：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>VMAF</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>512 MB</td><td class="num">498 MB</td><td class="num">1920×1080</td><td class="num">96.1</td><td>看着一样</td></tr>
+        <tr><td>100 MB</td><td class="num">97.6 MB</td><td class="num">1920×1080</td><td class="num">93.4</td><td>看着一样</td></tr>
+        <tr><td>40 MB</td><td class="num">39.1 MB</td><td class="num">1280×720</td><td class="num">88.7</td><td>轻微变软</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">多一次编码不是白给的。上传前就把文件做成 X 偏好的格式，平台能再损失的空间就更小。</p>
+
+  <h2>给 X 的格式清单</h2>
+  <ul>
+    <li><b>容器：</b>MP4 + <code>+faststart</code>，边下边播。</li>
+    <li><b>视频：</b>H.264 High、<code>yuv420p</code>，1080p 或更低。</li>
+    <li><b>音频：</b>AAC 128 kbps 立体声，再高也会被转掉。</li>
+    <li><b>帧率：</b>源是多少就多少，最高 60 fps，不要伪造更高。</li>
+  </ul>
+  <p>halfsize 的默认值就是这份清单，所以多数时候 <code>--for twitter</code> 就够了。</p>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>X 真的收 512 MB 吗？</summary><p>这是目前普通账号的单视频上限，而且调整过不止一次。视频时长限制还和账号等级有关。如果你的账号显示的数字不同，用 <code>--to</code> 按实际数字来。</p></details>
+    <details><summary>要不要传 4K？</summary><p>除非多出来的分辨率比上传时间更重要。多数播放场景下 X 最终给的是 1080p，一个干净的 1080p 更划算。</p></details>
+    <details><summary>为什么上传后变糊了？</summary><p>X 又转码了一次。如果你给它的是 H.264、AAC、<code>+faststart</code>，而且码率本来就没被饿死，它能破坏的空间会小很多。</p></details>
+    <details><summary>会上传文件吗？</summary><p>不会。压缩全在本地完成，只有最后发布那一步才把文件传到 X。</p></details>
+  </div>
+
+  <h2>相关教程</h2>
+  <div class="platforms">
+    <a href="../20mb/">20 MB 上限</a>
+    <a href="../email/">邮件附件</a>
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 指定大小</a>
+    <a href="../wechat/">微信 <b>20 MB</b></a>
+    <a href="../../discord/">Discord <b>20 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a video for email — 20–25 MB, no cloud upload</title>
+<meta name="description" content="Gmail stops at 25 MB, Outlook and most corporate mail at 20 MB. Here is why the attachment is bigger than the file, and how to compress a video locally to fit.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/email/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/email/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/email/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compress a video for email">
+<meta property="og:description" content="The 33% that base64 adds, and one command that lands under the attachment cap.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/email/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Compress a video so it fits in an email attachment",
+  "description": "Target 18 MB for a 25 MB mailbox limit, compress locally, then attach the result.",
+  "totalTime": "PT5M",
+  "tool": [{ "@type": "HowToTool", "name": "Node.js 18+" }],
+  "step": [
+    { "@type": "HowToStep", "name": "Check the mailbox limit", "text": "Gmail is 25 MB, Outlook and many corporate servers are 20 MB, and some are 10 MB." },
+    { "@type": "HowToStep", "name": "Compress with margin", "text": "Run npx halfsize video.mp4 --to 18mb so the base64-encoded attachment still fits." },
+    { "@type": "HowToStep", "name": "Read the report", "text": "Confirm the output size and check the VMAF verdict." },
+    { "@type": "HowToStep", "name": "Attach", "text": "Attach the generated file, or send a link if the mailbox still refuses it." }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/email/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Email</p>
+  <h1>Compress a video for <em>email</em></h1>
+  <p class="lede">
+    Gmail stops at <b>25 MB</b>. Outlook and a lot of corporate servers stop at <b>20 MB</b>.
+    And the attachment your recipient sees is about a third larger than the file on your disk.
+    Here is the arithmetic, and one command that lands under it.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>The 33% nobody accounts for</h2>
+  <p>SMTP is a text protocol. Binary attachments are base64-encoded, which turns every 3 bytes into 4. A 19 MB MP4 becomes roughly <b>25 MB</b> inside the message. Many providers enforce the limit on the encoded message, not on the file you dragged in.</p>
+  <p>That is why a video that “is under 20 MB” still bounces. If the limit is 25 MB, aim for a file around <b>18 MB</b>. If the limit is 20 MB, aim for <b>14–15 MB</b>.</p>
+
+  <div class="callout">
+    <p><b>Rule of thumb:</b> attachment size ≈ file size × 1.37. Compress to <code>limit ÷ 1.37</code> and stop worrying about it.</p>
+  </div>
+
+  <h2>One command</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize holiday.mp4 --to 18mb</span>
+
+  target     18.0 MB
+  plan       H.264  1280x720  2.19 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     holiday.18mb.mp4
+
+  <span class="hl">214 MB  →  17.62 MB   12x smaller   2.1% under target</span>
+  <span class="hl">VMAF 87.4   SSIM 0.968   slight softening</span></code></pre>
+  <p>The <code>--for email</code> shortcut targets 20 MB, which is right for Outlook-class servers. For Gmail, <code>--to 18mb</code> is the safer number because of the base64 tax.</p>
+
+  <h2>What it does to the picture</h2>
+  <p>Eighteen megabytes for a one-minute clip is about 2.2 Mbps. That is comfortable for 720p and cramped for 1080p, so the tool downscales instead of starving the larger frame. Measured on a 60-second 1080p30 source at 18 Mbps:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>18 MB</td><td class="num">17.62 MB</td><td class="num">1280×720</td><td class="num">87.4</td><td>slight softening</td></tr>
+        <tr><td>15 MB</td><td class="num">14.71 MB</td><td class="num">1280×720</td><td class="num">86.2</td><td>slight softening</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>slight softening</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">VMAF is measured against the source at the midpoint. Above 90 reads as “looks the same”; 80–90 is slight softening; 70–80 is visible loss.</p>
+
+  <h2>When the mailbox still refuses it</h2>
+  <p>Some servers cap the whole mailbox, or scan attachments and reject anything above 10 MB regardless of settings. In that case, do not compress harder — send a link:</p>
+  <ul>
+    <li>Put the compressed file on any storage you already have and send the URL.</li>
+    <li>If the recipient is on the same company network, a shared drive beats email every time.</li>
+    <li>For a client who needs the original quality, send the source through a file-transfer service and attach only the compressed preview.</li>
+  </ul>
+
+  <h2>Why not an online compressor?</h2>
+  <p>Because the videos people email are usually the private ones: a passport scan, a contract walkthrough, a child's recital, an unreleased product demo. Uploading that to an ad-funded site to save two minutes is a bad trade. halfsize runs FFmpeg on your machine: no upload, no account, no quota, and no watermark. It also has a local web UI if you would rather click than type:</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize --web</span>
+<span class="out">halfsize web UI on http://127.0.0.1:4174</span></code></pre>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>What is Gmail's actual limit?</summary><p>25 MB for the encoded message, which is roughly an 18 MB file. Google Drive links do not count against it, but the recipient then needs access.</p></details>
+    <details><summary>Why does Outlook reject a 20 MB file?</summary><p>Because the base64 encoding pushes it past 20 MB. Target 14–15 MB, or ask the recipient's IT what the real cap is.</p></details>
+    <details><summary>Can I keep 1080p?</summary><p>Yes, with <code>--no-downscale</code>. At 18 MB for a minute it will look softer than 720p, but the frame size stays the same. Try <code>--dry-run</code> to see both plans.</p></details>
+    <details><summary>Does the recipient need any software?</summary><p>No. The output is a normal H.264 MP4 with AAC audio and <code>+faststart</code>, which plays in every mail client and phone.</p></details>
+    <details><summary>Is it free?</summary><p>Yes. MIT licensed, no paid tier, no account.</p></details>
+  </div>
+
+  <h2>Related guides</h2>
+  <div class="platforms">
+    <a href="../20mb/">20 MB limit</a>
+    <a href="../offline/">Compress without uploading</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg target size</a>
+    <a href="../twitter/">X / Twitter <b>512 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

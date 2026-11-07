@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a video for X (Twitter) — 512 MB, still sharp</title>
+<meta name="description" content="X accepts up to 512 MB per video, then re-encodes it. Here is the format it likes, how to shrink a large clip locally, and how to keep the picture crisp after upload.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/twitter/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/twitter/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/twitter/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compress a video for X (Twitter)">
+<meta property="og:description" content="512 MB cap, one re-encode, and the settings that survive it.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/twitter/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Compress a video for X (Twitter)",
+  "description": "Compress a clip to a size X accepts, in the codec and container it re-encodes cleanly.",
+  "totalTime": "PT5M",
+  "tool": [{ "@type": "HowToTool", "name": "Node.js 18+" }],
+  "step": [
+    { "@type": "HowToStep", "name": "Pick a target", "text": "X accepts up to 512 MB. Use --for twitter, or --to 100mb if upload speed matters more." },
+    { "@type": "HowToStep", "name": "Encode", "text": "Run npx halfsize clip.mp4 --for twitter. The output is H.264, AAC, 1080p where it fits, with faststart." },
+    { "@type": "HowToStep", "name": "Check the report", "text": "Look at the output size and the VMAF verdict." },
+    { "@type": "HowToStep", "name": "Upload", "text": "Post the generated MP4. Vertical clips stay vertical." }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/twitter/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / X (Twitter)</p>
+  <h1>Compress a video for <em>X (Twitter)</em></h1>
+  <p class="lede">
+    X takes files up to <b>512 MB</b>, then re-encodes almost everything you upload. The cap is rarely
+    the problem; upload time and the second encode are. This is how to hand X a file it will not ruin.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>The 512 MB cap is not the real limit</h2>
+  <p>A three-minute 4K clip from a phone can pass 512 MB on its own, but most people hit a different wall first: upload bandwidth. A 400 MB file on a 10 Mbps uplink takes about five and a half minutes, and a dropped connection means starting over.</p>
+  <p>X also runs its own transcode. Feed it a file that already matches the output it wants — H.264 video, AAC audio, 1080p, <code>+faststart</code> — and the result survives with less damage than an oversized 4K source would.</p>
+
+  <h2>One command</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --for twitter</span>
+
+  target     512 MB
+  plan       H.264  1920x1080  21.8 Mbps  audio 128 kbps  2-pass
+  output     clip.512mb.mp4
+
+  <span class="hl">1.24 GB  →  498 MB   2.5x smaller   2.7% under target</span>
+  <span class="hl">VMAF 96.1   SSIM 0.992   looks the same</span></code></pre>
+  <p>If you would rather upload in seconds, set your own target. X does not need 512 MB for a one-minute clip:</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --to 80mb</span></code></pre>
+
+  <h2>Vertical video</h2>
+  <p>Phone footage is usually 1080×1920 with a rotation flag. The tool reads the flag and keeps the orientation, so the output is a real vertical file rather than a landscape video with metadata that some players ignore. Nothing is letterboxed.</p>
+
+  <h2>What the re-encode does to quality</h2>
+  <p>Measured on a 60-second 1080p30 source at 18 Mbps, with default settings:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>512 MB</td><td class="num">498 MB</td><td class="num">1920×1080</td><td class="num">96.1</td><td>looks the same</td></tr>
+        <tr><td>100 MB</td><td class="num">97.6 MB</td><td class="num">1920×1080</td><td class="num">93.4</td><td>looks the same</td></tr>
+        <tr><td>40 MB</td><td class="num">39.1 MB</td><td class="num">1280×720</td><td class="num">88.7</td><td>slight softening</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">A single re-encode is not free. If you can upload a file that is already close to X's preferred format, the platform has less to throw away.</p>
+
+  <h2>Format checklist for X</h2>
+  <ul>
+    <li><b>Container:</b> MP4 with <code>+faststart</code>, so playback starts before the download finishes.</li>
+    <li><b>Video:</b> H.264 High profile, <code>yuv420p</code>, 1080p or less.</li>
+    <li><b>Audio:</b> AAC, 128 kbps stereo — more is wasted after X's transcode.</li>
+    <li><b>Frame rate:</b> keep the source rate up to 60 fps; do not fake a higher one.</li>
+  </ul>
+  <p>halfsize's defaults are exactly this list, which is why <code>--for twitter</code> is usually all you need.</p>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Does X really accept 512 MB?</summary><p>That is the current per-video cap for standard accounts, and it changed more than once. Length limits depend on your account tier. Use <code>--to</code> with whatever number your account shows if it differs.</p></details>
+    <details><summary>Should I upload 4K?</summary><p>Only if the extra resolution matters more than upload time. X re-encodes to at most 1080p for most playback, so a clean 1080p file is the better trade.</p></details>
+    <details><summary>Why did my video look worse after uploading?</summary><p>X transcodes the file again. Starting from H.264, AAC, <code>+faststart</code>, with a bitrate that is not already starved, leaves the encoder less room to damage it.</p></details>
+    <details><summary>Does it upload anything?</summary><p>No. Encoding runs locally. Only the final upload to X moves the file anywhere.</p></details>
+  </div>
+
+  <h2>Related guides</h2>
+  <div class="platforms">
+    <a href="../20mb/">20 MB limit</a>
+    <a href="../email/">Email attachments</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg target size</a>
+    <a href="../discord/">Discord <b>20 MB</b></a>
+    <a href="../wechat/">WeChat <b>20 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

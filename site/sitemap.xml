@@ -77,4 +77,52 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/offline/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/offline/"/>
   </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/email/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/email/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/email/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/email/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/email/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/email/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/twitter/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/twitter/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/twitter/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/twitter/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/twitter/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/twitter/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/</loc>
+    <lastmod>2026-11-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/"/>
+  </url>
 </urlset>

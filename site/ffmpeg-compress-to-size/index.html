@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FFmpeg: compress a video to an exact target size</title>
+<meta name="description" content="Two-pass FFmpeg commands that hit a target file size instead of a quality level, the bitrate math behind them, and how to verify the result with VMAF.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FFmpeg: compress a video to an exact target size">
+<meta property="og:description" content="Two-pass commands, the bitrate budget, and a VMAF check that proves the quality survived.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Compress a video to an exact target size with FFmpeg",
+  "description": "Compute a bitrate budget from the target size, encode in two passes, then verify the file size and the VMAF quality score.",
+  "totalTime": "PT10M",
+  "tool": [{ "@type": "HowToTool", "name": "FFmpeg" }],
+  "step": [
+    { "@type": "HowToStep", "name": "Compute the budget", "text": "Multiply the target bytes by 8, divide by the duration in seconds, then subtract the audio bitrate and a small container margin." },
+    { "@type": "HowToStep", "name": "Run pass one", "text": "Encode with -b:v set to the budget, -pass 1, and no audio." },
+    { "@type": "HowToStep", "name": "Run pass two", "text": "Encode again with -pass 2, add AAC audio, and write the final MP4 with +faststart." },
+    { "@type": "HowToStep", "name": "Verify", "text": "Check the byte size, then measure VMAF against the source to see what the compression cost." }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/ffmpeg-compress-to-size/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / FFmpeg target size</p>
+  <h1>FFmpeg: compress to an <em>exact target size</em></h1>
+  <p class="lede">
+    <code>-crf</code> asks for quality and lets the file size land wherever it wants. When a form says
+    <b>20 MB</b>, you need the opposite: a bitrate budget, two passes, and a check that the result
+    actually fits.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Why <code>-crf</code> does not hit a size</h2>
+  <p>Constant Rate Factor targets a perceptual quality level. A talking-head clip and a fireworks clip at the same CRF can differ by 4× in size, because the encoder spends bits where the picture needs them. That is the right behaviour for archiving and the wrong behaviour for an upload form with a hard cap.</p>
+  <p>You can guess, encode, check the size, and encode again. That loop is what most people mean by "just use HandBrake". It works, but it costs an encode per guess and it never tells you what the picture lost.</p>
+
+  <h2>The bitrate budget</h2>
+  <p>Video encoders think in bits per second. A file-size target converts to a bitrate:</p>
+  <pre><code>video_kbps = (target_bytes × 8 ÷ seconds) − audio_kbps − container_overhead</code></pre>
+  <p>A 60-second clip at 20 MB (20,000,000 bytes) is 2.67 Mbps total. Remove 128 kbps of AAC audio and roughly 1.5% for MP4 container overhead, and you have about <b>2.46 Mbps</b> for the video stream.</p>
+  <p>That number is the whole trick. Everything else is bookkeeping: rotation metadata, HDR, variable frame rate, whether the source audio is already low bitrate and re-encoding it would waste bits.</p>
+
+  <h2>Two-pass x264</h2>
+  <p>Average bitrate mode in a single pass has to guess how complex the next scene will be. Two-pass fixes that: the first pass analyses the whole clip, the second spends the budget where it matters.</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffmpeg -y -i input.mp4 -c:v libx264 -b:v 2460k \
+    -pass 1 -passlogfile ffmpeg2pass -an -f mp4 /dev/null</span>
+<span class="prompt">$</span> <span class="hl">ffmpeg -i input.mp4 -c:v libx264 -b:v 2460k \
+    -pass 2 -passlogfile ffmpeg2pass -c:a aac -b:a 128k \
+    -movflags +faststart output.mp4</span></code></pre>
+  <p class="small">On Windows, replace <code>/dev/null</code> with <code>NUL</code>. Delete the <code>ffmpeg2pass*</code> log files afterwards; they are only needed between the two passes.</p>
+
+  <h2>Why the result still misses by a few percent</h2>
+  <p>Three things bend the number:</p>
+  <ul>
+    <li><b>ABR is not CBR.</b> x264 targets an average, and a short clip gives it less room to average out. A 10-second file can overshoot more than a 10-minute one.</li>
+    <li><b>Container overhead.</b> MP4 headers, the moov atom, and per-frame overhead are not in your bitrate maths. Budget 1–2%.</li>
+    <li><b>Audio re-encoding.</b> Copying an existing AAC track (<code>-c:a copy</code>) is free; re-encoding to a lower bitrate saves space but drifts from the plan.</li>
+  </ul>
+  <p>Landing 1–3% under the cap is the correct outcome. 19.45 MB is accepted everywhere. 20.01 MB is rejected by the same form.</p>
+
+  <h2>Verify the size and the quality</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffprobe -v error -show_entries format=duration,size \
+    -of default=noprint_wrappers=1 output.mp4</span>
+
+<span class="prompt">$</span> <span class="hl">ffmpeg -i output.mp4 -i input.mp4 -lavfi libvmaf -f null -</span></code></pre>
+  <p>VMAF scores perceptual similarity from 0 to 100. Above 90 reads as “looks the same”. 80–90 is “slight softening”. 70–80 is visible loss. A size target without this number is a guess with extra steps.</p>
+
+  <h2>What halfsize automates</h2>
+  <ul>
+    <li>Probes duration, frame rate, rotation, audio bitrate and HDR flags before planning.</li>
+    <li>Computes the budget, then picks the largest resolution that stays above a bits-per-pixel floor — 1080p when it fits, 720p or 540p when 1080p would look starved.</li>
+    <li>Runs both passes, writes to a temporary file, and only renames it when the encode succeeds.</li>
+    <li>Measures VMAF and SSIM, then prints a plain-language verdict instead of a number you have to interpret.</li>
+    <li>Adds <code>--for discord</code>, <code>--for wechat</code>, <code>--for whatsapp</code>, <code>--for email</code> and <code>--for twitter</code> so you do not have to look the cap up.</li>
+  </ul>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize input.mp4 --to 20mb</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     input.20mb.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+
+  <h2>Measured results</h2>
+  <p>60-second 1080p30 source at 18 Mbps, default settings, one laptop:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>Video bitrate</th><th>VMAF</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">1.24 Mbps</td><td class="num">82.9</td></tr>
+        <tr><td>2 MB</td><td class="num">1.99 MB</td><td class="num">960×540</td><td class="num">0.25 Mbps</td><td class="num">79.9</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Is two-pass always better than CRF?</summary><p>For a hard size cap, yes: it is the only mode that spends the budget predictably. For quality-first work, CRF is faster and usually better, because it does not waste bits on scenes that do not need them.</p></details>
+    <details><summary>Can I just use <code>-fs 20M</code>?</summary><p><code>-fs</code> stops writing when the file reaches the limit, which can truncate mid-GOP. The file may be the right size and unplayable at the end. It also gives you no control over quality distribution.</p></details>
+    <details><summary>Does H.265 help?</summary><p>Usually 30–50% better compression at the same quality, so you can keep more resolution. The catch is playback: older Windows machines, many browsers, and some editors cannot decode it. For a file that must play anywhere, H.264 is still the safe answer.</p></details>
+    <details><summary>Why is my 10-second clip over the target?</summary><p>Short clips give the rate controller less to average over, and container overhead is a larger fraction. Add 5% margin, or set a slightly lower bitrate by hand.</p></details>
+    <details><summary>How exact is “exact”?</summary><p>Typically 1–3% under. The encoder cannot promise a byte count before it finishes, so a small margin is deliberate.</p></details>
+  </div>
+
+  <h2>Guides by destination</h2>
+  <div class="platforms">
+    <a href="../20mb/">20 MB limit</a>
+    <a href="../email/">Email attachments</a>
+    <a href="../twitter/">X / Twitter</a>
+    <a href="../discord/">Discord <b>20 MB</b></a>
+    <a href="../wechat/">WeChat <b>20 MB</b></a>
+    <a href="../whatsapp/">WhatsApp <b>16 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

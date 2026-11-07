@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ffmpeg 把视频压缩到指定大小（两遍编码）</title>
+<meta name="description" content="用 ffmpeg 压到指定大小而不是指定画质：码率预算怎么算、两遍编码怎么写、为什么总会差几个百分点，以及怎么用 VMAF 验证画质。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ffmpeg 把视频压缩到指定大小">
+<meta property="og:description" content="码率预算、两遍编码、VMAF 验证，一条链路讲清楚。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "用 ffmpeg 把视频压缩到指定大小",
+  "description": "先按目标大小算码率预算，再两遍编码，最后检查文件大小和 VMAF。",
+  "totalTime": "PT10M",
+  "tool": [{ "@type": "HowToTool", "name": "FFmpeg" }],
+  "step": [
+    { "@type": "HowToStep", "name": "算预算", "text": "目标字节数乘 8，除以时长秒数，再减掉音频码率和少量容器开销。" },
+    { "@type": "HowToStep", "name": "跑第一遍", "text": "用 -b:v 指定码率、-pass 1，先不带音频。" },
+    { "@type": "HowToStep", "name": "跑第二遍", "text": "用 -pass 2 再编一次，加上 AAC 音频和 +faststart，写出最终 MP4。" },
+    { "@type": "HowToStep", "name": "验证", "text": "先看文件大小，再用 VMAF 和原片对比，确认画质到底掉了多少。" }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../ffmpeg-compress-to-size/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / ffmpeg 指定大小</p>
+  <h1>ffmpeg 压到<em>指定大小</em></h1>
+  <p class="lede">
+    <code>-crf</code> 要的是画质，文件多大它不管。当报名表写着 <b>20 MB</b> 时，你需要的是反过来：
+    先算码率预算，再两遍编码，最后确认真的塞得下。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>为什么 <code>-crf</code> 压不准大小</h2>
+  <p>CRF 是恒定画质，编码器把码率花在画面需要的地方。同样 CRF 下，一个人物访谈和一段烟花视频，文件大小能差四倍。存档时这是对的，面对有硬性上限的上传表单就是错的。</p>
+  <p>于是大多数人开始「猜一个 CRF、导出、看大小、再导一次」。这个循环能用，但每猜一次就要重编一遍，而且永远不告诉你画质付出了什么代价。</p>
+
+  <h2>先算码率预算</h2>
+  <p>编码器只认每秒多少比特，文件大小要换算过去：</p>
+  <pre><code>视频码率 = (目标字节 × 8 ÷ 时长秒数) − 音频码率 − 容器开销</code></pre>
+  <p>60 秒压到 20 MB（20,000,000 字节），总码率是 2.67 Mbps。减掉 128 kbps 的 AAC 音频，再留大约 1.5% 给 MP4 容器，视频流大约 <b>2.46 Mbps</b>。</p>
+  <p>剩下都是细节：旋转信息、HDR 标记、可变帧率，以及源音频本来就很低时，重新编码是否反而浪费码率。</p>
+
+  <h2>两遍编码</h2>
+  <p>单遍的平均码率要在编码时猜后面的画面有多复杂。两遍就不一样：第一遍把整条片子分析完，第二遍把预算花在真正需要的地方。</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffmpeg -y -i 输入.mp4 -c:v libx264 -b:v 2460k \
+    -pass 1 -passlogfile ffmpeg2pass -an -f mp4 /dev/null</span>
+<span class="prompt">$</span> <span class="hl">ffmpeg -i 输入.mp4 -c:v libx264 -b:v 2460k \
+    -pass 2 -passlogfile ffmpeg2pass -c:a aac -b:a 128k \
+    -movflags +faststart 输出.mp4</span></code></pre>
+  <p class="small">Windows 下把 <code>/dev/null</code> 换成 <code>NUL</code>。两遍跑完记得删掉 <code>ffmpeg2pass*</code> 日志。</p>
+
+  <h2>为什么还是会差几个百分点</h2>
+  <ul>
+    <li><b>ABR 不是 CBR。</b> x264 追的是平均值，片段越短越难平均。10 秒的片子比 10 分钟的更容易超出。</li>
+    <li><b>容器开销。</b> MP4 头、moov 原子、每帧开销都不在你的码率算式里。留 1%–2%。</li>
+    <li><b>音频重编码。</b> 直接复制原 AAC（<code>-c:a copy</code>）不花码率；降到更低码率能省空间，但会偏离预算。</li>
+  </ul>
+  <p>落在上限下方 1%–3% 才是正确结果：19.45 MB 到处能过，20.01 MB 会被同一个表单拒掉。</p>
+
+  <h2>验证大小和画质</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffprobe -v error -show_entries format=duration,size \
+    -of default=noprint_wrappers=1 输出.mp4</span>
+
+<span class="prompt">$</span> <span class="hl">ffmpeg -i 输出.mp4 -i 输入.mp4 -lavfi libvmaf -f null -</span></code></pre>
+  <p>VMAF 是 0–100 的感知相似度。90 以上基本「看着一样」，80–90 是「轻微变软」，70–80 能看出损失。只报大小不报 VMAF 的压缩，等于多绕几步的猜。</p>
+
+  <h2>halfsize 把这些串起来了</h2>
+  <ul>
+    <li>先探测时长、帧率、旋转、音频码率和 HDR 标记，再出方案。</li>
+    <li>算完预算后挑「每像素比特数」还撑得住的最大分辨率：能 1080p 就 1080p，撑不住就 720p 或 540p。</li>
+    <li>两遍编码写出临时文件，成功后才改名成正式文件。</li>
+    <li>测 VMAF 和 SSIM，直接给一句人话结论，而不是甩一个数字让你猜。</li>
+    <li>内置 <code>--for discord</code>、<code>--for wechat</code>、<code>--for whatsapp</code>、<code>--for email</code>、<code>--for twitter</code>，不用现查上限。</li>
+  </ul>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 输入.mp4 --to 20mb</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     输入.20mb.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   小 7.0 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
+
+  <h2>实测数据</h2>
+  <p>60 秒 1080p30、源 18 Mbps，默认设置，普通笔记本：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>视频码率</th><th>VMAF</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">1.24 Mbps</td><td class="num">82.9</td></tr>
+        <tr><td>2 MB</td><td class="num">1.99 MB</td><td class="num">960×540</td><td class="num">0.25 Mbps</td><td class="num">79.9</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>两遍一定比 CRF 好吗？</summary><p>有硬性大小上限时是的：它是唯一能可预测地花完预算的模式。只在意画质时 CRF 更快也更好，不会把码率浪费在不需要的场景上。</p></details>
+    <details><summary>直接用 <code>-fs 20M</code> 不行吗？</summary><p><code>-fs</code> 是写到上限就停，可能在高帧组中间截断，文件大小对了、结尾却播不了，而且完全不管画质怎么分配。</p></details>
+    <details><summary>H.265 值得吗？</summary><p>同画质大约省 30%–50%，可以把分辨率留得更高。代价是兼容性：老 Windows、部分浏览器和剪辑软件解不了。要保证到处能播，还是 H.264。</p></details>
+    <details><summary>为什么 10 秒的片子更容易超？</summary><p>片段短，码率控制器能平均的空间小，容器开销占比也更大。多留 5% 余量，或者手动把码率调低一点。</p></details>
+    <details><summary>「指定大小」有多准？</summary><p>一般在上限下方 1%–3%。编码器没法在开始前承诺精确字节数，留一点余量是故意的。</p></details>
+  </div>
+
+  <h2>按去向选教程</h2>
+  <div class="platforms">
+    <a href="../20mb/">20 MB 上限</a>
+    <a href="../email/">邮件附件</a>
+    <a href="../twitter/">X / Twitter</a>
+    <a href="../wechat/">微信 <b>20 MB</b></a>
+    <a href="../../discord/">Discord <b>20 MB</b></a>
+    <a href="../../whatsapp/">WhatsApp <b>16 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

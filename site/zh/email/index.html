@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频压到能发邮件：20–25 MB 附件，本地压缩</title>
+<meta name="description" content="Gmail 25 MB、Outlook 和多数企业邮箱 20 MB，而 base64 编码会让附件再大三分之一。这里讲清楚怎么算、怎么压、为什么不用上传到在线网站。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/email/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/email/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/email/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频压到能发邮件">
+<meta property="og:description" content="附件会大 33%，所以要按 18 MB 而不是 25 MB 来压。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/email/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "把视频压到能作为邮件附件发送",
+  "description": "25 MB 的邮箱按 18 MB 压，20 MB 的邮箱按 15 MB 压，本地完成，不上传。",
+  "totalTime": "PT5M",
+  "tool": [{ "@type": "HowToTool", "name": "Node.js 18+" }],
+  "step": [
+    { "@type": "HowToStep", "name": "确认邮箱上限", "text": "Gmail 是 25 MB，Outlook 和很多企业邮箱是 20 MB，有些只有 10 MB。" },
+    { "@type": "HowToStep", "name": "留出 base64 余量", "text": "运行 npx halfsize 视频.mp4 --to 18mb，编码后的附件才塞得进 25 MB。" },
+    { "@type": "HowToStep", "name": "看报告", "text": "确认输出大小，再看 VMAF 结论。" },
+    { "@type": "HowToStep", "name": "发送", "text": "把生成的文件作为附件；如果还是被拒，就改成发链接。" }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../email/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 邮件附件</p>
+  <h1>视频压到能<em>发邮件</em></h1>
+  <p class="lede">
+    Gmail 卡在 <b>25 MB</b>，Outlook 和很多企业邮箱卡在 <b>20 MB</b>。
+    更麻烦的是：对方收到的附件，比硬盘上的文件大约大三成。这里把账算清楚，再给一条能过的命令。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>没人算的那 33%</h2>
+  <p>SMTP 是文本协议，二进制附件要 base64 编码：每 3 个字节变成 4 个。一个 19 MB 的 MP4，在邮件里大约是 <b>25 MB</b>。很多邮箱是按编码后的整封邮件算大小的，不是按你拖进去的文件。</p>
+  <p>这就是为什么「明明不到 20 MB」还是被退信。上限 25 MB，文件就该压到 <b>18 MB</b> 左右；上限 20 MB，压到 <b>14–15 MB</b>。</p>
+
+  <div class="callout">
+    <p><b>记一个系数：</b>附件大小 ≈ 文件大小 × 1.37。按「上限 ÷ 1.37」压，就不用再担心。</p>
+  </div>
+
+  <h2>一条命令</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 旅行.mp4 --to 18mb</span>
+
+  target     18.0 MB
+  plan       H.264  1280x720  2.19 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     旅行.18mb.mp4
+
+  <span class="hl">214 MB  →  17.62 MB   小 12 倍   比目标小 2.1%</span>
+  <span class="hl">VMAF 87.4   SSIM 0.968   轻微变软</span></code></pre>
+  <p><code>--for email</code> 直接按 20 MB 算，适合 Outlook 这类邮箱；Gmail 建议用 <code>--to 18mb</code>，把 base64 的份额留出来。</p>
+
+  <h2>画质会变成什么样</h2>
+  <p>一分钟的片子 18 MB，视频码率大约 2.2 Mbps。720p 够用，1080p 就显得紧，所以工具会主动降分辨率，而不是把 1080p 饿死。60 秒 1080p30、源 18 Mbps 的实测：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>VMAF</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>18 MB</td><td class="num">17.62 MB</td><td class="num">1280×720</td><td class="num">87.4</td><td>轻微变软</td></tr>
+        <tr><td>15 MB</td><td class="num">14.71 MB</td><td class="num">1280×720</td><td class="num">86.2</td><td>轻微变软</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>轻微变软</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">VMAF 取片中位置和原片对比。90 以上「看着一样」，80–90「轻微变软」，70–80 能看出损失。</p>
+
+  <h2>还是被退信怎么办</h2>
+  <p>有些服务器限的是整个邮箱，或者不管设置如何，附件超过 10 MB 就拦。这种情况不要继续硬压，改发链接：</p>
+  <ul>
+    <li>把压好的文件放到你已有的网盘，邮件里发链接。</li>
+    <li>同一个公司内网的话，共享盘永远比邮件靠谱。</li>
+    <li>对方要原片时，用文件传输服务发源文件，附件只放压缩版预览。</li>
+  </ul>
+
+  <h2>为什么不用在线压缩</h2>
+  <p>因为要发邮件的视频，往往正是最私密的那些：身份证扫描、合同讲解、孩子演出、还没发布的产品演示。为了省两分钟，把它传到靠广告支撑的服务器上，不划算。halfsize 在你自己电脑上跑 FFmpeg：不上传、免注册、无额度、无水印。不想敲命令也可以用本地网页版：</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize --web</span>
+<span class="out">halfsize web UI on http://127.0.0.1:4174</span></code></pre>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>Gmail 到底能发多大？</summary><p>按编码后的整封邮件算 25 MB，也就是文件大约 18 MB。用 Google Drive 链接不占这个额度，但对方需要有权限。</p></details>
+    <details><summary>为什么 Outlook 拒收 20 MB 的文件？</summary><p>base64 编码后已经超过 20 MB。压到 14–15 MB，或者直接问对方 IT 真实上限。</p></details>
+    <details><summary>能保留 1080p 吗？</summary><p>可以，加 <code>--no-downscale</code>。但一分钟 18 MB 的 1080p 会比 720p 更软。先用 <code>--dry-run</code> 看看两种方案。</p></details>
+    <details><summary>对方需要装软件吗？</summary><p>不需要。输出是标准 H.264 + AAC 的 MP4，带 <code>+faststart</code>，手机和邮箱客户端都能直接播。</p></details>
+    <details><summary>免费吗？</summary><p>免费。MIT 协议，没有付费版，也不要账号。</p></details>
+  </div>
+
+  <h2>相关教程</h2>
+  <div class="platforms">
+    <a href="../20mb/">20 MB 上限</a>
+    <a href="../offline/">压缩不上传</a>
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 指定大小</a>
+    <a href="../twitter/">X / Twitter <b>512 MB</b></a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>
