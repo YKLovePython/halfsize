@@ -36,6 +36,45 @@
   "softwareVersion": "0.1.8"
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-CN",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "视频会被上传到服务器吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不会。编码和测量都在本地用 FFmpeg 完成，免账号、无额度，装好之后断网也能用。" }
+    },
+    {
+      "@type": "Question",
+      "name": "需要自己装 FFmpeg 吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不用。首次安装会自动下载静态版本；下载失败时会退回使用系统里已有的 FFmpeg。" }
+    },
+    {
+      "@type": "Question",
+      "name": "能保持原分辨率吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "可以，加 --no-downscale。但同样的比特分给更多像素，画面通常会更软。" }
+    },
+    {
+      "@type": "Question",
+      "name": "Windows 能用吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "能。Windows、macOS、Linux 都支持，只需要 Node.js 18+。" }
+    },
+    {
+      "@type": "Question",
+      "name": "可以写进脚本吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "可以。--json 输出机器可读结果，--dry-run 只打印方案不编码。" }
+    },
+    {
+      "@type": "Question",
+      "name": "真的免费吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "MIT 协议，没有付费版。如果它帮你省了时间，点个 star 能让更多人找到它。" }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <div class="wrap">

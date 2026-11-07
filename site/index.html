@@ -45,23 +45,33 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Does halfsize upload my video anywhere?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. Encoding and quality measurement run locally with FFmpeg. The tool makes no network calls with your file, needs no account, and works offline after installation." }
-    },
-    {
-      "@type": "Question",
-      "name": "What is the Discord video size limit?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Discord's free upload limit is 20 MB per file. Use halfsize video.mp4 --for discord to hit that limit automatically." }
-    },
-    {
-      "@type": "Question",
-      "name": "Will compressing a video make it look bad?",
-      "acceptedAnswer": { "@type": "Answer", "text": "halfsize measures VMAF and SSIM after encoding and prints a plain-language verdict, so you can see the quality cost instead of guessing. At 20 MB a 60-second 1080p clip measured VMAF 88.3, described as slight softening." }
+      "name": "Does it upload my video anywhere?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Encoding and measurement run locally with FFmpeg. No account, no quota, and it works offline after installation." }
     },
     {
       "@type": "Question",
       "name": "Do I need to install FFmpeg?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. A static FFmpeg build is downloaded on first install. If the download fails, halfsize falls back to an FFmpeg already on your PATH." }
+      "acceptedAnswer": { "@type": "Answer", "text": "No. A static build is downloaded on first install. If that fails, halfsize uses an FFmpeg already on your PATH." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can it compress without shrinking the resolution?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes: add --no-downscale. It will keep the source size and spend the budget there, which is usually softer than letting it downscale." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it work on Windows, macOS and Linux?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Node.js 18+ is the only requirement." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use it in a script?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. --json prints a machine-readable result, and --dry-run shows the plan without encoding." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it really free?",
+      "acceptedAnswer": { "@type": "Answer", "text": "MIT licensed, no paid tier. If it saves you time, a star helps other people find it." }
     }
   ]
 }
@@ -124,6 +134,9 @@
     <a href="wechat/">WeChat <b>20 MB</b></a>
     <a href="20mb/">Anything with a <b>20 MB</b> cap</a>
     <a href="offline/">Compress without uploading</a>
+    <a href="email/">Email attachments</a>
+    <a href="twitter/">X / Twitter</a>
+    <a href="ffmpeg-compress-to-size/">FFmpeg target size</a>
   </div>
 
   <div class="grid">
