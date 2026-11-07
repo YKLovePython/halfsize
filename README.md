@@ -145,10 +145,17 @@ Step-by-step guides with measured quality numbers:
 
 ### Use it from an agent
 
-The repo ships a skill in [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md). Drop that
-folder into your agent's skills directory (for Claude Code: `.claude/skills/halfsize/`) and the
-agent can turn "make this fit in 25 MB" into a compression plus a measured quality report,
-instead of guessing a bitrate.
+The repo ships a skill in [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md). Install it with
+the [skills CLI](https://skills.sh) so Claude Code, Codex, Cursor, OpenCode and the rest pick it
+up automatically:
+
+```bash
+npx skills add YKLovePython/halfsize
+```
+
+Or copy the folder into your agent's skills directory by hand (for Claude Code:
+`.claude/skills/halfsize/`). Either way the agent can turn "make this fit in 25 MB" into a
+compression plus a measured quality report, instead of guessing a bitrate.
 
 ## How it works
 

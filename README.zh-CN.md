@@ -139,9 +139,15 @@ npx halfsize --web
 
 ### 给 agent 用
 
-仓库里带了 [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md)。把整个文件夹放进你的
-agent 技能目录（Claude Code 是 `.claude/skills/halfsize/`），agent 就能把「把这个视频压到
-25 MB」变成一次压缩加一份画质报告，而不是瞎猜码率。
+仓库里带了 [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md)。用 [skills CLI](https://skills.sh)
+一条命令装好，Claude Code、Codex、Cursor、OpenCode 等都能直接用：
+
+```bash
+npx skills add YKLovePython/halfsize
+```
+
+也可以手动把整个文件夹放进 agent 技能目录（Claude Code 是 `.claude/skills/halfsize/`）。
+装好之后，agent 就能把「把这个视频压到 25 MB」变成一次压缩加一份画质报告，而不是瞎猜码率。
 
 ## 它怎么工作
 
