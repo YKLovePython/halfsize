@@ -88,6 +88,7 @@
   <h2>Why compress it yourself?</h2>
   <p>WeChat applies its own compression when you send a video from the gallery. If you hand it a 200 MB file, its encoder has to throw away 90% of the bits in one pass, and the result looks it. If you hand it a 19.5 MB file that was already carefully encoded, it has almost nothing left to remove.</p>
   <p>That is the whole trick: spend the bits deliberately before the chat app does it carelessly. halfsize also tells you the quality cost, so you can decide whether to trim the clip instead of accepting mush.</p>
+  <p>If the video still looks soft on the other phone, the reason is the second encode, not yours — <a href="../video-blurry-after-sending/">what actually happens when you hit send</a>.</p>
 
   <h2>What 20 MB buys you</h2>
   <div class="table-wrap">
@@ -131,6 +132,7 @@
     <a href="../email/">Email attachments</a>
     <a href="../twitter/">X / Twitter</a>
     <a href="../ffmpeg-compress-to-size/">FFmpeg target size</a>
+    <a href="../video-blurry-after-sending/">Why it looks worse after sending</a>
   </div>
 </main>
 
