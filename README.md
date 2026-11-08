@@ -151,6 +151,25 @@ Step-by-step guides with measured quality numbers:
 [FFmpeg target size](https://YKLovePython.github.io/halfsize/ffmpeg-compress-to-size/) ·
 [compress without uploading](https://YKLovePython.github.io/halfsize/offline/).
 
+### Which size do I need?
+
+| Where it is going | The cap | Command |
+|---|---|---|
+| Discord (free) | 20 MB per file | `--for discord` |
+| WeChat chat video | 20 MB | `--for wechat` |
+| WhatsApp, sent as media | 16 MB | `--for whatsapp` |
+| Gmail attachment | 25 MB message → 18 MB file | `--for gmail` |
+| Outlook / corporate mail | 20 MB message → 15 MB file | `--for outlook` |
+| X / Twitter | 512 MB | `--for twitter` |
+| Anything else | whatever you type | `--to 700mb` |
+
+The email rows are smaller on purpose: base64 makes the attachment about 37% bigger than the
+file, so an 18 MB MP4 is what fits in a 25 MB message. Caps change; `--to` always overrides the
+preset. Full table, with what each cap counts and the measured VMAF at each size:
+[size limits by platform](https://YKLovePython.github.io/halfsize/file-size-limits/) ·
+[every target size explained](https://YKLovePython.github.io/halfsize/compress-video-to-size/) ·
+[video size calculator](https://YKLovePython.github.io/halfsize/video-size-calculator/).
+
 ### Use it from an agent
 
 The repo ships a skill in [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md). Install it with
@@ -296,6 +315,19 @@ that resolution drop is what buys the size.
 **WeChat says the video is too large. What now?**
 `npx halfsize clip.mp4 --for wechat` targets the 20 MB chat-video cap. If you need it smaller
 still, pass `--to 10mb` (or any size) instead.
+
+**How many minutes of video fit in 20 MB?**
+About two minutes at 1.2 Mbps, which is normal 720p. Five minutes only works at 400 kbps
+(low-motion 540p), and ten minutes leaves 133 kbps — that is a slideshow, not video. Since 0.1.9
+the tool does that arithmetic before encoding and reports the smallest size the duration can hold,
+so you find out in a second instead of ten minutes.
+
+**Why does my iPhone video turn grey after compressing?**
+Because it is HDR. iPhone 12 and later record HLG by default, and older tools re-encode those
+values as ordinary 8-bit video while keeping the HDR tag, so players show it flat and washed out.
+halfsize detects HLG and PQ and converts to SDR BT.709 inside the same encode pass, including the
+quality measurement, so the output looks like what you saw on the phone. On a version before 0.1.9,
+upgrade instead of tuning bitrate.
 
 **Why did it lower my resolution?**
 Because 20 MB of 4K is not enough bits to look good. Lowering resolution and keeping the

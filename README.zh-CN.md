@@ -144,6 +144,24 @@ npx halfsize --web
 [WhatsApp 16 MB](https://YKLovePython.github.io/halfsize/whatsapp/) ·
 [本地压缩不上传](https://YKLovePython.github.io/halfsize/zh/offline/)。
 
+### 我该压到多少？
+
+| 发到哪里 | 上限 | 命令 |
+|---|---|---|
+| Discord（免费档） | 每个文件 20 MB | `--for discord` |
+| 微信聊天视频 | 20 MB | `--for wechat` |
+| WhatsApp（当媒体发） | 16 MB | `--for whatsapp` |
+| Gmail 附件 | 整封 25 MB → 文件 18 MB | `--for gmail` |
+| Outlook / 企业邮箱 | 整封 20 MB → 文件 15 MB | `--for outlook` |
+| X / Twitter | 512 MB | `--for twitter` |
+| 其他 | 你自己写 | `--to 700mb` |
+
+邮件那两行故意更小：base64 会让附件比文件大约 37%，所以 25 MB 的邮件里塞得进的是一个
+18 MB 的 MP4。平台上限会变，`--to` 永远能覆盖预设。完整的表，包括每个上限到底算的是什么、
+每一档的实测 VMAF：[各平台文件大小上限](https://YKLovePython.github.io/halfsize/zh/file-size-limits/) ·
+[每个目标大小能装什么](https://YKLovePython.github.io/halfsize/zh/compress-video-to-size/) ·
+[视频大小计算器](https://YKLovePython.github.io/halfsize/zh/video-size-calculator/)。
+
 ### 给 agent 用
 
 仓库里带了 [`skills/halfsize/SKILL.md`](skills/halfsize/SKILL.md)。用 [skills CLI](https://skills.sh)
@@ -284,6 +302,17 @@ Discord 预览能直接播。长一点的 1080p 视频通常会降到 720p，尺
 **微信提示视频太大怎么办？**
 `npx halfsize 视频.mp4 --for wechat` 会按微信聊天视频的 20 MB 上限压。还想更小就换成
 `--to 10mb`（或者任意大小）。
+
+**20 MB 到底能装多长的视频？**
+1.2 Mbps 的 720p 大约两分钟。五分钟只有 400 kbps（低运动 540p）才成立，十分钟只剩 133 kbps，
+那是幻灯片不是视频。0.1.9 起工具会在编码前先算这笔账，直接告诉你这段时长最小能压到多少，
+一秒出结果，不用等十分钟。
+
+**iPhone 拍的视频压完为什么发灰？**
+因为它是 HDR。iPhone 12 以后默认录 HLG，旧工具会把这些像素当成普通 8-bit 视频重编码，
+却仍然打着 HDR 的标签，播放器就按平的方式显示。`halfsize` 会识别 HLG 和 PQ，在同一次编码里
+转成 SDR BT.709，连画质检测的参照也一起转，所以输出和你在手机上看到的一致。
+低于 0.1.9 的版本请直接升级，调码率是没用的。
 
 **为什么给我降分辨率了？**
 因为 20 MB 的 4K 根本不够比特，硬撑 4K 只会满屏马赛克。降分辨率、把每像素比特数保住，
