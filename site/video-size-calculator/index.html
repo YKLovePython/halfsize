@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video size calculator: will it fit in 20 MB?</title>
+<meta name="description" content="Enter a duration and a target size. Get the bitrate budget, the resolution that fits it, an estimated quality band, and the exact command. No upload, no account.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/video-size-calculator/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-size-calculator/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-size-calculator/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Video size calculator: will it fit in 20 MB?">
+<meta property="og:description" content="Duration plus target size gives you the bitrate budget and the resolution that fits.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/video-size-calculator/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<style>
+  .calc { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 22px 0 10px; }
+  .calc-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .calc-field { display: flex; flex-direction: column; gap: 6px; }
+  .calc-field span { font-size: 13px; color: var(--muted); }
+  .calc input {
+    width: 110px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--text); font: inherit; font-variant-numeric: tabular-nums;
+  }
+  .calc input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .calc-quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+  .calc-quick button {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .calc-quick button:hover { color: var(--text); border-color: var(--accent); }
+  .calc-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 20px 0 0; padding: 0; list-style: none; }
+  .calc-out li { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .calc-out b { display: block; font-size: 22px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .calc-out small { color: var(--dim); font-size: 12.5px; }
+  .verdict { margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(182, 243, 106, .06); }
+  .verdict.bad { background: rgba(255, 138, 128, .07); border-color: rgba(255, 138, 128, .35); }
+  .calc code { word-break: break-all; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Video size calculator",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any",
+  "description": "Work out the bitrate budget and the resolution that fits a target video file size.",
+  "inLanguage": "en",
+  "url": "https://yklovepython.github.io/halfsize/video-size-calculator/",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I calculate video file size from bitrate?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Bytes equal bitrate times duration divided by eight. A 2 Mbps video for 60 seconds is 2,000,000 times 60 divided by 8, about 15 MB before audio." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does the calculator subtract audio first?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The cap applies to the whole file. A 128 kbps track costs about 1 MB per minute, so a 20 MB file only has 19 MB for picture." }
+    },
+    {
+      "@type": "Question",
+      "name": "How accurate is the quality estimate?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The bands come from measured runs and hold for typical footage. High-motion or grainy material lands lower, a talking head lands higher. The tool reports the real VMAF after encoding." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../compress-video-to-size/">Target size</a>
+    <a href="../zh/video-size-calculator/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Calculator</p>
+  <h1>Will it fit? <em>Video size calculator</em></h1>
+  <p class="lede">
+    Type the duration and the limit. The calculator does the arithmetic every encoder hides:
+    the bitrate you have, the resolution that can carry it, and roughly what it will look like.
+    Everything runs in this page; nothing is uploaded.
+  </p>
+
+  <div class="calc">
+    <div class="calc-row">
+      <label class="calc-field"><span>Minutes</span>
+        <input id="mins" type="number" min="0" max="600" step="1" value="1" inputmode="numeric">
+      </label>
+      <label class="calc-field"><span>Seconds</span>
+        <input id="secs" type="number" min="0" max="59" step="1" value="0" inputmode="numeric">
+      </label>
+      <label class="calc-field"><span>Target size (MB)</span>
+        <input id="size" type="number" min="1" max="4096" step="1" value="20" inputmode="decimal">
+      </label>
+      <label class="calc-field"><span>Audio</span>
+        <select id="audio" style="padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font:inherit">
+          <option value="128">128 kbps</option>
+          <option value="64">64 kbps</option>
+          <option value="0">No audio</option>
+        </select>
+      </label>
+    </div>
+    <div class="calc-quick">
+      <button type="button" data-size="5">5 MB</button>
+      <button type="button" data-size="10">10 MB</button>
+      <button type="button" data-size="20">20 MB</button>
+      <button type="button" data-size="25">25 MB</button>
+      <button type="button" data-size="50">50 MB</button>
+    </div>
+
+    <ul class="calc-out" aria-live="polite">
+      <li><small>Bitrate budget</small><b id="out-total">—</b></li>
+      <li><small>For video</small><b id="out-video">—</b></li>
+      <li><small>Fits at</small><b id="out-res">—</b></li>
+      <li><small>Estimated VMAF</small><b id="out-vmaf">—</b></li>
+    </ul>
+
+    <p class="verdict" id="verdict">Fill in a duration to see the plan.</p>
+    <p class="small" id="cmd" hidden><code>npx halfsize video.mp4 --to <span id="cmd-size">20</span>mb</code></p>
+  </div>
+
+  <p class="small">
+    Estimate, not a promise: the VMAF band comes from measured 1080p30 runs and shifts with motion,
+    grain and codec. The real number is printed after encoding, and it is measured against your source.
+  </p>
+
+  <h2>The formula, in one line</h2>
+  <p><code>video bitrate = (MB × 8000 ÷ seconds) × 0.98 − audio kbps</code>. Then the resolution is the
+  largest standard size whose pixels the bitrate can feed at about 0.072 bits per pixel (H.264 at
+  30 fps). That is the whole model; the rest is measurement.</p>
+
+  <h2>Read it as a table instead</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Duration</th><th>10 MB</th><th>20 MB</th><th>25 MB</th><th>50 MB</th><th>100 MB</th></tr></thead>
+      <tbody>
+        <tr><td>30 s</td><td class="num">2.5 Mbps</td><td class="num">5.1 Mbps</td><td class="num">6.4 Mbps</td><td class="num">12.9 Mbps</td><td class="num">26.0 Mbps</td></tr>
+        <tr><td>1 min</td><td class="num">1.2 Mbps</td><td class="num">2.5 Mbps</td><td class="num">3.1 Mbps</td><td class="num">6.4 Mbps</td><td class="num">12.9 Mbps</td></tr>
+        <tr><td>2 min</td><td class="num">525 kbps</td><td class="num">1.2 Mbps</td><td class="num">1.5 Mbps</td><td class="num">3.1 Mbps</td><td class="num">6.4 Mbps</td></tr>
+        <tr><td>5 min</td><td class="num">133 kbps</td><td class="num">395 kbps</td><td class="num">525 kbps</td><td class="num">1.2 Mbps</td><td class="num">2.5 Mbps</td></tr>
+        <tr><td>10 min</td><td class="num">—</td><td class="num">133 kbps</td><td class="num">199 kbps</td><td class="num">525 kbps</td><td class="num">1.2 Mbps</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Video bitrate after a 128 kbps audio track and 2% container overhead.</p>
+
+  <h2>What the numbers mean in practice</h2>
+  <ul>
+    <li><b>Under 150 kbps</b> — slideshow territory. Static screens are fine, motion is not.</li>
+    <li><b>300–600 kbps</b> — 540p conversation and screen recordings look acceptable.</li>
+    <li><b>1–2 Mbps</b> — normal 720p. Most social video lives here.</li>
+    <li><b>3–6 Mbps</b> — comfortable 1080p for normal footage.</li>
+    <li><b>Above 8 Mbps</b> — the encoder is preserving grain more than detail. Nothing to gain for chat apps.</li>
+  </ul>
+
+  <div class="callout">
+    <p><b>If the calculator says “does not fit”,</b> the answer is not a better encoder. Cut the clip,
+    drop the audio, or split it. A 60-minute video in 20 MB is 44 kbps by arithmetic.</p>
+  </div>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>How do I calculate video file size from bitrate?</summary><p>Bytes = bitrate × seconds ÷ 8. 2 Mbps for 60 s is 15 MB, before audio and overhead.</p></details>
+    <details><summary>Why subtract audio first?</summary><p>The cap counts the whole file. A 128 kbps track takes about 1 MB per minute.</p></details>
+    <details><summary>How accurate is the estimate?</summary><p>Good for typical footage. Grain and fast motion land lower; a talking head lands higher. The tool prints the measured VMAF afterwards.</p></details>
+    <details><summary>Does it use decimal or binary megabytes?</summary><p>Decimal, 1 MB = 1,000,000 bytes, because that is how platform caps are written.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../compress-video-to-size/">Compress to a size</a>
+    <a href="../compress-video-without-losing-quality/">Without losing quality</a>
+    <a href="../file-size-limits/">Limits by platform</a>
+    <a href="../20mb/">Any 20 MB cap</a>
+    <a href="../email/">Email attachments</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+<script>
+(function () {
+  var ladder = [
+    [1920, 1080], [1600, 900], [1280, 720], [960, 540], [640, 360], [480, 270]
+  ];
+  var mins = document.getElementById("mins");
+  var secs = document.getElementById("secs");
+  var size = document.getElementById("size");
+  var audio = document.getElementById("audio");
+  var outTotal = document.getElementById("out-total");
+  var outVideo = document.getElementById("out-video");
+  var outRes = document.getElementById("out-res");
+  var outVmaf = document.getElementById("out-vmaf");
+  var verdict = document.getElementById("verdict");
+  var cmd = document.getElementById("cmd");
+  var cmdSize = document.getElementById("cmd-size");
+
+  function kbps(v) {
+    return v >= 1000 ? (v / 1000).toFixed(1) + " Mbps" : Math.round(v) + " kbps";
+  }
+
+  function vmafBand(bpp) {
+    if (bpp >= 0.09) return "93+";
+    if (bpp >= 0.07) return "88–92";
+    if (bpp >= 0.055) return "85–88";
+    if (bpp >= 0.04) return "82–85";
+    if (bpp >= 0.028) return "78–82";
+    return "under 76";
+  }
+
+  function compute() {
+    var seconds = (parseInt(mins.value, 10) || 0) * 60 + (parseInt(secs.value, 10) || 0);
+    var mb = parseFloat(size.value) || 0;
+    var audioKbps = parseInt(audio.value, 10) || 0;
+
+    if (seconds <= 0 || mb <= 0) {
+      outTotal.textContent = outVideo.textContent = outRes.textContent = outVmaf.textContent = "—";
+      verdict.className = "verdict";
+      verdict.textContent = "Fill in a duration and a target size.";
+      cmd.hidden = true;
+      return;
+    }
+
+    var total = (mb * 8000) / seconds;
+    var video = total * 0.98 - audioKbps;
+    var minMb = ((80 + audioKbps) * seconds) / (8000 * 0.98);
+
+    outTotal.textContent = kbps(total);
+    cmdSize.textContent = mb;
+    cmd.hidden = false;
+
+    if (video < 80) {
+      outVideo.textContent = kbps(video);
+      outRes.textContent = "does not fit";
+      outVmaf.textContent = "—";
+      verdict.className = "verdict bad";
+      verdict.innerHTML =
+        "<b>This target is below the floor.</b> " + seconds + " seconds in " + mb +
+        " MB leaves " + kbps(Math.max(video, 0)) + " for video, and below 80 kbps nothing looks like video. " +
+        "The smallest honest size for this duration is about <b>" + minMb.toFixed(1) + " MB</b>. " +
+        "Cut the clip, drop the audio, or raise the limit.";
+      return;
+    }
+
+    var pixels = (video * 1000) / (0.072 * 30);
+    var pick = ladder[ladder.length - 1];
+    for (var i = 0; i < ladder.length; i++) {
+      if (ladder[i][0] * ladder[i][1] <= pixels) { pick = ladder[i]; break; }
+    }
+    var bpp = (video * 1000) / (pick[0] * pick[1] * 30);
+    var band = vmafBand(bpp);
+
+    outVideo.textContent = kbps(video);
+    outRes.textContent = pick[0] + "×" + pick[1];
+    outVmaf.textContent = band;
+
+    verdict.className = "verdict";
+    verdict.innerHTML =
+      "<b>It fits.</b> " + seconds + " seconds at " + kbps(video) + " of video is " +
+      pick[0] + "×" + pick[1] + " at " + bpp.toFixed(3) + " bits per pixel. " +
+      "Expect roughly VMAF " + band + " on normal footage.";
+  }
+
+  [mins, secs, size, audio].forEach(function (el) {
+    el.addEventListener("input", compute);
+    el.addEventListener("change", compute);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".calc-quick button"), function (b) {
+    b.addEventListener("click", function () {
+      size.value = b.getAttribute("data-size");
+      compute();
+    });
+  });
+  compute();
+})();
+</script>
+</body>
+</html>

@@ -157,4 +157,52 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/hdr-washed-out/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/hdr-washed-out/"/>
   </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/compress-video-to-size/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/compress-video-to-size/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/compress-video-to-size/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/compress-video-to-size/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/compress-video-to-size/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/compress-video-to-size/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/video-size-calculator/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-size-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-size-calculator/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/video-size-calculator/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-size-calculator/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-size-calculator/"/>
+  </url>
 </urlset>

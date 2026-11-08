@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频大小计算器：这段视频能压进 20 MB 吗？</title>
+<meta name="description" content="输入时长和目标大小，算出码率预算、能撑住这个码率的分辨率、大致画质区间，以及直接可用的命令。不上传、不需要账号。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/video-size-calculator/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-size-calculator/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-size-calculator/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="视频大小计算器：这段视频能压进 20 MB 吗？">
+<meta property="og:description" content="时长加目标大小，就能算出码率预算和撑得住的分辨率。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/video-size-calculator/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<style>
+  .calc { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 22px 0 10px; }
+  .calc-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .calc-field { display: flex; flex-direction: column; gap: 6px; }
+  .calc-field span { font-size: 13px; color: var(--muted); }
+  .calc input {
+    width: 110px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--text); font: inherit; font-variant-numeric: tabular-nums;
+  }
+  .calc input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .calc-quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+  .calc-quick button {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .calc-quick button:hover { color: var(--text); border-color: var(--accent); }
+  .calc-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 20px 0 0; padding: 0; list-style: none; }
+  .calc-out li { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .calc-out b { display: block; font-size: 22px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .calc-out small { color: var(--dim); font-size: 12.5px; }
+  .verdict { margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(182, 243, 106, .06); }
+  .verdict.bad { background: rgba(255, 138, 128, .07); border-color: rgba(255, 138, 128, .35); }
+  .calc code { word-break: break-all; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "视频大小计算器",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any",
+  "description": "算出目标视频体积对应的码率预算和能撑住的分辨率。",
+  "inLanguage": "zh-CN",
+  "url": "https://yklovepython.github.io/halfsize/zh/video-size-calculator/",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-CN",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "怎么从码率算视频体积？",
+      "acceptedAnswer": { "@type": "Answer", "text": "字节数 = 码率 × 秒数 ÷ 8。2 Mbps 的视频 60 秒是 15 MB，还没算音频和封装开销。" }
+    },
+    {
+      "@type": "Question",
+      "name": "为什么先扣音频？",
+      "acceptedAnswer": { "@type": "Answer", "text": "上限算的是整个文件。128 kbps 的音轨大约每分钟 1 MB，所以 20 MB 里只有 19 MB 留给画面。" }
+    },
+    {
+      "@type": "Question",
+      "name": "画质估计准吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "区间来自实测，对常规素材有效。运动大、颗粒重的会低一档，人物讲话会高一档。编码完成后工具会打印实测 VMAF。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../compress-video-to-size/">指定大小</a>
+    <a href="../../video-size-calculator/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 计算器</p>
+  <h1>装得下吗？<em>视频大小计算器</em></h1>
+  <p class="lede">
+    填时长和上限，算清所有编码器都藏起来的那笔账：你手上多少码率、这个码率能撑住什么分辨率、
+    大致会是什么观感。全部在这个页面里算，不上传任何东西。
+  </p>
+
+  <div class="calc">
+    <div class="calc-row">
+      <label class="calc-field"><span>分钟</span>
+        <input id="mins" type="number" min="0" max="600" step="1" value="1" inputmode="numeric">
+      </label>
+      <label class="calc-field"><span>秒</span>
+        <input id="secs" type="number" min="0" max="59" step="1" value="0" inputmode="numeric">
+      </label>
+      <label class="calc-field"><span>目标大小（MB）</span>
+        <input id="size" type="number" min="1" max="4096" step="1" value="20" inputmode="decimal">
+      </label>
+      <label class="calc-field"><span>音频</span>
+        <select id="audio" style="padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font:inherit">
+          <option value="128">128 kbps</option>
+          <option value="64">64 kbps</option>
+          <option value="0">无音频</option>
+        </select>
+      </label>
+    </div>
+    <div class="calc-quick">
+      <button type="button" data-size="5">5 MB</button>
+      <button type="button" data-size="10">10 MB</button>
+      <button type="button" data-size="20">20 MB</button>
+      <button type="button" data-size="25">25 MB</button>
+      <button type="button" data-size="50">50 MB</button>
+    </div>
+
+    <ul class="calc-out" aria-live="polite">
+      <li><small>码率预算</small><b id="out-total">—</b></li>
+      <li><small>留给视频</small><b id="out-video">—</b></li>
+      <li><small>可用分辨率</small><b id="out-res">—</b></li>
+      <li><small>估计 VMAF</small><b id="out-vmaf">—</b></li>
+    </ul>
+
+    <p class="verdict" id="verdict">填入时长就能看到结果。</p>
+    <p class="small" id="cmd" hidden><code>npx halfsize 视频.mp4 --to <span id="cmd-size">20</span>mb</code></p>
+  </div>
+
+  <p class="small">
+    这是估计，不是承诺：VMAF 区间来自 1080p30 的实测，会随运动、颗粒和编码器浮动。真实数字在编码完成后打印，
+    而且是拿你的原片测出来的。
+  </p>
+
+  <h2>公式只有一行</h2>
+  <p><code>视频码率 =（MB × 8000 ÷ 秒数）× 0.98 − 音频 kbps</code>。然后取「这些像素喂得起」的最大标准分辨率，
+  按 H.264、30fps、每像素约 0.072 bit 估算。模型就这么多，剩下的都是实测。</p>
+
+  <h2>也可以直接看表</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>时长</th><th>10 MB</th><th>20 MB</th><th>25 MB</th><th>50 MB</th><th>100 MB</th></tr></thead>
+      <tbody>
+        <tr><td>30 秒</td><td class="num">2.5 Mbps</td><td class="num">5.1 Mbps</td><td class="num">6.4 Mbps</td><td class="num">12.9 Mbps</td><td class="num">26.0 Mbps</td></tr>
+        <tr><td>1 分钟</td><td class="num">1.2 Mbps</td><td class="num">2.5 Mbps</td><td class="num">3.1 Mbps</td><td class="num">6.4 Mbps</td><td class="num">12.9 Mbps</td></tr>
+        <tr><td>2 分钟</td><td class="num">525 kbps</td><td class="num">1.2 Mbps</td><td class="num">1.5 Mbps</td><td class="num">3.1 Mbps</td><td class="num">6.4 Mbps</td></tr>
+        <tr><td>5 分钟</td><td class="num">133 kbps</td><td class="num">395 kbps</td><td class="num">525 kbps</td><td class="num">1.2 Mbps</td><td class="num">2.5 Mbps</td></tr>
+        <tr><td>10 分钟</td><td class="num">—</td><td class="num">133 kbps</td><td class="num">199 kbps</td><td class="num">525 kbps</td><td class="num">1.2 Mbps</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">扣掉 128 kbps 音轨和 2% 封装开销之后的视频码率。</p>
+
+  <h2>这些数字意味着什么</h2>
+  <ul>
+    <li><b>150 kbps 以下</b>——幻灯片区。静态画面还行，一动就散。</li>
+    <li><b>300–600 kbps</b>——540p 的人物讲话和录屏，勉强能看。</li>
+    <li><b>1–2 Mbps</b>——正常的 720p，社交视频大多在这一档。</li>
+    <li><b>3–6 Mbps</b>——常规素材下舒服的 1080p。</li>
+    <li><b>8 Mbps 以上</b>——保住的多半是颗粒而不是细节，发聊天软件没有收益。</li>
+  </ul>
+
+  <div class="callout">
+    <p><b>如果计算器说「装不下」，</b>答案不是换个更好的编码器。剪短、去掉音频、或者拆成两段。
+    60 分钟塞进 20 MB，按算术就是 44 kbps。</p>
+  </div>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>怎么从码率算体积？</summary><p>字节 = 码率 × 秒数 ÷ 8。2 Mbps 跑 60 秒是 15 MB，还没算音频和封装开销。</p></details>
+    <details><summary>为什么先扣音频？</summary><p>上限算的是整个文件。128 kbps 的音轨大约每分钟 1 MB。</p></details>
+    <details><summary>估计准吗？</summary><p>对常规素材够准。颗粒重、运动快的会低一档，人物讲话会高一档。编码完会打印实测 VMAF。</p></details>
+    <details><summary>按十进制还是二进制算？</summary><p>十进制，1 MB = 1,000,000 字节，因为平台的上限就是这么写的。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../compress-video-to-size/">压到指定大小</a>
+    <a href="../compress-video-without-losing-quality/">不损画质压</a>
+    <a href="../file-size-limits/">各平台上限</a>
+    <a href="../20mb/">任意 20 MB</a>
+    <a href="../email/">邮件附件</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+<script>
+(function () {
+  var ladder = [
+    [1920, 1080], [1600, 900], [1280, 720], [960, 540], [640, 360], [480, 270]
+  ];
+  var mins = document.getElementById("mins");
+  var secs = document.getElementById("secs");
+  var size = document.getElementById("size");
+  var audio = document.getElementById("audio");
+  var outTotal = document.getElementById("out-total");
+  var outVideo = document.getElementById("out-video");
+  var outRes = document.getElementById("out-res");
+  var outVmaf = document.getElementById("out-vmaf");
+  var verdict = document.getElementById("verdict");
+  var cmd = document.getElementById("cmd");
+  var cmdSize = document.getElementById("cmd-size");
+
+  function kbps(v) {
+    return v >= 1000 ? (v / 1000).toFixed(1) + " Mbps" : Math.round(v) + " kbps";
+  }
+
+  function vmafBand(bpp) {
+    if (bpp >= 0.09) return "93+";
+    if (bpp >= 0.07) return "88–92";
+    if (bpp >= 0.055) return "85–88";
+    if (bpp >= 0.04) return "82–85";
+    if (bpp >= 0.028) return "78–82";
+    return "76 以下";
+  }
+
+  function compute() {
+    var seconds = (parseInt(mins.value, 10) || 0) * 60 + (parseInt(secs.value, 10) || 0);
+    var mb = parseFloat(size.value) || 0;
+    var audioKbps = parseInt(audio.value, 10) || 0;
+
+    if (seconds <= 0 || mb <= 0) {
+      outTotal.textContent = outVideo.textContent = outRes.textContent = outVmaf.textContent = "—";
+      verdict.className = "verdict";
+      verdict.textContent = "填入时长和目标大小。";
+      cmd.hidden = true;
+      return;
+    }
+
+    var total = (mb * 8000) / seconds;
+    var video = total * 0.98 - audioKbps;
+    var minMb = ((80 + audioKbps) * seconds) / (8000 * 0.98);
+
+    outTotal.textContent = kbps(total);
+    cmdSize.textContent = mb;
+    cmd.hidden = false;
+
+    if (video < 80) {
+      outVideo.textContent = kbps(video);
+      outRes.textContent = "装不下";
+      outVmaf.textContent = "—";
+      verdict.className = "verdict bad";
+      verdict.innerHTML =
+        "<b>这个目标低于下限。</b>" + seconds + " 秒放进 " + mb +
+        " MB，留给视频只有 " + kbps(Math.max(video, 0)) + "，而 80 kbps 以下已经不能叫视频了。这段时长最诚实的最小体积约 <b>" +
+        minMb.toFixed(1) + " MB</b>。剪短、去掉音频，或者把上限调大。";
+      return;
+    }
+
+    var pixels = (video * 1000) / (0.072 * 30);
+    var pick = ladder[ladder.length - 1];
+    for (var i = 0; i < ladder.length; i++) {
+      if (ladder[i][0] * ladder[i][1] <= pixels) { pick = ladder[i]; break; }
+    }
+    var bpp = (video * 1000) / (pick[0] * pick[1] * 30);
+    var band = vmafBand(bpp);
+
+    outVideo.textContent = kbps(video);
+    outRes.textContent = pick[0] + "×" + pick[1];
+    outVmaf.textContent = band;
+
+    verdict.className = "verdict";
+    verdict.innerHTML =
+      "<b>装得下。</b>" + seconds + " 秒分到 " + kbps(video) + " 的视频码率，可以用 " +
+      pick[0] + "×" + pick[1] + "，" + bpp.toFixed(3) + " 比特/像素。" +
+      "常规素材大约在 VMAF " + band + "。";
+  }
+
+  [mins, secs, size, audio].forEach(function (el) {
+    el.addEventListener("input", compute);
+    el.addEventListener("change", compute);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".calc-quick button"), function (b) {
+    b.addEventListener("click", function () {
+      size.value = b.getAttribute("data-size");
+      compute();
+    });
+  });
+  compute();
+})();
+</script>
+</body>
+</html>

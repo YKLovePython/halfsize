@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频压缩不损画质：先搞清楚你说的是哪一种「不损」</title>
+<meta name="description" content="无损、视觉无损、压到指定大小是三件不同的事。每种各付出多少体积、实测 VMAF 是多少，以及你应该选哪一种。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频压缩不损画质：先搞清楚你说的是哪一种「不损」">
+<meta property="og:description" content="无损、视觉无损、指定大小，是三件事。这里给出每种的真实代价。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "视频压缩不损画质：先搞清楚你说的是哪一种「不损」",
+  "description": "无损、视觉无损、指定大小三种压缩的区别，以及各自的实测数字。",
+  "inLanguage": "zh-CN",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-CN",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "有没有真正零损失的压缩？",
+      "acceptedAnswer": { "@type": "Answer", "text": "只有不重编码才可能：换封装格式做流拷贝，像素完全不变，但体积也几乎不降。无损编码像素精确，代价是通常比原片大好几倍。比原片更小的任何文件，按定义都是有损的。" }
+    },
+    {
+      "@type": "Question",
+      "name": "VMAF 多少算视觉无损？",
+      "acceptedAnswer": { "@type": "Answer", "text": "实际经验是 93 以上，在手机和笔记本的正常观看距离下看不出差别。90–93 需要逐帧对比才分得出。85 以下能看出运动拖影和细节变软。" }
+    },
+    {
+      "@type": "Question",
+      "name": "该用 CRF 还是指定大小？",
+      "acceptedAnswer": { "@type": "Answer", "text": "只关心画质、不在意体积时用 CRF；有平台卡体积时只能用指定大小。两者回答的是不同的问题，halfsize 都支持，但只有 --to 带体积保证。" }
+    },
+    {
+      "@type": "Question",
+      "name": "降分辨率比降码率更伤画质吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "通常相反。同样码率下，清晰的 960x540 比发软、带块的 1920x1080 观感更好，所以工具会先降分辨率再降码率。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../compress-video-to-size/">指定大小</a>
+    <a href="../../compress-video-without-losing-quality/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 画质</p>
+  <h1>「不损画质」到底<em>损的是什么</em></h1>
+  <p class="lede">
+    「压缩视频但不损画质」这句话里，其实藏着三种不同的需求。一种免费但省不下体积，一种诚实但会让文件变大，
+    还有一种是大多数人真正想要的。没人明说的一点是：<b>画质和体积是同一个旋钮</b>。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">安装 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>三种说法，三种结果</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>你的说法</th><th>实际做的事</th><th>体积</th><th>画质</th></tr></thead>
+      <tbody>
+        <tr><td>「只换个格式」</td><td>流拷贝，不重编码</td><td>基本不变，±1%</td><td>像素完全一致</td></tr>
+        <tr><td>「无损」</td><td>x264 加 <code>-qp 0</code></td><td>大 2–5 倍</td><td>像素完全一致</td></tr>
+        <tr><td>「视觉无损」</td><td>原分辨率下 CRF 18–20</td><td>原片的 40–60%</td><td>VMAF 通常 95+，肉眼一致</td></tr>
+        <tr><td>「压到装得下」</td><td>指定体积，两遍编码，逐档降分辨率</td><td>正好是你要的数字</td><td>实测并打印，典型 82–89</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>没有第四行，能让文件小很多而像素不变。压缩就是丢信息，唯一的问题是：丢掉的这部分你原本会不会注意到。</p>
+
+  <h2>同一个源片的实测数字</h2>
+  <p>60 秒 1080p30、18 Mbps（136 MB），本地编码后和原片对比。指定大小的几行是实测；CRF 那行是常见范围，不是单次测试：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>方式</th><th>输出</th><th>分辨率</th><th>VMAF</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>原片</td><td class="num">136 MB</td><td class="num">1920×1080</td><td class="num">100</td><td>基准</td></tr>
+        <tr><td>CRF 18，不降分辨率</td><td class="num">原片的 40–60%</td><td class="num">1920×1080</td><td class="num">通常 95+</td><td>视觉无损</td></tr>
+        <tr><td>压到 20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">88.3</td><td>轻微变软</td></tr>
+        <tr><td>压到 10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>变软，运动拖影</td></tr>
+        <tr><td>压到 5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">72.0</td><td>明显损失</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>真正值得看的是代价曲线，而不是某一行。20 MB 减半到 10 MB，大约掉 5 个 VMAF；再从 10 MB 减半到 5 MB，
+  又要掉 11 个。第一次减半是划算的交易，第二次就开始「看得出变差」了。反过来加码率也一样：最后那几分，非常贵。</p>
+
+  <h2>为什么 CRF 和「20 MB 以内」是两个问题</h2>
+  <p>CRF 问的是「每帧我可以丢掉多少」，丢完多大就是多大。指定体积问的是「我每秒有多少字节」，
+  画质掉到哪就是哪。如果卡你的是报名表、邮箱或聊天软件，只有第二个问题有用，
+  再怎么调 CRF 也给不出体积保证。</p>
+  <p>体积在底层会换算成码率：<code>字节 × 8 ÷ 秒 − 音频 − 封装开销</code>，然后再挑一个能扛住这个码率的分辨率，
+  H.264 的经验值是每像素 0.072 bit（H.265 是 0.045）。这就是为什么 1080p 给 500 kbps 会糊，
+  而 540p 给 500 kbps 还看得过去。</p>
+
+  <h2>画质到底花在哪</h2>
+  <ul>
+    <li><b>分辨率</b>——最先该花的地方。干净的小画面胜过发软的大画面。</li>
+    <li><b>运动</b>——横摇、彩带、水面、手持抖动，吃码率比人脸快得多。</li>
+    <li><b>颗粒和噪点</b>——胶片颗粒接近随机噪声，编码器得实打实地花比特。编码前做轻微降噪，
+    同样体积下能换回好几分 VMAF。</li>
+    <li><b>音频</b>——128 kbps 大约每分钟 1 MB。去掉它，等于把体积全留给画面。</li>
+  </ul>
+
+  <div class="callout">
+    <p><b>诚实的检查方法：</b>VMAF 是整帧打分，颗粒损失很容易被平均值掩盖。用最终观看的那块屏幕，
+    100% 放大看 10 秒。你在那里看不出差别，别人也看不出。</p>
+  </div>
+
+  <h2>命令</h2>
+  <pre><code><span class="prompt">#</span> 画质优先，多大就多大
+<span class="prompt">$</span> <span class="hl">npx halfsize 片段.mp4 --crf 19 --no-downscale</span>
+
+<span class="prompt">#</span> 硬性上限，事后报告画质
+<span class="prompt">$</span> <span class="hl">npx halfsize 片段.mp4 --to 20mb</span>
+
+<span class="prompt">#</span> 同样上限，但保住画面尺寸
+<span class="prompt">$</span> <span class="hl">npx halfsize 片段.mp4 --to 20mb --no-downscale</span></code></pre>
+  <p>第一行对应的 FFmpeg 是 <code>-crf 19 -preset slow</code>；第二行对应的是先算码率再跑两遍，
+  也就是工具替你自动化的部分。想自己写命令，看 <a href="../ffmpeg-compress-to-size/">ffmpeg 指定大小那篇</a>。</p>
+
+  <h2>上限实在太小的时候</h2>
+  <p>一小时的课程塞进 20 MB，那是 44 kbps，没有救。真正有用的做法按伤害从小到大排：
+  剪成关键的那几分钟；去掉音频、课件另发；或者接受 360p。再压第四遍不会有任何改善。</p>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>有没有真正零损失的压缩？</summary><p>只有不重编码才行。流拷贝像素不变，但省不下体积；无损编码像素精确，却比原片大好几倍。比原片小的文件，按定义都有损。</p></details>
+    <details><summary>VMAF 多少算视觉无损？</summary><p>93 以上，正常距离看不出。90–93 要并排对比。85 以下运动和小纹理就开始发软。</p></details>
+    <details><summary>用 CRF 还是指定大小？</summary><p>不在意体积就用 CRF；有平台卡体积就只能指定大小，只有后者带保证。</p></details>
+    <details><summary>降分辨率比降码率更伤吗？</summary><p>通常更好。同样码率下，清晰的 540p 比带块的 1080p 观感更干净。</p></details>
+    <details><summary>压完还能救回来吗？</summary><p>不能。对有损文件再编码，只会在损失上叠加损失。拿到满意输出之前，保留原片。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../compress-video-to-size/">压到指定大小</a>
+    <a href="../video-size-calculator/">大小计算器</a>
+    <a href="../file-size-limits/">各平台上限</a>
+    <a href="../hdr-washed-out/">HDR 压完发灰</a>
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 指定大小</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

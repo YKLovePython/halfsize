@@ -71,6 +71,9 @@ macOS and Linux are supported.
 - Offline / no-upload guide: https://yklovepython.github.io/halfsize/offline/
 - Size limits by platform: https://yklovepython.github.io/halfsize/file-size-limits/
 - HDR looks washed out (why, and the fix): https://yklovepython.github.io/halfsize/hdr-washed-out/
+- Compress to a specific size (5/10/20/25/50/100 MB): https://yklovepython.github.io/halfsize/compress-video-to-size/
+- Compress without losing quality (what is possible): https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/
+- Video size calculator: https://yklovepython.github.io/halfsize/video-size-calculator/
 - Chinese docs: https://yklovepython.github.io/halfsize/zh/
 - Source: https://github.com/YKLovePython/halfsize
 - npm: https://www.npmjs.com/package/halfsize

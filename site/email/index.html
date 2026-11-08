@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Compress a video for email — 20–25 MB, no cloud upload</title>
-<meta name="description" content="Gmail stops at 25 MB, Outlook and most corporate mail at 20 MB. Here is why the attachment is bigger than the file, and how to compress a video locally to fit.">
+<title>Video too large to email? Compress it to 18 MB (Gmail 25 MB)</title>
+<meta name="description" content="Gmail stops at 25 MB, Outlook and most corporate mail at 20 MB. Why a 19 MB video bounces, the base64 math, and how to compress it locally to fit — from iPhone or a laptop.">
 <link rel="canonical" href="https://yklovepython.github.io/halfsize/email/">
 <link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/email/">
 <link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/email/">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Compress a video for email">
+<meta property="og:title" content="Video too large to email? Compress it to 18 MB">
 <meta property="og:description" content="The 33% that base64 adds, and one command that lands under the attachment cap.">
 <meta property="og:url" content="https://yklovepython.github.io/halfsize/email/">
 <meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
@@ -51,7 +51,7 @@
 
 <main>
   <p class="small"><a href="../">halfsize</a> / Email</p>
-  <h1>Compress a video for <em>email</em></h1>
+  <h1>“Video is too large to email” — <em>here is the number</em></h1>
   <p class="lede">
     Gmail stops at <b>25 MB</b>. Outlook and a lot of corporate servers stop at <b>20 MB</b>.
     And the attachment your recipient sees is about a third larger than the file on your disk.
@@ -70,6 +70,13 @@
   <div class="callout">
     <p><b>Rule of thumb:</b> attachment size ≈ file size × 1.37. Compress to <code>limit ÷ 1.37</code> and stop worrying about it.</p>
   </div>
+
+  <h2>If you are sending from an iPhone</h2>
+  <p>Mail on iOS offers a size chooser when the attachment is too big, and it does re-encode the
+  clip. The problem is that you do not control the target: it picks a preset, and a 4K HEVC clip can
+  still land near the cap. The reliable order is to compress first, on a computer or with a tool that
+  takes an explicit size, then attach the result. A 3-minute 4K clip from an iPhone is typically
+  300–600 MB, so no mail app is going to make that fit by itself at a quality you would recognise.</p>
 
   <h2>One command</h2>
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize holiday.mp4 --to 18mb</span>

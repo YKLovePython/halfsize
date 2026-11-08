@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a video without losing quality: what is actually possible</title>
+<meta name="description" content="Lossless, visually lossless, and size-capped are three different things. What each one costs in bytes, the measured VMAF behind the claims, and how to pick the right one.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/compress-video-without-losing-quality/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compress a video without losing quality: what is actually possible">
+<meta property="og:description" content="Lossless, visually lossless and size-capped are not the same thing. Here is what each one costs.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Compress a video without losing quality: what is actually possible",
+  "description": "The difference between lossless, visually lossless and size-capped compression, with measured numbers.",
+  "inLanguage": "en",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is there a way to compress a video with zero quality loss?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Only by not re-encoding: stream copy into a different container keeps every pixel and saves almost nothing. A lossless encode is pixel-exact but usually several times larger than the source. Anything smaller than the source is lossy, by definition." }
+    },
+    {
+      "@type": "Question",
+      "name": "What VMAF counts as visually lossless?",
+      "acceptedAnswer": { "@type": "Answer", "text": "In practice 93 and above looks the same at normal viewing distance on a phone or laptop. 90 to 93 is hard to tell apart without putting frames side by side. Below 85 you can see softening in motion and fine texture." }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I use CRF or a target size?",
+      "acceptedAnswer": { "@type": "Answer", "text": "CRF if quality is the only constraint and the resulting size does not matter. A target size if something rejects the file above a limit. They answer different questions; halfsize supports both, and --to is the one with a guarantee." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does downscaling lose more quality than lowering the bitrate?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Usually the opposite. A sharp 960x540 frame reads as better than a soft, blocky 1920x1080 at the same bitrate, which is why the planner drops resolution before it starves the encoder." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../compress-video-to-size/">Target size</a>
+    <a href="../zh/compress-video-without-losing-quality/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Quality</p>
+  <h1>Compress without <em>losing quality</em>: pick which loss</h1>
+  <p class="lede">
+    “Compress without losing quality” is three different requests wearing the same sentence.
+    One of them is free but saves nothing, one is honest but makes the file bigger, and one is what
+    you actually want. The part nobody tells you: <b>quality and size are the same dial</b>.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Three meanings, three outcomes</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>What you ask for</th><th>What it does</th><th>Size</th><th>Quality</th></tr></thead>
+      <tbody>
+        <tr><td>“Just change the container”</td><td>stream copy, no re-encode</td><td>same, ±1%</td><td>pixel-identical</td></tr>
+        <tr><td>“Lossless”</td><td>x264 with <code>-qp 0</code></td><td>2–5× larger</td><td>pixel-identical</td></tr>
+        <tr><td>“Visually lossless”</td><td>CRF 18–20 at source resolution</td><td>40–60% of source</td><td>VMAF 95+, same to the eye</td></tr>
+        <tr><td>“Make it fit”</td><td>target size, two-pass, resolution stepped down</td><td>exactly what you asked</td><td>measured, printed, 82–89 typical</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>There is no fourth row where the file gets much smaller and the pixels do not change. Compression
+  removes information; the only question is whether the removed information is the part you would
+  have noticed.</p>
+
+  <h2>Measured on one source, so the numbers mean something</h2>
+  <p>60-second 1080p30 clip at 18 Mbps (136 MB), encoded locally and scored against the original.
+  The caps are measured runs; the CRF row is a typical range, not a single test:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Mode</th><th>Output</th><th>Resolution</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Original</td><td class="num">136 MB</td><td class="num">1920×1080</td><td class="num">100</td><td>reference</td></tr>
+        <tr><td>CRF 18, no downscale</td><td class="num">~40–60% of source</td><td class="num">1920×1080</td><td class="num">typically 95+</td><td>visually lossless</td></tr>
+        <tr><td>20 MB cap</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">88.3</td><td>slight softening</td></tr>
+        <tr><td>10 MB cap</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>soft, motion smears</td></tr>
+        <tr><td>5 MB cap</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">72.0</td><td>visible loss</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The interesting part is the cost curve, not any single row. Halving 20 MB to 10 MB costs about
+  five VMAF points; halving again to 5 MB costs another eleven. The first halving is a reasonable
+  trade, the second one is where “looks worse” starts. Spending more bytes has the same curve in
+  reverse: the last few points get very expensive.</p>
+
+  <h2>Why CRF and “under 20 MB” are different questions</h2>
+  <p>CRF asks “how much can I throw away per frame?” and gives you whatever size falls out. A target
+  size asks “how many bytes per second do I have?” and gives you whatever quality falls out. If a
+  form, an inbox or a chat app is rejecting the file, the second question is the only one that helps,
+  and no amount of tuning CRF will guarantee an answer.</p>
+  <p>Under the hood the size cap becomes a bitrate: <code>bytes × 8 ÷ seconds − audio − overhead</code>,
+  then a resolution that can carry that bitrate at roughly 0.072 bits per pixel for H.264
+  (0.045 for H.265). That second number is why 1080p at 500 kbps looks bad and 540p at 500 kbps
+  looks fine.</p>
+
+  <h2>Where quality actually goes</h2>
+  <ul>
+    <li><b>Resolution</b> — the first thing to spend. A clean smaller frame beats a soft large one.</li>
+    <li><b>Motion</b> — pans, confetti, water and handheld shake eat bitrate faster than faces do.</li>
+    <li><b>Grain and noise</b> — film grain is close to random, so the encoder spends real bits on it.
+    A light denoise before encoding can buy several VMAF points at the same size.</li>
+    <li><b>Audio</b> — 128 kbps costs about 1 MB per minute. Dropping it is free quality for the video.</li>
+  </ul>
+
+  <div class="callout">
+    <p><b>Check it the honest way:</b> VMAF scores the whole frame, so heavy grain loss can hide in a
+    good average. Watch 10 seconds at 100% zoom on the screen the video will be seen on. If you cannot
+    find the difference there, nobody else will.</p>
+  </div>
+
+  <h2>The commands</h2>
+  <pre><code><span class="prompt">#</span> quality first, size whatever it lands at
+<span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --crf 19 --no-downscale</span>
+
+<span class="prompt">#</span> a hard cap, quality reported afterwards
+<span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --to 20mb</span>
+
+<span class="prompt">#</span> same cap, but keep the frame size
+<span class="prompt">$</span> <span class="hl">npx halfsize clip.mp4 --to 20mb --no-downscale</span></code></pre>
+  <p>The FFmpeg equivalent of the first one is <code>-crf 19 -preset slow</code>; the equivalent of the
+  second is a two-pass run with a computed bitrate, which is what the tool automates. If you want the
+  raw recipe, see <a href="../ffmpeg-compress-to-size/">the FFmpeg target-size guide</a>.</p>
+
+  <h2>When the cap is brutal</h2>
+  <p>A one-hour lecture in 20 MB cannot look good; that is 44 kbps. Options that actually work, in
+  order of how little they hurt: cut the clip to the part that matters, drop the audio and send the
+  slides separately, or accept 360p. Re-encoding it a fourth time will not help.</p>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Is zero quality loss possible?</summary><p>Only without re-encoding. Stream copy keeps every pixel and saves almost nothing; a lossless encode is pixel-exact but several times bigger. Anything smaller than the source is lossy by definition.</p></details>
+    <details><summary>What VMAF is “visually lossless”?</summary><p>93+ at normal viewing distance. 90–93 needs side-by-side frames. Below 85 you see softening in motion and fine texture.</p></details>
+    <details><summary>CRF or target size?</summary><p>CRF when size does not matter. Target size when something rejects the file. Only the second one comes with a guarantee.</p></details>
+    <details><summary>Is downscaling worse than a low bitrate?</summary><p>Usually better. A sharp 540p frame reads as cleaner than a blocky 1080p at the same bitrate.</p></details>
+    <details><summary>Can I raise the quality afterwards?</summary><p>No. Re-encoding a compressed file only adds loss on top of loss. Keep the original until you have the output you want.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../compress-video-to-size/">Compress to a size</a>
+    <a href="../video-size-calculator/">Size calculator</a>
+    <a href="../file-size-limits/">Limits by platform</a>
+    <a href="../hdr-washed-out/">HDR turns grey</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg target size</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>
