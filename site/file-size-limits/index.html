@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video and file size limits by platform (2026)</title>
+<meta name="description" content="Discord 20 MB, WhatsApp 16 MB, WeChat 20 MB, Gmail 25 MB, Outlook 20 MB, X 512 MB. The current upload caps, what actually counts against them, and one command to fit.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/file-size-limits/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/file-size-limits/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/file-size-limits/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Video and file size limits by platform (2026)">
+<meta property="og:description" content="The caps people actually hit, what counts against them, and the command that fits.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/file-size-limits/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Video and file size limits by platform (2026)",
+  "description": "Discord 20 MB, WhatsApp 16 MB, WeChat 20 MB, Gmail 25 MB, Outlook 20 MB, X 512 MB, plus why the number you see is not the number you get.",
+  "inLanguage": "en",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/file-size-limits/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why does a 20 MB file fail on a 20 MB limit?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Three reasons stack up: platforms count decimal megabytes while your file manager shows mebibytes, email base64 adds about 37%, and the container plus audio overhead is part of the file. Aim about 5% under the advertised cap." }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Discord's free upload limit?",
+      "acceptedAnswer": { "@type": "Answer", "text": "20 MB per file on the free plan as of November 2026. Nitro tiers raise it. Use --to to override the preset if your account tier differs." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does WhatsApp re-compress videos?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes, when you send it as media. Sending it as a document avoids the 16 MB media cap and the extra re-encode, but the recipient sees a file instead of a preview." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can halfsize hit a 2 GB target?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes, if the source has enough bitrate to spend. The tool reports the smallest size the clip's duration can hold, so an impossible target fails before the encode instead of after it." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/file-size-limits/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Size limits</p>
+  <h1>Video size limits, <em>by platform</em></h1>
+  <p class="lede">
+    Every platform publishes a cap, and almost every cap is measured differently from the number
+    your file manager shows. Here are the limits people actually hit, checked in
+    <b>November 2026</b>, and the one command that lands under each of them.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>The current caps</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Platform</th><th>Cap</th><th>What counts</th><th>Fit it</th></tr></thead>
+      <tbody>
+        <tr><td>Discord (free)</td><td class="num">20 MB</td><td>per file, per message</td><td><code>--for discord</code></td></tr>
+        <tr><td>WhatsApp</td><td class="num">16 MB</td><td>video sent as media</td><td><code>--for whatsapp</code></td></tr>
+        <tr><td>WeChat</td><td class="num">20 MB</td><td>video sent in a chat</td><td><code>--for wechat</code></td></tr>
+        <tr><td>Gmail</td><td class="num">25 MB</td><td>the whole message, after base64</td><td><code>--for gmail</code></td></tr>
+        <tr><td>Outlook.com</td><td class="num">20 MB</td><td>the whole message, after base64</td><td><code>--for outlook</code></td></tr>
+        <tr><td>X / Twitter</td><td class="num">512 MB</td><td>per video upload</td><td><code>--for twitter</code></td></tr>
+        <tr><td>Telegram</td><td class="num">2 GB</td><td>per file, 4 GB on Premium</td><td><code>--to 2gb</code></td></tr>
+        <tr><td>Slack (free)</td><td class="num">1 GB</td><td>per file</td><td><code>--to 1gb</code></td></tr>
+        <tr><td>YouTube</td><td class="num">256 GB</td><td>per upload, 12 hours max</td><td>not the use case</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Caps change without much notice, and paid tiers differ. The presets are a convenience; <code>--to</code> always wins.</p>
+
+  <h2>Why the number you see is not the number you get</h2>
+  <p>Three things eat into a cap, and they stack:</p>
+  <ul>
+    <li><b>Decimal versus binary.</b> Platforms mean 20,000,000 bytes. Windows and macOS often show 19.07 MiB and call it 19 MB. A file that “is 20 MB” can already be over.</li>
+    <li><b>Base64 for email.</b> Binary attachments are encoded as text, 3 bytes into 4. A 20 MB file becomes a 26.7 MB message and bounces at a 25 MB limit. Compress to 18 MB for Gmail, 15 MB for a 20 MB mailbox.</li>
+    <li><b>Container and audio.</b> The cap applies to the whole file, not the video stream. Muxing overhead and the audio track are part of the budget, which is why the planner subtracts them first.</li>
+  </ul>
+
+  <div class="callout">
+    <p><b>Rule of thumb:</b> aim 5% under the advertised cap for a normal upload, and divide by 1.37 first for an email attachment. <code>--for</code> already does both.</p>
+  </div>
+
+  <h2>One command per cap</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize holiday.mp4 --for discord</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     holiday.discord.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   7x smaller   2.8% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+  <p>Swap the preset for the platform you are fighting: <code>--for whatsapp</code>, <code>--for wechat</code>,
+  <code>--for gmail</code>, <code>--for outlook</code>, <code>--for twitter</code>. Anything else becomes
+  <code>--to 800mb</code> or <code>--to 700k</code>.</p>
+
+  <h2>What each cap costs in quality</h2>
+  <p>Measured on the same 60-second 1080p30 source at 18 Mbps (136 MB), encoded locally on a laptop:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>VMAF</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB (Discord, WeChat)</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">88.3</td><td>slight softening</td></tr>
+        <tr><td>18 MB (Gmail)</td><td class="num">17.62 MB</td><td class="num">1280×720</td><td class="num">87.4</td><td>slight softening</td></tr>
+        <tr><td>16 MB (WhatsApp)</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">84.8</td><td>slight softening</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>slight softening</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">72.0</td><td>visible loss</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">VMAF above 90 reads as “looks the same”, 80–90 as slight softening, 70–80 as visible loss. Real numbers move with content: a talking head does better than confetti.</p>
+
+  <h2>When the target is arithmetically impossible</h2>
+  <p>A cap is a bitrate budget: bytes × 8 ÷ seconds. One hour inside 20 MB is 44 kbps for video and
+  audio combined, which no encoder can make look good. Since 0.1.9 the tool says so
+  <b>before</b> encoding and reports the smallest size that duration can hold, instead of spending
+  ten minutes to hand back a file that still does not fit. Trimming the clip is the honest fix.</p>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Why does a 20 MB file fail on a 20 MB limit?</summary><p>Decimal megabytes versus binary mebibytes, base64 for email, and container overhead all count. Aim 5% under, or use the preset which already does.</p></details>
+    <details><summary>What is Discord's free upload limit?</summary><p>20 MB per file on the free plan as of November 2026. Nitro raises it; <code>--to</code> overrides the preset.</p></details>
+    <details><summary>Does WhatsApp re-compress videos?</summary><p>Yes, when you send video as media. Sending it as a document skips the 16 MB media cap and the second encode, but the recipient gets a file rather than a preview.</p></details>
+    <details><summary>Can it hit a 2 GB target?</summary><p>Yes, if the source has the bitrate to spend. A short clip cannot grow to fill a big cap, and a very long one cannot shrink into a tiny cap.</p></details>
+    <details><summary>Is anything uploaded?</summary><p>No. FFmpeg runs on your machine. No account, no quota, no watermark.</p></details>
+  </div>
+
+  <h2>Related guides</h2>
+  <div class="platforms">
+    <a href="../20mb/">Any 20 MB limit</a>
+    <a href="../email/">Email attachments</a>
+    <a href="../discord/">Discord 20 MB</a>
+    <a href="../whatsapp/">WhatsApp 16 MB</a>
+    <a href="../wechat/">WeChat 20 MB</a>
+    <a href="../twitter/">X / Twitter 512 MB</a>
+    <a href="../hdr-washed-out/">HDR looks washed out</a>
+    <a href="../offline/">No-upload compression</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

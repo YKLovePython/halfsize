@@ -125,4 +125,36 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/ffmpeg-compress-to-size/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/"/>
   </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/file-size-limits/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/file-size-limits/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/file-size-limits/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/file-size-limits/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/file-size-limits/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/file-size-limits/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/hdr-washed-out/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/hdr-washed-out/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/hdr-washed-out/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/hdr-washed-out/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/hdr-washed-out/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/hdr-washed-out/"/>
+  </url>
 </urlset>

@@ -69,6 +69,8 @@ macOS and Linux are supported.
 - WeChat 20 MB: https://yklovepython.github.io/halfsize/wechat/
 - WhatsApp 16 MB: https://yklovepython.github.io/halfsize/whatsapp/
 - Offline / no-upload guide: https://yklovepython.github.io/halfsize/offline/
+- Size limits by platform: https://yklovepython.github.io/halfsize/file-size-limits/
+- HDR looks washed out (why, and the fix): https://yklovepython.github.io/halfsize/hdr-washed-out/
 - Chinese docs: https://yklovepython.github.io/halfsize/zh/
 - Source: https://github.com/YKLovePython/halfsize
 - npm: https://www.npmjs.com/package/halfsize

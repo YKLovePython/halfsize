@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iPhone HDR video looks washed out after compression — why, and the fix</title>
+<meta name="description" content="iPhone 12 and later record HLG HDR. Re-encoding to 8-bit without converting the transfer curve leaves grey, flat video. Here is the tone-map chain and the one-command fix.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/hdr-washed-out/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/hdr-washed-out/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/hdr-washed-out/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iPhone HDR video looks washed out after compression">
+<meta property="og:description" content="It is a transfer-curve problem, not a bitrate problem. Here is what actually happens and how to fix it.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/hdr-washed-out/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "iPhone HDR video looks washed out after compression — why, and the fix",
+  "description": "Why HLG and PQ sources turn grey after an 8-bit re-encode, and the tone-map chain that converts them to BT.709 SDR.",
+  "inLanguage": "en",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/hdr-washed-out/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why does my iPhone video look grey after compressing?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The source is HDR (HLG). The compressor converted the pixels to 8-bit SDR but did not convert the transfer curve, so the file either keeps HDR tags on SDR pixels or loses the metadata that told players how to display it. Both read as flat and grey." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does compressing at a higher bitrate fix it?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Bitrate changes detail, not color. A 50 Mbps export with the wrong transfer curve is still grey." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I keep HDR in the compressed file?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Not with halfsize today. It converts to SDR BT.709, which is what most chat apps, browsers and email clients can actually display. Keeping HDR needs a different pipeline and a player that supports it." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I know if a file is HDR?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Run ffprobe and look at color_transfer. arib-std-b67 is HLG, smpte2084 is PQ (HDR10). A bt2020 matrix with an SDR transfer is wide gamut, not HDR." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/hdr-washed-out/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / HDR</p>
+  <h1>HDR video that turns <em>grey</em> after compression</h1>
+  <p class="lede">
+    The clip looked vivid in Photos. You compressed it, and now the sky is white, the skin is grey,
+    and everything looks like it was shot through a sock. That is not a bitrate problem, and
+    compressing harder will not fix it.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>What the iPhone actually records</h2>
+  <p>From the iPhone 12 on, the default camera records <b>HLG</b> HDR: 10-bit pixels, BT.2020 primaries,
+  and a transfer curve named <code>arib-std-b67</code>. Android flagships often record HLG or
+  <b>PQ</b> (<code>smpte2084</code>, the HDR10 curve). The numbers in the file are not scene colors;
+  they are HDR code values that need a known display to make sense.</p>
+
+  <h2>Two ways a compressor gets it wrong</h2>
+  <ul>
+    <li><b>Keep the HDR tags.</b> The encoder drops to 8-bit <code>yuv420p</code> but leaves the HDR
+    metadata in place. Players that ignore HDR show the raw code values, which look flat and grey.</li>
+    <li><b>Drop the tags.</b> The pixels are converted to 8-bit and the metadata is stripped, but the
+    transfer curve is never converted. Colors shift, contrast collapses, and different players disagree
+    about what they are looking at.</li>
+  </ul>
+  <p>Either way the file is valid. It plays. It just looks wrong, and the person who compressed it
+  usually blames the bitrate.</p>
+
+  <div class="callout">
+    <p><b>The tell:</b> if raising the bitrate does not bring the color back, it was never a bitrate problem.</p>
+  </div>
+
+  <h2>The fix is a conversion, not a checkbox</h2>
+  <p>To put HDR into a normal 8-bit SDR file you have to go through linear light, compress the dynamic
+  range, and re-tag the result as BT.709. With FFmpeg's <code>zscale</code> and <code>tonemap</code>
+  filters that is one chain:</p>
+  <pre><code>zscale=tin=arib-std-b67:min=bt2020nc:pin=bt2020:t=linear:npl=100,
+format=gbrpf32le,
+zscale=p=bt709,
+tonemap=tonemap=hable:desat=0,
+zscale=t=bt709:m=bt709:r=tv,
+format=yuv420p</code></pre>
+  <p><code>npl</code> is the nominal peak luminance. HLG is relative, so 100 works; PQ is graded against
+  a real peak, usually 1000 nits. For a PQ source the first line becomes
+  <code>tin=smpte2084:...:npl=1000</code>.</p>
+  <p>The order matters. Tone mapping has to happen <b>before</b> scaling, on the source transfer curve.
+  Scale first and you are resampling HDR code values, then guessing.</p>
+
+  <h2>What halfsize does since 0.1.9</h2>
+  <p>It reads <code>color_transfer</code> during the probe, applies the matching chain before the
+  scale filter, and tags the output <code>bt709</code>. <code>--dry-run</code> shows it:</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize IMG_2041.MOV --to 20mb --dry-run</span>
+
+  IMG_2041.MOV
+  214 MB  38s  3840x2160  30.00 fps  hevc
+
+  target     20.0 MB
+  plan       H.264  1280x720  4.18 Mbps  audio 128 kbps  2-pass
+  scale      3840x2160 → 1280x720
+  <span class="hl">hdr        HLG → SDR BT.709</span></code></pre>
+  <p>The quality check needs the same treatment. Comparing an SDR output against an untouched HDR
+  source scores the transfer curve as “compression loss” and produces a useless VMAF number, so the
+  reference frame is tone-mapped too before SSIM and VMAF are calculated.</p>
+
+  <h2>Check your own file</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffprobe -v error -select_streams v:0 \</span>
+<span class="hl">  -show_entries stream=color_transfer,color_primaries,color_space,pix_fmt \</span>
+<span class="hl">  -of default=nw=1 video.mov</span>
+
+color_transfer=arib-std-b67   <span class="out"># HLG</span>
+color_primaries=bt2020
+color_space=bt2020nc
+pix_fmt=yuv420p10le</code></pre>
+  <p>If <code>color_transfer</code> is <code>smpte2084</code>, the file is PQ. If it is
+  <code>bt709</code>, it is already SDR and none of this applies. A BT.2020 matrix with an SDR transfer
+  is wide gamut, not HDR; re-encoding it is harmless.</p>
+
+  <h2>“Can I keep HDR?”</h2>
+  <p>Not with halfsize today. The output is SDR BT.709, which is what Discord, WhatsApp, WeChat,
+  browsers, email clients and most video players actually display. Keeping HDR means a different
+  pipeline and a viewer that supports it; for “send this to a group chat”, SDR is the version that
+  looks right everywhere.</p>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Why does my iPhone video look grey after compressing?</summary><p>The source is HLG HDR. The compressor made 8-bit pixels without converting the transfer curve, so the file either keeps HDR tags on SDR pixels or loses the metadata players need. Both look flat.</p></details>
+    <details><summary>Does a higher bitrate fix it?</summary><p>No. Bitrate changes detail, not color. A 50 Mbps export with the wrong curve is still grey.</p></details>
+    <details><summary>Can I keep HDR in the compressed file?</summary><p>Not with halfsize today. It converts to SDR BT.709, which is what most apps can display. Keeping HDR needs a separate pipeline.</p></details>
+    <details><summary>How do I know if a file is HDR?</summary><p><code>ffprobe</code> and look at <code>color_transfer</code>: <code>arib-std-b67</code> is HLG, <code>smpte2084</code> is PQ.</p></details>
+    <details><summary>Does tone mapping reduce quality?</summary><p>It changes the look on purpose: HDR highlights are compressed into what an SDR screen can show. The alternative is not “full quality”, it is a grey file.</p></details>
+  </div>
+
+  <h2>Related guides</h2>
+  <div class="platforms">
+    <a href="../file-size-limits/">Size limits by platform</a>
+    <a href="../20mb/">Any 20 MB limit</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg target size</a>
+    <a href="../offline/">No-upload compression</a>
+    <a href="../email/">Email attachments</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

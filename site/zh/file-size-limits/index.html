@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>各平台视频/文件大小上限（2026 年版）</title>
+<meta name="description" content="Discord 20 MB、WhatsApp 16 MB、微信 20 MB、Gmail 25 MB、Outlook 20 MB、X 512 MB。整理各平台真正卡人的上传上限、到底按什么算，以及一条命令压进去。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/file-size-limits/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/file-size-limits/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/file-size-limits/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="各平台视频/文件大小上限（2026 年版）">
+<meta property="og:description" content="卡人的上限、按什么算，以及一条命令压进去。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/file-size-limits/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "各平台视频/文件大小上限（2026 年版）",
+  "description": "Discord 20 MB、WhatsApp 16 MB、微信 20 MB、Gmail 25 MB、Outlook 20 MB、X 512 MB，以及为什么「不到 20 MB」还是传不上去。",
+  "inLanguage": "zh-CN",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/zh/file-size-limits/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-CN",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "为什么 20 MB 的文件传不进 20 MB 的限制？",
+      "acceptedAnswer": { "@type": "Answer", "text": "三个原因叠加：平台按十进制 MB 算，而系统显示的是 MiB；邮件 base64 会再大三分之一；容器和音轨也算在文件里。留 5% 余量最稳。" }
+    },
+    {
+      "@type": "Question",
+      "name": "Discord 免费用户的上传上限是多少？",
+      "acceptedAnswer": { "@type": "Answer", "text": "2026 年 11 月核对是单个文件 20 MB，Nitro 档位更高。账号档位不同就用 --to 覆盖预设。" }
+    },
+    {
+      "@type": "Question",
+      "name": "微信发视频会被二次压缩吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "作为聊天视频发送时会被再压一次，而且只有 20 MB。压到限制以内再发，损失至少是自己可控的。" }
+    },
+    {
+      "@type": "Question",
+      "name": "能压到 2 GB 这种大目标吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "可以，只要源片有足够的码率可花。工具会先报出这段时长能压到的最小值，做不到的目标在编码前就拒绝。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../file-size-limits/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 平台上限</p>
+  <h1>各平台的视频大小上限，<em>一张表</em></h1>
+  <p class="lede">
+    每个平台都写了一个上限，但几乎每个上限的算法都和系统里显示的数字不一样。下面是人真正会撞到的限制，
+    <b>2026 年 11 月</b>核对，以及每个限制对应的一条命令。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">安装 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>当前上限</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>平台</th><th>上限</th><th>按什么算</th><th>怎么压</th></tr></thead>
+      <tbody>
+        <tr><td>Discord（免费）</td><td class="num">20 MB</td><td>单个文件、单条消息</td><td><code>--for discord</code></td></tr>
+        <tr><td>WhatsApp</td><td class="num">16 MB</td><td>作为媒体发送的视频</td><td><code>--for whatsapp</code></td></tr>
+        <tr><td>微信</td><td class="num">20 MB</td><td>聊天里发送的视频</td><td><code>--for wechat</code></td></tr>
+        <tr><td>Gmail</td><td class="num">25 MB</td><td>base64 之后的整封邮件</td><td><code>--for gmail</code></td></tr>
+        <tr><td>Outlook.com</td><td class="num">20 MB</td><td>base64 之后的整封邮件</td><td><code>--for outlook</code></td></tr>
+        <tr><td>X / Twitter</td><td class="num">512 MB</td><td>单条视频上传</td><td><code>--for twitter</code></td></tr>
+        <tr><td>Telegram</td><td class="num">2 GB</td><td>单个文件，会员 4 GB</td><td><code>--to 2gb</code></td></tr>
+        <tr><td>Slack（免费）</td><td class="num">1 GB</td><td>单个文件</td><td><code>--to 1gb</code></td></tr>
+        <tr><td>YouTube</td><td class="num">256 GB</td><td>单次上传，最长 12 小时</td><td>不是这个场景</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">平台会不打招呼就改上限，付费档位也不一样。预设只是省事，<code>--to</code> 永远优先。</p>
+
+  <h2>为什么「显示 20 MB」却传不上去</h2>
+  <p>有三笔账会一起吃进上限，而且是叠加的：</p>
+  <ul>
+    <li><b>十进制和二进制。</b>平台说的是 20,000,000 字节，Windows 和 macOS 往往显示成 19.07 MiB 并写成 19 MB。你以为刚好 20 MB 的文件，其实已经超了。</li>
+    <li><b>邮件的 base64。</b>附件按文本编码，3 个字节变 4 个。20 MB 的文件进邮件会变成约 26.7 MB，在 25 MB 的 Gmail 直接被退。发邮件要压到 18 MB，20 MB 的企业邮箱压到 15 MB。</li>
+    <li><b>容器和音轨。</b>上限算的是整个文件，不是视频流。封装开销和音轨都占预算，所以工具会先把它们扣掉再算码率。</li>
+  </ul>
+
+  <div class="callout">
+    <p><b>经验值：</b>普通上传留 5% 余量；邮件附件先除以 1.37。<code>--for</code> 已经帮你算好了。</p>
+  </div>
+
+  <h2>一条命令对应一个上限</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 假期.mp4 --for discord</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     假期.discord.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   小 7 倍   比目标小 2.8%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
+  <p>换成你要对付的平台就行：<code>--for whatsapp</code>、<code>--for wechat</code>、
+  <code>--for gmail</code>、<code>--for outlook</code>、<code>--for twitter</code>。其他限制直接写
+  <code>--to 800mb</code> 或 <code>--to 700k</code>。</p>
+
+  <h2>每个上限要付出多少画质</h2>
+  <p>同一个 60 秒 1080p30、18 Mbps 的源片（136 MB），在普通笔记本上本地实测：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>VMAF</th><th>结论</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB（Discord / 微信）</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">88.3</td><td>轻微变软</td></tr>
+        <tr><td>18 MB（Gmail）</td><td class="num">17.62 MB</td><td class="num">1280×720</td><td class="num">87.4</td><td>轻微变软</td></tr>
+        <tr><td>16 MB（WhatsApp）</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">84.8</td><td>轻微变软</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">82.9</td><td>轻微变软</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">72.0</td><td>能看出损失</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">VMAF 90 以上是「几乎看不出差别」，80–90 是轻微变软，70–80 是能看出损失。实际数字随内容变化，讲话镜头比彩带雪花好压得多。</p>
+
+  <h2>目标在算术上就做不到的时候</h2>
+  <p>上限本质是码率预算：字节 × 8 ÷ 秒。一小时的视频塞进 20 MB，视频加音频只有 44 kbps，
+  没有编码器能让它好看。0.1.9 起，工具会在<b>编码前</b>直接说明，并告诉你这段时长最小能压到多少，
+  而不是花十分钟压完再交给你一个还是塞不进去的文件。真正的解法是剪短。</p>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>为什么 20 MB 的文件传不进 20 MB 的限制？</summary><p>十进制 MB 和二进制 MiB 的差别、邮件 base64、容器开销都会吃预算。留 5% 余量，或者直接用预设。</p></details>
+    <details><summary>Discord 免费用户上限多少？</summary><p>2026 年 11 月是单个文件 20 MB，Nitro 更高。档位不同就用 <code>--to</code> 覆盖。</p></details>
+    <details><summary>微信发视频会被二次压缩吗？</summary><p>作为聊天视频发送会被再压一次，而且只有 20 MB。先自己压到限制以内，至少损失是可控的。</p></details>
+    <details><summary>能压到 2 GB 这种大目标吗？</summary><p>可以，前提是源片有足够码率可花。短视频撑不满大上限，超长视频也塞不进小上限。</p></details>
+    <details><summary>视频会被上传吗？</summary><p>不会。FFmpeg 在你自己的电脑上跑，免账号、无额度、无水印。</p></details>
+  </div>
+
+  <h2>相关教程</h2>
+  <div class="platforms">
+    <a href="../20mb/">任意 20 MB 限制</a>
+    <a href="../email/">邮件附件</a>
+    <a href="../../discord/">Discord 20 MB</a>
+    <a href="../../whatsapp/">WhatsApp 16 MB</a>
+    <a href="../wechat/">微信 20 MB</a>
+    <a href="../twitter/">X / Twitter 512 MB</a>
+    <a href="../hdr-washed-out/">HDR 压完发灰</a>
+    <a href="../offline/">压缩不上传</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>
