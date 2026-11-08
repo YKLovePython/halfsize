@@ -26,6 +26,10 @@
 </p>
 
 <p align="center">
+  <sub>As featured in <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> · 1,900+ downloads a week on npm</sub>
+</p>
+
+<p align="center">
   <b>New in 0.1.9:</b> HDR clips (iPhone HLG, HDR10) are tone-mapped to SDR instead of
   looking washed out, a target that cannot fit now fails before the encode with the real
   minimum, and the email presets account for the base64 attachment tax.

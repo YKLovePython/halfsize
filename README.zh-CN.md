@@ -26,6 +26,10 @@
 </p>
 
 <p align="center">
+  <sub>已被 <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> 收录 · npm 每周 1,900+ 次下载</sub>
+</p>
+
+<p align="center">
   <b>0.1.9 新功能：</b>iPhone 拍的 HDR 视频会自动转成 SDR，压完不再发灰；压不到的目标在编码前就报出真实最小值；邮件预设按 base64 后的实际上限来算。
   <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">更新说明</a>
 </p>
