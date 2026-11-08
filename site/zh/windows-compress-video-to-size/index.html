@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows 11 没有「压缩到 20 MB」，这是那条命令</title>
+<meta name="description" content="资源管理器压缩成 ZIP 对视频毫无作用，照片只能裁剪，Clipchamp 只有分辨率预设。这里给出在 Windows 11 上精确压到指定大小的两遍编码命令、码率算法和 PowerShell 注意事项。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/windows-compress-video-to-size/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows 11 没有「压缩到 20 MB」">
+<meta property="og:description" content="Windows 自带的工具都只能按画质档位压，不能指定体积。这是能指定体积的那条命令。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Windows 11 没有「压缩到 20 MB」这条命令",
+  "description": "Windows 11 自带的视频压缩能力能做什么、不能做什么，以及精确压到目标大小的两遍编码命令。",
+  "inLanguage": "zh-CN",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-CN",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "把视频压缩成 ZIP 能变小吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不能。MP4 本身已经是压缩过的数据，再打 zip 只能省下不到 1%。「压缩为 ZIP」是给文档用的。" }
+    },
+    {
+      "@type": "Question",
+      "name": "Windows 自带功能能压到指定大小吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不能。照片应用只能裁剪后另存，Clipchamp 只能选 480p/720p/1080p 预设，两者都不接受「20 MB」这种输入。要精确到字节，必须做两遍编码，也就是 FFmpeg 或它的封装。" }
+    },
+    {
+      "@type": "Question",
+      "name": "为什么压完还是超了目标？",
+      "acceptedAnswer": { "@type": "Answer", "text": "两遍 ABR 控制的是平均值，激烈的画面会超、安静的画面会省，封装还会再加一点。留 3–5% 余量，或者用会测量结果、超了就再编一次的工具。" }
+    },
+    {
+      "@type": "Question",
+      "name": "需要额外装软件吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不一定。npx halfsize 只要 Node.js，第一次运行会自带 FFmpeg；想要裸的 ffmpeg 命令，用 winget install Gyan.FFmpeg。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../compress-video-to-size/">指定大小</a>
+    <a href="../../windows-compress-video-to-size/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Windows</p>
+  <h1>Windows 11 没有<em>「压缩到 20 MB」</em></h1>
+  <p class="lede">
+    在资源管理器里几乎什么都能右键，唯独没有「把这个视频变成 20 MB」。系统自带的工具都是按<b>画质档位</b>
+    压的，而「指定体积」是另一个问题；其中还有一个压根不是压缩。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">安装 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>Windows 11 到底给了什么</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>工具</th><th>对视频做了什么</th><th>能指定大小吗</th></tr></thead>
+      <tbody>
+        <tr><td>资源管理器 → 压缩为 ZIP</td><td>什么也没做：MP4 本来就已经压缩过</td><td>不能</td></tr>
+        <tr><td>照片 → 编辑 / 裁剪</td><td>裁剪后另存，码率不变</td><td>不能</td></tr>
+        <tr><td>Clipchamp 导出</td><td>按 480p / 720p / 1080p 预设重编码</td><td>不能</td></tr>
+        <tr><td>Office「压缩媒体」</td><td>只影响插进文档里的片子，而且是画质档位</td><td>不能</td></tr>
+        <tr><td>FFmpeg（winget 安装）</td><td>按算出来的码率做两遍编码</td><td><b>能</b></td></tr>
+        <tr><td>halfsize（封装 FFmpeg）</td><td>同上，另外给你实测画质分数</td><td><b>能</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    ZIP 那一行值得单独说清楚，因为它是绝大多数人第一个尝试的东西：<b>视频已经是熵编码过的数据</b>，
+    通用压缩几乎找不到可删的冗余。40 MB 的片子打成 zip 还是 40 MB，只是多花了一秒。
+  </p>
+  <p>
+    Clipchamp 是真会压缩，但它转的旋钮是分辨率，不是字节预算。一段 20 分钟的 1080p 录屏导出 720p，
+    出来可能是 300 MB 也可能是 90 MB，取决于画面内容；你没法要求「就给我 20 MB」。
+  </p>
+
+  <h2>Windows 不会替你算的那道题</h2>
+  <p>
+    体积上限会换算成码率：<code>MB × 8000 ÷ 秒数</code>，再减掉音频和封装开销。按 20 MB、
+    128 kbps 音轨、2% 开销算：
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>片长</th><th>20 MB 留给视频的码率</th><th>够用来做什么</th></tr></thead>
+      <tbody>
+        <tr><td>15 秒</td><td class="num">10.3 Mbps</td><td>舒服的 1080p</td></tr>
+        <tr><td>30 秒</td><td class="num">5.1 Mbps</td><td>不错的 1080p</td></tr>
+        <tr><td>1 分钟</td><td class="num">2.5 Mbps</td><td>720p</td></tr>
+        <tr><td>2 分钟</td><td class="num">1.2 Mbps</td><td>720p，或干净的 540p</td></tr>
+        <tr><td>5 分钟</td><td class="num">395 kbps</td><td>540p，低运动</td></tr>
+        <tr><td>10 分钟</td><td class="num">133 kbps</td><td>幻灯片区</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">视频码率低于 80 kbps 左右，就没有哪个编码器还能压出「视频」的样子了。这是预算的性质，不是编码器的。</p>
+
+  <h2>那条命令，在 PowerShell 里</h2>
+  <p>先用 winget 装一次 FFmpeg：</p>
+  <pre><code><span class="prompt">&gt;</span> <span class="hl">winget install Gyan.FFmpeg</span></code></pre>
+  <p>
+    然后跑两遍。第一遍只分析片子、写日志，不产出视频，所以输出到 <code>NUL</code>——这是 Windows 的空设备，
+    并且必须带上 <code>-f mp4</code> FFmpeg 才肯接受。下面是 60 秒的片子压到 20 MB，所以视频码率取 2480 kbps：
+  </p>
+  <pre><code><span class="prompt">&gt;</span> <span class="hl">ffmpeg -y -i "假期.mp4" -c:v libx264 -preset medium -b:v 2480k -pass 1 -passlogfile ffpass -an -f mp4 NUL</span>
+
+<span class="prompt">&gt;</span> <span class="hl">ffmpeg -i "假期.mp4" -c:v libx264 -preset medium -b:v 2480k -pass 2 -passlogfile ffpass -c:a aac -b:a 128k -movflags +faststart "假期.20mb.mp4"</span></code></pre>
+  <p>
+    两个容易踩的点：路径有空格一定要加引号（PowerShell 会正常传过去），并且第二遍必须读和第一遍同一个日志名。
+    第二点，第一遍要加 <code>-an</code>：音频在两遍之间没有变化，编两遍纯属浪费时间。
+  </p>
+  <p>
+    这条命令的前提是片长足够短，2.48 Mbps 还能看。十分钟的片子同样 20 MB 就是 133 kbps，
+    输出也会诚实地长成那个样子——命令照样能跑，只是它变不出比特来。
+  </p>
+
+  <h2>为什么结果还是会差一点</h2>
+  <p>
+    两遍 ABR 控制的是整段的平均值。有激烈场景的片子会在那里超、在别处省，总量只是接近，不是精确；
+    封装还要再加一点。实务上的答案是瞄低 3–5%，下面这个工具就是这么做的。
+  </p>
+
+  <h2>一条命令的版本</h2>
+  <pre><code><span class="prompt">&gt;</span> <span class="hl">npx halfsize 假期.mp4 --to 20mb --dry-run</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  estimate   19.3 MB
+
+<span class="prompt">&gt;</span> <span class="hl">npx halfsize 假期.mp4 --to 20mb</span>
+
+  <span class="hl">136 MB  →  19.45 MB   小 7 倍   比目标小 2.8%</span>
+  <span class="hl">VMAF 88.3   轻微变软</span></code></pre>
+  <p>
+    <code>--dry-run</code> 才是最值得学走的部分，哪怕你继续手写 FFmpeg：它在编码之前的十秒钟里，
+    就把码率和「这个预算能撑住哪一档分辨率」打印出来。同样 20 MB，选 720p 还是硬撑 1080p，
+    就是清晰和发软的区别。
+  </p>
+  <p>
+    不需要全局安装，<code>npx</code> 第一次跑完就会缓存。想长期用就 <code>npm install -g halfsize</code>。
+  </p>
+
+  <div class="callout">
+    <p><b>别叠压缩器。</b>如果这段视频接下来还要发微信或 WhatsApp，就一次压到那个软件能接受的大小，
+    不要压两遍。<a href="../video-blurry-after-sending/">第二遍才是你看得见的那一遍。</a></p>
+  </div>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>打成 zip 会变小吗？</summary><p>不会。MP4 已经是压缩数据，zip 只能省不到 1%。压缩成 ZIP 是给文档用的。</p></details>
+    <details><summary>系统自带功能能指定大小吗？</summary><p>不能。照片只能裁剪，Clipchamp 只能选分辨率预设，Office 只压文档里的内嵌媒体。要精确到字节只能两遍编码，也就是 FFmpeg 或它的封装。</p></details>
+    <details><summary>为什么还是超过目标？</summary><p>两遍 ABR 控的是平均值，激烈画面会超。留 3–5% 余量，或者用会复测、超标重编一次的工具。</p></details>
+    <details><summary>NUL 还是 /dev/null？</summary><p>Windows 的空设备是 <code>NUL</code>，前面要加 <code>-f mp4</code>；macOS / Linux 用 <code>-f mp4 /dev/null</code>。</p></details>
+    <details><summary>Windows 10 能用吗？</summary><p>能。FFmpeg 命令和 halfsize 完全一样，只有照片和 Clipchamp 那两行不同。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../compress-video-to-size/">压到指定大小</a>
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 指定大小</a>
+    <a href="../video-size-calculator/">大小计算器</a>
+    <a href="../compress-video-without-losing-quality/">不损画质压</a>
+    <a href="../file-size-limits/">各平台上限</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

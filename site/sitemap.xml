@@ -205,4 +205,36 @@
     <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-size-calculator/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-size-calculator/"/>
   </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/video-blurry-after-sending/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-blurry-after-sending/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-blurry-after-sending/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/windows-compress-video-to-size/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/windows-compress-video-to-size/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/</loc>
+    <lastmod>2026-11-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/windows-compress-video-to-size/"/>
+  </url>
 </urlset>

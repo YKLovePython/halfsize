@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频发出去就模糊？因为它被压了两遍</title>
+<meta name="description" content="聊天软件不会把你的文件原样送到，它会先解码再按自己的预算重编码一遍。哪些软件会重压、哪些会原样传输，以及怎么保住画质。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-blurry-after-sending/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="视频发出去就模糊？因为它被压了两遍">
+<meta property="og:description" content="发送环节会重编码。这里说清楚哪些会、哪些不会，以及怎么保住画质。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "视频发出去就模糊？因为它被压了两遍",
+  "description": "哪些软件发送前会重编码、哪些原样传输，以及第二代损失的应对办法。",
+  "inLanguage": "zh-CN",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "zh-CN",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "为什么视频发到微信之后就糊了？",
+      "acceptedAnswer": { "@type": "Answer", "text": "微信的聊天视频会重新编码：降分辨率、按自己的预算压码率。你的文件本来就已经压过一次，这是第二遍，而第二遍去掉的正是第一遍刻意保留的细节。" }
+    },
+    {
+      "@type": "Question",
+      "name": "用「文件」发送就不会被压吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "对。微信的文件、WhatsApp 的文档、Telegram 的文件模式都是原样传输字节，不重新编码。代价是对方要下载后再播放，而且软件自身的文件大小上限仍然存在。" }
+    },
+    {
+      "@type": "Question",
+      "name": "文件明明没超过上限，为什么还是变差了？",
+      "acceptedAnswer": { "@type": "Answer", "text": "上限和编码器是两回事。没超上限也照样会重压，而且很多软件无论文件多大都把分辨率压到 720p，4K 素材到了对面就自动降了。" }
+    },
+    {
+      "@type": "Question",
+      "name": "已经被压糊的文件还能救回来吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不能。再编码只会在已有的损失上叠加损失。只能让对方把原片重新发一遍，或者下次改用文件发送。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../file-size-limits/">各平台上限</a>
+    <a href="../../video-blurry-after-sending/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 发完变糊</p>
+  <h1>发出去就糊，是因为<em>它被压了两遍</em></h1>
+  <p class="lede">
+    你只压了一次，也检查过，看着还行。发出去之后，对面收到的却是软的。因为发送软件并没有把你的文件
+    原样递过去，它先解码，再按自己的存储预算编码了一个新文件。
+    <b>每个聊天软件都是一个你没有配置过的第二台压缩器。</b>
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">安装 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>谁会重压，谁会把字节原样交出去</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>发到哪里</th><th>软件做了什么</th><th>怎么保住原样</th></tr></thead>
+      <tbody>
+        <tr><td>WhatsApp，当媒体发</td><td>重编码，通常 720p，码率自己定</td><td>改成<b>文档</b>发送</td></tr>
+        <tr><td>Telegram，当视频发</td><td>重编码进它的流媒体档位</td><td>改成<b>文件</b>发送，或「不压缩发送」</td></tr>
+        <tr><td>微信聊天视频</td><td>重编码，分辨率由它决定</td><td>开<b>原视频</b>，或用<b>文件</b>发送</td></tr>
+        <tr><td>iMessage</td><td>大视频会被压得很狠</td><td>没有开关；改用邮件、AirDrop 或文件链接</td></tr>
+        <tr><td>Discord，没超上传上限</td><td>原样传输</td><td>什么都不用做</td></tr>
+        <tr><td>邮件附件</td><td>只做 base64，字节不变</td><td>什么都不用做</td></tr>
+        <tr><td>网盘链接</td><td>原样存储</td><td>什么都不用做</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    这张表可以读成一句话：<b>你从哪个渠道发，决定了你压出来的东西能不能活到对面</b>。
+    Discord 和邮件送的正是你做出来的文件；WhatsApp、Telegram、微信和 iMessage 送的则是
+    「它们的编码器对你要发的文件的理解」。这就是同一个文件在你自己电脑上挺好、在对方手机上却很差的原因。
+  </p>
+
+  <h2>为什么第二遍比第一遍更伤</h2>
+  <p>
+    编码器擅长丢掉「人眼本来就不注意」的信息，但这份红利只有一次。第一遍留下的，是刚好卡在可见阈值
+    之上的纹理、渐变和运动。第二遍没有这份余量可花：它再丢一次同类细节，而这一次，丢掉的部分就看得见了。
+  </p>
+  <p>
+    这笔账不用实测也成立。假设一段 60 秒的视频你压到了 20 MB，扣掉音频和开销，视频大约 2.4 Mbps。
+    如果软件按它惯常的 720p 预算、大约 1 Mbps 重压一遍，它只保留了你刚刚认定「最低可接受」的
+    <b>40% 的比特</b>。你的文件第一次测出来多少分不重要，对方拿到的那一份是要重新打分的。
+  </p>
+
+  <div class="callout">
+    <p><b>一条能解决大部分情况的规则：</b>既然软件无论如何都要重压，就别把比特花在它一定会扔掉的地方。
+    要么压到它的阈值以下让它原样放过，要么用「文件」模式传输字节。</p>
+  </div>
+
+  <h2>办法一：当文件发</h2>
+  <p>
+    表里每个软件都有一个把视频当成「不透明文件」的模式。代价是对方收到的是一个下载提示，而不是直接
+    能点的播放器。如果这段视频是要被留下来的——婚礼、看房、给客户的演示——这个交换明显值得。
+  </p>
+  <p>
+    软件的文件上限依然存在，但那是唯一需要遵守的数字，而且通常比媒体上限高得多。WhatsApp 的文档上限
+    就远高于 16 MB 的媒体上限，一个 50 MB 的文件可以原样过去，当媒体发则永远发不出去。
+  </p>
+
+  <h2>办法二：一次压到软件能接受的大小</h2>
+  <p>
+    如果必须当媒体发（要能直接点开播），那就一次压到它真正的预算，并且直接用它会用的分辨率。
+    软件反正要降到 720p，你却按 1080p 压，等于一半的比特在被看到之前就扔掉了。
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 假期.mp4 --for whatsapp</span>
+
+  target     16.0 MB
+  plan       H.264  960x540  1.94 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 960x540
+
+  <span class="hl">136 MB  →  15.59 MB   小 8.7 倍   比目标小 2.5%</span>
+  <span class="hl">VMAF 84.8   轻微变软</span></code></pre>
+  <p>
+    预设用的是各平台公开的免费档上限。一分钟 16 MB 只有 1.94 Mbps，够一个干净的 540p，
+    不够 720p，所以工具选 540p 而不是发软的 720p。这就是软件会做的同一个取舍，区别只是：
+    你在发出去之前就能看到画质分数，而不是之后。
+  </p>
+
+  <h2>怎么判断文件到底有没有被重压</h2>
+  <p>拿你发出去的文件和对方存下来的文件比一下分辨率、码率和时长，一般就够了：</p>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffprobe -v error -select_streams v:0 -show_entries stream=width,height,bit_rate -of default=nw=1 发出的.mp4</span>
+width=1920
+height=1080
+bit_rate=8143221
+
+<span class="prompt">$</span> <span class="hl">ffprobe -v error -select_streams v:0 -show_entries stream=width,height,bit_rate -of default=nw=1 收到的.mp4</span>
+width=1280
+height=720
+bit_rate=1041888</code></pre>
+  <p>
+    同一个片段，发出去是 1080p / 8 Mbps，收到的是 720p / 1 Mbps。这不是你调参能改的，只有换发送方式能改。
+  </p>
+
+  <h2>「糊」还有另外两个来源</h2>
+  <ul>
+    <li><b>其实是发灰，不是糊。</b>HDR 素材经过丢了传递曲线的工具，看起来会又平又淡。
+    那是<a href="../hdr-washed-out/">另一个问题，另一种修法</a>。</li>
+    <li><b>它本来就不锐。</b>便宜的手机镜头、数码变焦、激进降噪，压一遍之后都会表现得像压缩损伤。
+    压缩会让本来发软的素材软得更快。</li>
+  </ul>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>为什么微信发完就糊了？</summary><p>聊天视频会重编码，通常降到 720p 并用它自己的码率。你的文件已经压过一次，这是第二遍，去掉的是第一遍特意保留的细节。</p></details>
+    <details><summary>用「文件」发就不会被压？</summary><p>对。文件/文档模式原样传字节，对方下载后播放，软件的文件上限仍然适用。</p></details>
+    <details><summary>没超上限为什么也变差了？</summary><p>上限和编码器是两件事。没超上限照样重压，而且分辨率常常被无条件压到 720p。</p></details>
+    <details><summary>iPhone 上一样吗？</summary><p>iMessage 对大视频压得很狠，而且没有「发原视频」的开关。AirDrop、邮件或文件链接才能保住字节。</p></details>
+    <details><summary>收到的文件还能修吗？</summary><p>不能。再编码只会叠加损失。要原片，下次改用文件发送。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../wechat/">微信 20 MB</a>
+    <a href="../file-size-limits/">各平台上限</a>
+    <a href="../compress-video-to-size/">压到指定大小</a>
+    <a href="../hdr-washed-out/">HDR 压完发灰</a>
+    <a href="../offline/">压缩不上传</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video looks blurry after sending? It was compressed twice</title>
+<meta name="description" content="Chat apps re-encode your video before delivery, so a good file arrives soft. Which apps pass the file through unchanged, which ones recompress it, and how to keep the quality.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/video-blurry-after-sending/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/video-blurry-after-sending/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/video-blurry-after-sending/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Video looks blurry after sending? It was compressed twice">
+<meta property="og:description" content="Delivery apps re-encode what you send. Here is which ones, and how to keep the quality.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/video-blurry-after-sending/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Video looks blurry after sending? It was compressed twice",
+  "description": "Which apps re-encode a video before delivery, which pass it through, and what to do about the second generation of loss.",
+  "inLanguage": "en",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/video-blurry-after-sending/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why is my video blurry after sending it on WhatsApp?",
+      "acceptedAnswer": { "@type": "Answer", "text": "WhatsApp re-encodes video sent as media: it lowers the resolution, usually to 720p, and drops the bitrate to fit its own delivery budget. Your file was already compressed once; WhatsApp compresses it again, and the second generation removes detail the first pass had kept." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does sending a video as a document avoid compression?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. WhatsApp, Telegram and WeChat all have a file or document mode that transfers the original bytes. The recipient has to tap the file to play it, and the app's own size limit still applies, but nothing is re-encoded." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does a video look worse after sending even when it is under the size limit?",
+      "acceptedAnswer": { "@type": "Answer", "text": "The limit and the encoder are separate settings. A clip under the cap can still be re-encoded, and many apps cap resolution at 720p regardless of file size, so 4K footage is downscaled on arrival." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I recover the quality after it has been sent?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. The delivered file is the only copy that matters, and re-encoding it again only adds loss. Ask the sender for the original, or send the original as a file next time." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../file-size-limits/">Limits</a>
+    <a href="../zh/video-blurry-after-sending/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Blurry after sending</p>
+  <h1>It looks worse after sending because <em>it was compressed twice</em></h1>
+  <p class="lede">
+    You compressed once, checked the result, and it looked fine. Then you sent it, and it came back
+    soft. The delivery app did not pass your file along — it decoded your file and encoded a new one
+    to save its own storage. <b>Every chat app is a second compressor you did not configure.</b>
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Who re-encodes, and who hands over the bytes</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Where it goes</th><th>What the app does</th><th>How to keep the original</th></tr></thead>
+      <tbody>
+        <tr><td>WhatsApp, sent as media</td><td>re-encodes; typically 720p, own bitrate</td><td>send as <b>Document</b></td></tr>
+        <tr><td>Telegram, sent as video</td><td>re-encodes into its streaming ladder</td><td>send as <b>File</b>, or "send without compression"</td></tr>
+        <tr><td>WeChat chat video</td><td>re-encodes; resolution follows the app</td><td><b>原视频</b> toggle, or send via <b>File</b></td></tr>
+        <tr><td>iMessage</td><td>re-encodes large videos, often hard</td><td>no switch; use Mail, AirDrop or a file link</td></tr>
+        <tr><td>Discord, under the upload cap</td><td>passes the file through</td><td>nothing to do</td></tr>
+        <tr><td>Email attachment</td><td>base64 only, bytes unchanged</td><td>nothing to do</td></tr>
+        <tr><td>Drive / OneDrive link</td><td>stores the file as is</td><td>nothing to do</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Read that table as: <b>the platform you send through decides whether your encode survives</b>.
+    Discord and email deliver exactly what you made. WhatsApp, Telegram, WeChat and iMessage deliver
+    their own encode of what you made, which is why the same file can look good on your laptop and
+    poor on the recipient's phone.
+  </p>
+
+  <h2>Why the second pass hurts more than the first</h2>
+  <p>
+    Encoders are efficient at removing information a viewer would not notice, but only once. The
+    first pass leaves behind fine texture, gradient steps and motion that sit just above the
+    visibility threshold. The second pass has no such reserve to spend: it removes the same kind of
+    detail again, and now it is visible.
+  </p>
+  <p>
+    The arithmetic is simple and does not need a measurement to be true. Suppose your clip is
+    60 seconds long and you compressed it to 20 MB. That is about 2.4 Mbps of video (20 MB × 8000 ÷
+    60 s, minus audio and overhead). If the app re-encodes it at its usual 720p budget of roughly
+    1 Mbps, it keeps <b>40% of the bits</b> you just decided were the minimum acceptable. Whatever
+    VMAF your file scored the first time, the delivered copy is scored on the delivered copy.
+  </p>
+
+  <div class="callout">
+    <p><b>The one rule that fixes most of this:</b> if the app is going to re-encode anyway, do not
+    spend bytes it will throw away. Either get under its threshold so it passes the file through, or
+    send it in a mode that transfers bytes — Document, File, attachment, link.</p>
+  </div>
+
+  <h2>Fix 1: send as a file</h2>
+  <p>
+    Every messenger in the table has a mode that treats your video as an opaque file. The recipient
+    gets a download prompt instead of an inline player, which is the trade. If the video is something
+    a person will keep — a wedding, a property walkthrough, a demo for a client — that trade is
+    clearly worth it.
+  </p>
+  <p>
+    The app's file limit still applies. That is the only number you need to respect, and it is
+    usually larger than the media limit: WhatsApp's document limit is well above its 16 MB media
+    cap, so a 50 MB file goes through untouched even though it could never be sent as media.
+  </p>
+
+  <h2>Fix 2: compress to what the app will accept, once</h2>
+  <p>
+    If it has to be media (inline playback matters), then compress to the app's actual budget in one
+    pass, at the resolution the app would use anyway. Compressing to 1080p when the app is going to
+    deliver 720p means half your bits are discarded before anyone sees them.
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize holiday.mp4 --for whatsapp</span>
+
+  target     16.0 MB
+  plan       H.264  960x540  1.94 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 960x540
+
+  <span class="hl">136 MB  →  15.59 MB   8.7x smaller   2.5% under target</span>
+  <span class="hl">VMAF 84.8   slight softening</span></code></pre>
+  <p>
+    The presets use the caps the apps publish for the free tier. At 16 MB for one minute the budget
+    is 1.94 Mbps, which carries a clean 540p frame but not 720p, so the planner picks 540p instead of
+    a soft 720p. That is the same trade the app makes, except you see the quality score before
+    sending rather than after.
+  </p>
+
+  <h2>How to tell whether your file was re-encoded</h2>
+  <p>
+    Compare the file you sent with the file the recipient saved. Resolution, bitrate and duration
+    are usually enough:
+  </p>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffprobe -v error -select_streams v:0 -show_entries stream=width,height,bit_rate -of default=nw=1 sent.mp4</span>
+width=1920
+height=1080
+bit_rate=8143221
+
+<span class="prompt">$</span> <span class="hl">ffprobe -v error -select_streams v:0 -show_entries stream=width,height,bit_rate -of default=nw=1 received.mp4</span>
+width=1280
+height=720
+bit_rate=1041888</code></pre>
+  <p>
+    Same clip, 8 Mbps at 1080p in, 1 Mbps at 720p out. No amount of tuning on your side changes that;
+    only the delivery mode does.
+  </p>
+
+  <h2>Two more causes of a "blurry" video</h2>
+  <ul>
+    <li><b>It is grey, not blurry.</b> HDR footage sent through a tool that drops the transfer curve
+    looks flat and washed out. That is <a href="../hdr-washed-out/">a different bug with a different fix</a>.</li>
+    <li><b>It was never sharp.</b> Cheap phone lenses, digital zoom and heavy denoise all look like
+    compression damage after one pass. Compression makes soft footage softer, faster.</li>
+  </ul>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Why is it blurry on WhatsApp?</summary><p>WhatsApp re-encodes media, usually to 720p at its own bitrate. Your file was already compressed once; this is the second generation, and it removes detail the first pass kept.</p></details>
+    <details><summary>Does sending as a document avoid it?</summary><p>Yes. Document/File mode transfers the original bytes. The recipient taps to download and play, and the app's file limit still applies.</p></details>
+    <details><summary>It was under 16 MB and still looked bad — why?</summary><p>The size limit and the encoder are separate. A clip under the cap is still re-encoded, and resolution is often capped at 720p regardless of size.</p></details>
+    <details><summary>Does the same happen on iPhone?</summary><p>iMessage re-encodes large videos and has no "send original" switch for video. AirDrop, Mail or a file link keeps the bytes intact.</p></details>
+    <details><summary>Can I fix the received file?</summary><p>No. Re-encoding it again just adds loss. Ask for the original, and send as a file next time.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../whatsapp/">WhatsApp 16 MB</a>
+    <a href="../wechat/">WeChat 20 MB</a>
+    <a href="../file-size-limits/">Limits by platform</a>
+    <a href="../compress-video-to-size/">Compress to a size</a>
+    <a href="../hdr-washed-out/">HDR turns grey</a>
+    <a href="../offline/">No upload</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

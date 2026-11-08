@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows 11 has no "compress video to 20 MB" — here is the exact command</title>
+<meta name="description" content="Explorer's zip does nothing to a video, Photos only trims, Clipchamp only offers presets. The two-pass FFmpeg command that hits a size on Windows 11, with the bitrate arithmetic and PowerShell notes.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/windows-compress-video-to-size/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/windows-compress-video-to-size/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/windows-compress-video-to-size/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows 11 has no &quot;compress video to 20 MB&quot;">
+<meta property="og:description" content="What Windows 11 actually offers, and the two-pass command that hits a real size.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/windows-compress-video-to-size/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Windows 11 has no compress-video-to-20-MB button",
+  "description": "What Windows 11 offers for video size, what it does not, and the exact two-pass FFmpeg command that hits a target size.",
+  "inLanguage": "en",
+  "dateModified": "2026-11-08",
+  "author": { "@type": "Person", "name": "YKLovePython" },
+  "mainEntityOfPage": "https://yklovepython.github.io/halfsize/windows-compress-video-to-size/"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "en",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does zipping a video make it smaller?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. An MP4 is already compressed, so a zip saves a fraction of a percent. Explorer's Compress to ZIP is for documents, not video." }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a built-in Windows tool that compresses to a specific size?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Photos can trim and save a copy; Clipchamp exports at 480p, 720p or 1080p presets; neither takes a target size. Hitting a byte count requires a two-pass encode, which means FFmpeg or a wrapper around it." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why is the output still over the target?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Two-pass average bitrate is exactly that, an average. Hard scenes overshoot and the container adds a little. Aim 3-5% under the cap, or use a tool that measures the result and re-encodes once if it overshoots." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to install anything?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Not necessarily. npx halfsize runs from Node.js and downloads a bundled FFmpeg on first use; winget install Gyan.FFmpeg gives you the raw ffmpeg command instead." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../compress-video-to-size/">Target size</a>
+    <a href="../zh/windows-compress-video-to-size/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / Windows</p>
+  <h1>Windows 11 has no <em>“compress to 20 MB”</em></h1>
+  <p class="lede">
+    You can right-click almost anything in Explorer, but not “make this video 20 MB”. The built-in
+    tools compress <b>on a quality scale</b>, which is a different question from a size cap — and one
+    of them is not compression at all.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>What Windows 11 actually offers</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tool</th><th>What it does to a video</th><th>Can you name a size?</th></tr></thead>
+      <tbody>
+        <tr><td>Explorer → Compress to ZIP</td><td>nothing: an MP4 is already compressed</td><td>no</td></tr>
+        <tr><td>Photos → Edit / Trim</td><td>trim and save a copy, same bitrate</td><td>no</td></tr>
+        <tr><td>Clipchamp export</td><td>re-encodes at 480p / 720p / 1080p presets</td><td>no</td></tr>
+        <tr><td>Office “Compress Media”</td><td>quality presets for embedded clips only</td><td>no</td></tr>
+        <tr><td>FFmpeg (winget)</td><td>two-pass encode at a computed bitrate</td><td><b>yes</b></td></tr>
+        <tr><td>halfsize over FFmpeg</td><td>same, plus a measured quality score</td><td><b>yes</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    The ZIP row is worth stating plainly because it is the first thing people try: <b>video is
+    already entropy-coded</b>, so a general-purpose compressor finds almost nothing left to remove.
+    A 40 MB clip becomes a 40 MB zip, one second later.
+  </p>
+  <p>
+    Clipchamp is a real compressor, but its dial is a resolution preset, not a byte budget. Exporting
+    at 720p from a 20-minute 1080p recording can give you 300 MB or 90 MB depending on the content;
+    there is no way to ask for 20 MB.
+  </p>
+
+  <h2>The arithmetic Windows does not do for you</h2>
+  <p>
+    A size cap converts to a bitrate: <code>MB × 8000 ÷ seconds</code>, minus audio and container
+    overhead. For a 20 MB cap, after a 128 kbps audio track and 2% overhead:
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Clip length</th><th>Video bitrate for 20 MB</th><th>That is enough for</th></tr></thead>
+      <tbody>
+        <tr><td>15 s</td><td class="num">10.3 Mbps</td><td>comfortable 1080p</td></tr>
+        <tr><td>30 s</td><td class="num">5.1 Mbps</td><td>good 1080p</td></tr>
+        <tr><td>1 min</td><td class="num">2.5 Mbps</td><td>720p</td></tr>
+        <tr><td>2 min</td><td class="num">1.2 Mbps</td><td>720p, or clean 540p</td></tr>
+        <tr><td>5 min</td><td class="num">395 kbps</td><td>540p, low motion</td></tr>
+        <tr><td>10 min</td><td class="num">133 kbps</td><td>slideshow territory</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">Below about 80 kbps for video, no encoder produces something that still reads as video. That is a property of the budget, not of the codec.</p>
+
+  <h2>The exact command, in PowerShell</h2>
+  <p>Install FFmpeg once with winget:</p>
+  <pre><code><span class="prompt">&gt;</span> <span class="hl">winget install Gyan.FFmpeg</span></code></pre>
+  <p>
+    Then two passes. The first analyses the clip and writes a log; it produces no video, so it goes to
+    <code>NUL</code> — that is the Windows null device, and <code>-f mp4</code> is required for FFmpeg
+    to accept it. The example is a 60-second clip aimed at 20 MB, so 2,480 kbps for video:
+  </p>
+  <pre><code><span class="prompt">&gt;</span> <span class="hl">ffmpeg -y -i "holiday.mp4" -c:v libx264 -preset medium -b:v 2480k -pass 1 -passlogfile ffpass -an -f mp4 NUL</span>
+
+<span class="prompt">&gt;</span> <span class="hl">ffmpeg -i "holiday.mp4" -c:v libx264 -preset medium -b:v 2480k -pass 2 -passlogfile ffpass -c:a aac -b:a 128k -movflags +faststart "holiday.20mb.mp4"</span></code></pre>
+  <p>
+    Two details that trip people up. First, quote paths that contain spaces — PowerShell passes them
+    through fine, but the second pass must read the same log name as the first. Second, the first
+    pass must be <code>-an</code>: audio does not change between passes, and encoding it twice wastes
+    time.
+  </p>
+  <p>
+    That command assumes the clip is short enough for 2.48 Mbps to look acceptable. If your clip is
+    ten minutes, the same 20 MB is 133 kbps and the output will look it — the command still runs, it
+    just cannot invent bits.
+  </p>
+
+  <h2>Why the result can still miss the target</h2>
+  <p>
+    Two-pass ABR is an average over the whole file. A clip with a hard scene will overshoot in that
+    scene and undershoot elsewhere; the total lands close, not exact. The container adds a little
+    too. The practical answer is to aim 3–5% under the cap, which is what the tool below does on
+    purpose.
+  </p>
+
+  <h2>The one-command version</h2>
+  <pre><code><span class="prompt">&gt;</span> <span class="hl">npx halfsize holiday.mp4 --to 20mb --dry-run</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  estimate   19.3 MB
+
+<span class="prompt">&gt;</span> <span class="hl">npx halfsize holiday.mp4 --to 20mb</span>
+
+  <span class="hl">136 MB  →  19.45 MB   7x smaller   2.8% under target</span>
+  <span class="hl">VMAF 88.3   slight softening</span></code></pre>
+  <p>
+    <code>--dry-run</code> is the part worth adopting even if you keep using FFmpeg by hand: it prints
+    the bitrate and the resolution the budget can carry <b>before</b> ten minutes of encoding. The
+    resolution choice is the difference between a soft 1080p file and a clean 720p one at the same
+    size.
+  </p>
+  <p>
+    No global install is needed; <code>npx</code> caches it after the first run. If you would rather
+    have it permanently: <code>npm install -g halfsize</code>.
+  </p>
+
+  <div class="callout">
+    <p><b>Do not stack compressors.</b> If the clip is going into WhatsApp or WeChat afterwards,
+    compress once to the size that app accepts, not twice. <a href="../video-blurry-after-sending/">Why
+    the second pass is the one you notice.</a></p>
+  </div>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Does zipping a video make it smaller?</summary><p>No. MP4 is already compressed; a zip saves a fraction of a percent. Compress to ZIP is for documents.</p></details>
+    <details><summary>Is there a built-in tool for a target size?</summary><p>No. Photos trims, Clipchamp exports presets, Office compresses embedded media. A byte target needs two-pass encoding, so FFmpeg or a wrapper.</p></details>
+    <details><summary>Why is the output over the target?</summary><p>Two-pass ABR is an average; hard scenes overshoot. Aim 3–5% under, or use a tool that re-encodes once when it overshoots.</p></details>
+    <details><summary>NUL vs /dev/null?</summary><p>On Windows the null device is <code>NUL</code> and FFmpeg needs <code>-f mp4</code> before it. On macOS or Linux use <code>-f mp4 /dev/null</code>.</p></details>
+    <details><summary>Does it work on Windows 10?</summary><p>Yes. The FFmpeg commands and halfsize are identical; only the Photos and Clipchamp entries differ.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../compress-video-to-size/">Compress to a size</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg target size</a>
+    <a href="../video-size-calculator/">Size calculator</a>
+    <a href="../compress-video-without-losing-quality/">Without losing quality</a>
+    <a href="../file-size-limits/">Limits by platform</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

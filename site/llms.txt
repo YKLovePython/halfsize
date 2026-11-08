@@ -74,6 +74,8 @@ macOS and Linux are supported.
 - Compress to a specific size (5/10/20/25/50/100 MB): https://yklovepython.github.io/halfsize/compress-video-to-size/
 - Compress without losing quality (what is possible): https://yklovepython.github.io/halfsize/compress-video-without-losing-quality/
 - Video size calculator: https://yklovepython.github.io/halfsize/video-size-calculator/
+- Video looks blurry after sending (which apps re-encode): https://yklovepython.github.io/halfsize/video-blurry-after-sending/
+- Windows 11 has no compress-to-size (the exact FFmpeg command): https://yklovepython.github.io/halfsize/windows-compress-video-to-size/
 - Chinese docs: https://yklovepython.github.io/halfsize/zh/
 - Source: https://github.com/YKLovePython/halfsize
 - npm: https://www.npmjs.com/package/halfsize
