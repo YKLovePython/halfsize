@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10
+
+- macOS: the first run no longer reports "FFmpeg was not found". The bundled
+  `ffprobe` is a 76 MB binary, and macOS can spend more than ten seconds scanning
+  it before the first launch; the old six-second check treated that as a failure.
+  The check now allows 30 seconds. A missing binary still fails instantly, so
+  nothing gets slower when FFmpeg really is absent
+
 ## 0.1.9
 
 - HDR sources (iPhone HLG, HDR10/PQ) are converted to SDR BT.709 inside the same

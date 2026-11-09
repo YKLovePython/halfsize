@@ -35,7 +35,7 @@
   "codeRepository": "https://github.com/YKLovePython/halfsize",
   "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "softwareVersion": "0.1.9"
+  "softwareVersion": "0.1.10"
 }
 </script>
 <script type="application/ld+json">
@@ -104,15 +104,15 @@
   </div>
   <p class="small">As featured in <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> · 1,900+ npm downloads a week</p>
   <p class="new">
-    <b>New in 0.1.9</b> — HDR clips (iPhone HLG, HDR10) are tone-mapped to SDR instead of
-    looking washed out, impossible targets fail before the encode, and the email presets
-    account for the base64 attachment tax.
-    <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">Release notes</a>
+  <b>New in 0.1.10</b> — the first run on macOS no longer reports a missing FFmpeg. The
+  bundled ffprobe is a 76 MB binary, and macOS can spend more than ten seconds scanning it
+  before the first launch. The old six-second check called that a failure.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.10">Release notes</a>
   </p>
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize source.mp4 --to 2mb</span>
 
-  halfsize 0.1.9
+  halfsize 0.1.10
 
   source.mp4
   <span class="out">23.2 MB  8s  1920x1080  30.00 fps  h264</span>

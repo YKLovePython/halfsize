@@ -30,8 +30,8 @@
 </p>
 
 <p align="center">
-  <b>0.1.9 新功能：</b>iPhone 拍的 HDR 视频会自动转成 SDR，压完不再发灰；压不到的目标在编码前就报出真实最小值；邮件预设按 base64 后的实际上限来算。
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">更新说明</a>
+  <b>0.1.10 更新：</b>macOS 首次运行不再误报「找不到 FFmpeg」。内置的 ffprobe 是 76 MB，系统首次启动前会扫描一遍，可能超过十秒，旧版本的六秒超时把它当成了失败。
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.10">更新说明</a>
 </p>
 
 ---
@@ -49,7 +49,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.9
+  halfsize 0.1.10
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264

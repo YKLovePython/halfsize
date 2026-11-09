@@ -2,9 +2,16 @@ import { execFileSync } from "node:child_process";
 
 let cache = null;
 
+// The bundled ffprobe is a 76 MB binary. On macOS the first launch can spend
+// more than ten seconds in the system's malware scan before printing its
+// version, so a short timeout turns a healthy install into "FFmpeg was not
+// found". Keep this generous: a missing binary fails instantly (ENOENT), and
+// only a genuinely hung process pays the full timeout.
+const PROBE_TIMEOUT_MS = 30000;
+
 function works(bin) {
   try {
-    execFileSync(bin, ["-version"], { stdio: "ignore", timeout: 6000, windowsHide: true });
+    execFileSync(bin, ["-version"], { stdio: "ignore", timeout: PROBE_TIMEOUT_MS, windowsHide: true });
     return true;
   } catch {
     return false;

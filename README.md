@@ -30,10 +30,10 @@
 </p>
 
 <p align="center">
-  <b>New in 0.1.9:</b> HDR clips (iPhone HLG, HDR10) are tone-mapped to SDR instead of
-  looking washed out, a target that cannot fit now fails before the encode with the real
-  minimum, and the email presets account for the base64 attachment tax.
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.9">Release notes</a>
+  <b>New in 0.1.10:</b> the first run on macOS no longer reports a missing FFmpeg. The
+  bundled ffprobe is a 76 MB binary, and macOS can spend more than ten seconds scanning it
+  before the first launch. The old six-second check called that a failure.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.10">Release notes</a>
 </p>
 
 ---
@@ -52,7 +52,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.9
+  halfsize 0.1.10
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
