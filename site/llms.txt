@@ -31,6 +31,17 @@ Options: `--to <size>`, `--for <app>`, `--crf <n>`, `--codec h264|h265`, `--pres
 Presets target Discord free 20 MB, WeChat 20 MB, WhatsApp 16 MB, email/Gmail 18 MB (the raw size
 that stays under a 25 MB message after base64), Outlook 15 MB, and X/Twitter 512 MB.
 
+## In GitHub Actions
+
+```
+- uses: YKLovePython/halfsize-action@v1
+  with:
+    files: artifacts/recording.mp4
+    args: --to 20mb
+```
+
+Marketplace page: https://github.com/marketplace/actions/halfsize-compress-video-to-an-exact-size
+
 ## As an agent skill
 
 The repository ships `skills/halfsize/SKILL.md`, so a coding agent can do the compression and read

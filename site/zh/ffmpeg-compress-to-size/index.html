@@ -115,6 +115,14 @@
   <span class="hl">136 MB  →  19.45 MB   小 7.0 倍   比目标小 2.7%</span>
   <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
 
+  <h2>放进 CI</h2>
+  <p>同样的两遍编码可以直接在 GitHub Actions 里跑，画质报告留在构建日志里：</p>
+  <pre><code>- uses: YKLovePython/halfsize-action@v1
+  with:
+    files: artifacts/recording.mp4
+    args: --to 20mb</code></pre>
+  <p><a href="https://github.com/marketplace/actions/halfsize-compress-video-to-an-exact-size">halfsize-action 的 Marketplace 页面</a>。它装的是同一个 npm 包，输出如果仍然超过目标，这一步会直接失败。</p>
+
   <h2>实测数据</h2>
   <p>60 秒 1080p30、源 18 Mbps，默认设置，普通笔记本：</p>
   <div class="table-wrap">

@@ -119,6 +119,14 @@
   <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
   <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
 
+  <h2>In CI</h2>
+  <p>The same two passes run in GitHub Actions, with the quality report in the build log:</p>
+  <pre><code>- uses: YKLovePython/halfsize-action@v1
+  with:
+    files: artifacts/recording.mp4
+    args: --to 20mb</code></pre>
+  <p><a href="https://github.com/marketplace/actions/halfsize-compress-video-to-an-exact-size">halfsize-action on the GitHub Marketplace</a>. It installs the same npm package and fails the job when an output still misses the target.</p>
+
   <h2>Measured results</h2>
   <p>60-second 1080p30 source at 18 Mbps, default settings, one laptop:</p>
   <div class="table-wrap">
