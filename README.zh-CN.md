@@ -119,6 +119,19 @@ npx halfsize video.mp4 --to 25mb --json
 npm install -g halfsize
 ```
 
+### 在 CI 里跑
+
+同一套压缩可以直接放进 GitHub Actions，画质报告留在构建日志里：
+
+```yaml
+- uses: YKLovePython/halfsize-action@v1
+  with:
+    files: artifacts/recording.mp4
+    args: --to 20mb
+```
+
+[halfsize-action 的 Marketplace 页面](https://github.com/marketplace/actions/halfsize-compress-video-to-an-exact-size)。
+
 ### 本地网页版
 
 ```bash

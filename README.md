@@ -124,6 +124,19 @@ Install it globally if you will use it more than once:
 npm install -g halfsize
 ```
 
+### In CI
+
+The same compression runs in GitHub Actions, and the quality report lands in the build log:
+
+```yaml
+- uses: YKLovePython/halfsize-action@v1
+  with:
+    files: artifacts/recording.mp4
+    args: --to 20mb
+```
+
+[halfsize-action on the GitHub Marketplace](https://github.com/marketplace/actions/halfsize-compress-video-to-an-exact-size).
+
 ### The local web app
 
 ```bash
