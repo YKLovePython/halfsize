@@ -158,6 +158,22 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/"/>
   </url>
   <url>
+    <loc>https://yklovepython.github.io/halfsize/mcp/</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/mcp/"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/mcp/"/>
+  </url>
+  <url>
+    <loc>https://yklovepython.github.io/halfsize/zh/mcp/</loc>
+    <lastmod>2026-11-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/mcp/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/mcp/"/>
+  </url>
+  <url>
     <loc>https://yklovepython.github.io/halfsize/file-size-limits/</loc>
     <lastmod>2026-11-08</lastmod>
     <changefreq>monthly</changefreq>

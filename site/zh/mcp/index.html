@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="msvalidate.01" content="D5517FDFEBAA23318580E81450A60C01">
+<title>把 halfsize 接进 MCP：Claude Code、Cursor、Claude Desktop</title>
+<meta name="description" content="给 AI agent 一个能解大小的工具：压到指定字节，同时返回实测 VMAF。Claude Code、Claude Desktop、Cursor、VS Code 的配置，纯 stdio，不需要 API key。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/mcp/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/mcp/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/mcp/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="halfsize 作为 MCP 服务器">
+<meta property="og:description" content="一个工具，compress_video：agent 要 20 MB，拿回一个文件和实测的画质损失。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/mcp/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "MCP 服务器会把视频上传吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不会。它和客户端跑在同一台机器上，是客户端拉起的子进程，走 stdio。不开端口、不起后台服务、不发出站请求，文件从磁盘读到磁盘写。" }
+    },
+    {
+      "@type": "Question",
+      "name": "用 halfsize 的 MCP 需要 API key 吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不需要。它不是一个托管接口，而是客户端用一行命令拉起的本地进程，没有要认证的东西。" }
+    },
+    {
+      "@type": "Question",
+      "name": "怎么把 halfsize 加进 Claude Code？",
+      "acceptedAnswer": { "@type": "Answer", "text": "运行 claude mcp add halfsize -- npx -y halfsize --mcp。Claude Code 自己负责启动进程，不用改 JSON 文件。" }
+    },
+    {
+      "@type": "Question",
+      "name": "为什么值得给 agent 一个压缩工具？",
+      "acceptedAnswer": { "@type": "Answer", "text": "因为 agent 最容易错的是算术：它会猜一个 CRF，文件塞不进去，然后换个数字再猜一次。compress_video 从字节预算反推，该降分辨率就降，并且把 VMAF 和 SSIM 一起返回，让 agent 能说清代价，而不是宣称没有任何损失。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../mcp/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / MCP 服务器</p>
+  <h1>给 agent 一个<em>解大小的工具</em></h1>
+  <p class="lede">
+    「压到指定大小」恰恰是助手靠嘴说不完的那一步。<code>halfsize --mcp</code> 把它变成一个工具调用：
+    agent 要 20 MB，拿回一个真实文件，同一次返回里还带着实测的画质损失。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>为什么是工具，不是提示词</h2>
+  <p>
+    让模型压小一个视频，它会写 <code>-crf 28</code>，压一遍、看大小、再猜一次；更糟的情况是没验证就告诉
+    你已经塞得进去了。算术本身不难，但它依赖模型看不到的状态：真实时长、真实音频码率、容器开销，以及
+    这份预算能撑住哪一档分辨率。
+  </p>
+  <p>
+    <code>compress_video</code> 要藏起来的正好就是这些。它返回输出路径、字节数、相对目标的误差，以及
+    对着原片测的 VMAF/SSIM。于是 agent 能说清<b>这个体积付出了什么</b>，而不是承诺什么都没损失。
+  </p>
+
+  <h2>接进你的客户端</h2>
+  <p>下面每种客户端启动的都是同一个本地进程：没有 key、没有账号、没有托管接口。</p>
+
+  <h3>Claude Code</h3>
+  <pre><code><span class="prompt">$</span> <span class="hl">claude mcp add halfsize -- npx -y halfsize --mcp</span></code></pre>
+
+  <h3>Claude Desktop</h3>
+  <p>编辑 <code>claude_desktop_config.json</code>（Settings → Developer → Edit Config）：</p>
+  <pre><code>{
+  "mcpServers": {
+    "halfsize": {
+      "command": "npx",
+      "args": ["-y", "halfsize", "--mcp"]
+    }
+  }
+}</code></pre>
+
+  <h3>Cursor</h3>
+  <p><code>~/.cursor/mcp.json</code>（或者项目里的 <code>.cursor/mcp.json</code>）用的是同样的
+     <code>mcpServers</code> 结构。</p>
+
+  <h3>VS Code</h3>
+  <p><code>.vscode/mcp.json</code> 的键名是 <code>servers</code>：</p>
+  <pre><code>{
+  "servers": {
+    "halfsize": { "command": "npx", "args": ["-y", "halfsize", "--mcp"] }
+  }
+}</code></pre>
+
+  <p class="small">
+    Windows 上部分客户端需要把 <code>command</code> 写成 <code>npx.cmd</code>。客户端继承的
+    <code>PATH</code> 里必须有 Node.js 18 以上。
+  </p>
+
+  <h2>唯一的那个工具</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>参数</th><th>类型</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>input</code></td><td>字符串，必填</td><td>本地视频路径。</td></tr>
+        <tr><td><code>target</code></td><td>字符串，必填</td><td><code>20mb</code>、<code>16mb</code>、<code>800k</code>、<code>1.5gb</code>。不写单位按 MB。</td></tr>
+        <tr><td><code>output</code></td><td>字符串</td><td>默认是输入旁边的 <code>&lt;输入&gt;.&lt;目标&gt;.mp4</code>。</td></tr>
+        <tr><td><code>codec</code></td><td><code>h264</code> | <code>h265</code></td><td>H.265 同样字节下能保住更多分辨率，代价是兼容性。</td></tr>
+        <tr><td><code>verify</code></td><td>布尔</td><td>是否测 VMAF/SSIM，默认 true；设 false 更快。</td></tr>
+        <tr><td><code>dryRun</code></td><td>布尔</td><td>只返回方案（码率、分辨率、警告），不编码。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    返回里既有给人看的一句话摘要，也有完整的 JSON（<code>structuredContent</code>），所以读结构的客户端和
+    读文本的客户端看到的是同一组数字。
+  </p>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 输入.mp4 --to 20mb</span>
+
+  <span class="hl">136 MB  →  19.45 MB   小 7.0 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
+
+  <h2>客户端不支持 MCP 怎么办</h2>
+  <p>
+    还有 agent 技能这一条路，本质上就是一份说明加一条命令：
+    <code>npx skills add YKLovePython/halfsize</code>。Claude Code、Codex、Cursor、OpenCode 都能用。
+    MCP 这条路更硬一点：参数有类型、结果是结构化的，不会被 shell 引号搞坏。
+  </p>
+
+  <h2>它不会做什么</h2>
+  <ul>
+    <li><b>不上传。</b> 只有 stdio：客户端拉起进程，没有任何端口在监听。如果某个工具描述让你把视频发到
+        某个地址，那不是这个工具。</li>
+    <li><b>不剪辑。</b> 一个输入一个输出。裁、切、拼接不在范围内，多个文件就是多次调用。</li>
+    <li><b>不空口说画质。</b> VMAF 和 SSIM 跟文件一起返回，agent 能报告的就不只是「好了」。</li>
+  </ul>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>会上传我的视频吗？</summary><p>不会。服务器是本机的子进程，用 stdin/stdout 说 JSON-RPC，没有 HTTP 端点也没有遥测。</p></details>
+    <details><summary>需要 API key 吗？</summary><p>不需要。客户端启动的是一条本地命令，没有要认证的东西。</p></details>
+    <details><summary>直接让 agent 调 <code>ffmpeg</code> 不行吗？</summary><p>可以，然后它会猜 CRF。出问题的不是命令，是预算：时长、音频码率、容器开销、分辨率选择。这个工具包的就是这一层。</p></details>
+    <details><summary>能离线用吗？</summary><p>压缩本身可以。第一次运行需要网络让 <code>npx</code> 取包，以及 FFmpeg（作为可选依赖下载）。之后除了手动跑一次 <code>halfsize --fix</code>，不再联网。</p></details>
+    <details><summary>Windows 能用吗？</summary><p>能，包括 Windows on ARM（x64 的 FFmpeg 在模拟层里跑）。如果客户端找不到 <code>npx</code>，把 <code>command</code> 改成 <code>npx.cmd</code>，参数不变。</p></details>
+    <details><summary>agent 要了一个不可能的大小呢？</summary><p>CLI 会直接以「这个时长能做到的最小体积」失败退出，而不是产出一个六分钟的幻灯片。工具会把这句话当作错误返回给 agent。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../halfsize-vs-ffmpeg-vs-handbrake/">和 ffmpeg、HandBrake 比</a>
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 手写两遍</a>
+    <a href="../compress-video-to-size/">每个目标大小</a>
+    <a href="../20mb/">20 MB 上限</a>
+    <a href="../offline/">不联网压缩</a>
+    <a href="../video-size-calculator/">大小计算器</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

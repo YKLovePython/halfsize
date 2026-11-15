@@ -34,6 +34,16 @@ Options: `--to <size>`, `--for <app>`, `--crf <n>`, `--codec h264|h265`, `--pres
 `ffmpeg-static` download, verifies each build against the published sha256, and caches it per user.
 It tries GitHub, then the npmmirror mirror.
 
+## As an MCP server
+
+`npx -y halfsize --mcp` speaks MCP over stdio (no port, no daemon) and exposes one tool,
+`compress_video(input, target, output?, codec?, verify?, dryRun?)`. It runs the same CLI and
+returns the same JSON report, including the measured VMAF/SSIM. Client config:
+
+```json
+{ "mcpServers": { "halfsize": { "command": "npx", "args": ["-y", "halfsize", "--mcp"] } } }
+```
+
 Presets target Discord free 20 MB, WeChat 20 MB, WhatsApp 16 MB, email/Gmail 18 MB (the raw size
 that stays under a 25 MB message after base64), Outlook 15 MB, and X/Twitter 512 MB.
 
@@ -84,6 +94,7 @@ macOS and Linux are supported.
 - FFmpeg target-size guide: https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/
 - HandBrake target size (its target-size box was removed in 0.10): https://yklovepython.github.io/halfsize/handbrake-compress-to-size/
 - halfsize vs FFmpeg vs HandBrake: https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/
+- MCP server setup (Claude Code, Cursor, Desktop): https://yklovepython.github.io/halfsize/mcp/
 - Discord 20 MB: https://yklovepython.github.io/halfsize/discord/
 - WeChat 20 MB: https://yklovepython.github.io/halfsize/wechat/
 - WhatsApp 16 MB: https://yklovepython.github.io/halfsize/whatsapp/

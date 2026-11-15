@@ -48,6 +48,13 @@ With more than one input, `--json` returns `{ "files": [ ... ] }`.
 
 If `npx halfsize` is unavailable, use `npx github:YKLovePython/halfsize` with the same flags.
 
+If a run fails with "FFmpeg was not found" (npm sometimes skips the binary download
+behind a proxy), repair it in place, then retry the same command:
+
+```bash
+npx halfsize@latest --fix
+```
+
 ## How to read the result
 
 - `0.3% under target` — good; it deliberately aims slightly under hard caps

@@ -209,7 +209,8 @@ If your client speaks MCP instead, halfsize is also a single-tool MCP server:
 
 That gives the agent one tool, `compress_video(input, target, output?, codec?, verify?)`,
 backed by the same CLI and the same JSON report. It is stdio only: no port, no daemon,
-nothing listening.
+nothing listening. Per-client setup (Claude Code, Claude Desktop, Cursor, VS Code) is on
+[MCP server](https://YKLovePython.github.io/halfsize/mcp/).
 
 ## How it works
 
@@ -278,6 +279,7 @@ halfsize <file> [options]
   --port <n>        Port for the web app (default 4174)
   --doctor          Show which FFmpeg and encoders were found
   --fix             Download FFmpeg when npm skipped it
+  --mcp             Run as an MCP server on stdio (for AI agents)
   -h, --help        Help
   -v, --version     Version
 ```

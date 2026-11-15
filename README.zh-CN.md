@@ -198,7 +198,8 @@ npx skills add YKLovePython/halfsize
 ```
 
 它只暴露一个工具 `compress_video(input, target, output?, codec?, verify?)`，底下跑的是同一个
-CLI、同一份 JSON 报告。纯 stdio，不开端口、不起后台服务。
+CLI、同一份 JSON 报告。纯 stdio，不开端口、不起后台服务。各客户端的配置（Claude Code、
+Claude Desktop、Cursor、VS Code）见 [MCP 服务器](https://YKLovePython.github.io/halfsize/zh/mcp/)。
 
 ## 它怎么工作
 
@@ -261,6 +262,7 @@ halfsize <file> [options]
   --port <n>        网页版端口（默认 4174）
   --doctor          查看找到的 FFmpeg 和编码器
   --fix             在 npm 没下到 FFmpeg 时补下载
+  --mcp             以 MCP 服务器方式运行（stdio，给 AI agent 用）
   -h, --help        帮助
   -v, --version     版本
 ```

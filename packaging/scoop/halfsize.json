@@ -10,7 +10,7 @@
     ],
     "depends": "nodejs-lts",
     "url": "https://registry.npmjs.org/halfsize/-/halfsize-0.1.11.tgz",
-    "hash": "sha256:ee7a918e345f7944acd529694e39cb09e7bac2e78e6ca7c35a7bc7fbbfe9e26b",
+    "hash": "sha256:afafaea03deeed56ff8a6379ae86ce4c76b29f97378fc6b68e94f04cdbf9eb94",
     "extract_dir": "package",
     "bin": "halfsize.cmd",
     "installer": {

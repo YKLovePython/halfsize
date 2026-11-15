@@ -12,6 +12,10 @@
   fixes it, and where to point `HALFSIZE_FFMPEG` if the download is blocked
 - Windows on ARM: `ffmpeg-static` publishes no `win32-arm64` build, so halfsize
   now falls back to the x64 binary, which runs under the OS emulation layer
+- New `halfsize --mcp`: a one-tool MCP server on stdio. `compress_video(input,
+  target, output?, codec?, verify?, dryRun?)` shells out to the same CLI and
+  returns the same JSON report, including the measured VMAF/SSIM, so an agent
+  reports what the size cost instead of guessing a CRF
 
 ## 0.1.10
 

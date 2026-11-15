@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="msvalidate.01" content="D5517FDFEBAA23318580E81450A60C01">
+<title>halfsize as an MCP server (Claude Code, Cursor, Desktop)</title>
+<meta name="description" content="Give an AI agent one tool that compresses a video to a byte target and returns the measured VMAF. Setup for Claude Code, Claude Desktop, Cursor and VS Code, over stdio, with no API key.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/mcp/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/mcp/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/mcp/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="halfsize as an MCP server">
+<meta property="og:description" content="One tool, compress_video: the agent asks for 20 MB and gets a file plus the measured quality loss.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/mcp/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does the MCP server upload the video?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. It runs on the same machine as the client, as a child process over stdio. There is no port, no daemon and no outbound request; the file is read from disk and written back to disk." }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need an API key for halfsize's MCP server?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. There is nothing to authenticate: the server is a local process started by the agent's client with a command line, not a hosted endpoint." }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I add halfsize to Claude Code?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Run: claude mcp add halfsize -- npx -y halfsize --mcp. Claude Code starts the process itself, so there is no JSON file to edit." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why give an agent a compression tool at all?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Because the part an agent gets wrong is the arithmetic: it will guess a CRF, the file will not fit, and it will guess again. compress_video solves for the byte budget, downscales when that looks better, and returns VMAF and SSIM so the agent can report what the size cost instead of claiming nothing was lost." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/mcp/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / MCP server</p>
+  <h1>Give your agent a <em>size solver</em></h1>
+  <p class="lede">
+    Compressing to a target is the one part of this task an assistant cannot talk its way through.
+    <code>halfsize --mcp</code> turns it into a tool call: the agent asks for 20 MB, gets a real file
+    back, and gets the measured quality loss in the same response.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Why a tool, not a prompt</h2>
+  <p>
+    Ask a model to shrink a video and it will write <code>-crf 28</code>, guess, check the size, and
+    guess again — or worse, tell the user it fits without checking. The arithmetic is not hard, but
+    it depends on state the model never sees: the real duration, the real audio bitrate, the
+    container overhead, the resolution that budget can carry.
+  </p>
+  <p>
+    <code>compress_video</code> hides exactly that. It returns the output path, the byte count, the
+    accuracy against the target, and VMAF/SSIM measured against the source, so the agent can report
+    <em>what the size cost</em> instead of promising that nothing was lost.
+  </p>
+
+  <h2>Add it to your client</h2>
+  <p>Every client below starts the same local process. No key, no account, no hosted endpoint.</p>
+
+  <h3>Claude Code</h3>
+  <pre><code><span class="prompt">$</span> <span class="hl">claude mcp add halfsize -- npx -y halfsize --mcp</span></code></pre>
+
+  <h3>Claude Desktop</h3>
+  <p>Edit <code>claude_desktop_config.json</code> (Settings → Developer → Edit Config):</p>
+  <pre><code>{
+  "mcpServers": {
+    "halfsize": {
+      "command": "npx",
+      "args": ["-y", "halfsize", "--mcp"]
+    }
+  }
+}</code></pre>
+
+  <h3>Cursor</h3>
+  <p><code>~/.cursor/mcp.json</code> (or <code>.cursor/mcp.json</code> inside a project) uses the
+     same <code>mcpServers</code> shape as above.</p>
+
+  <h3>VS Code</h3>
+  <p><code>.vscode/mcp.json</code> spells the key <code>servers</code>:</p>
+  <pre><code>{
+  "servers": {
+    "halfsize": { "command": "npx", "args": ["-y", "halfsize", "--mcp"] }
+  }
+}</code></pre>
+
+  <p class="small">
+    On Windows, <code>command</code> may need to be <code>npx.cmd</code> depending on the client.
+    Node.js 18+ must be on the <code>PATH</code> the client inherits.
+  </p>
+
+  <h2>The one tool</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Argument</th><th>Type</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>input</code></td><td>string, required</td><td>Path to the local video file.</td></tr>
+        <tr><td><code>target</code></td><td>string, required</td><td><code>20mb</code>, <code>16mb</code>, <code>800k</code>, <code>1.5gb</code>. No unit means MB.</td></tr>
+        <tr><td><code>output</code></td><td>string</td><td>Defaults to <code>&lt;input&gt;.&lt;target&gt;.mp4</code> next to the input.</td></tr>
+        <tr><td><code>codec</code></td><td><code>h264</code> | <code>h265</code></td><td>H.265 keeps more resolution at the same bytes, at a compatibility cost.</td></tr>
+        <tr><td><code>verify</code></td><td>boolean</td><td>Measure VMAF/SSIM. Defaults to true; false is faster.</td></tr>
+        <tr><td><code>dryRun</code></td><td>boolean</td><td>Return the plan — bitrate, resolution, warnings — without encoding.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    The response carries a short human-readable summary <em>and</em> the full JSON report as
+    <code>structuredContent</code>, so a client that reads structure and a client that reads text
+    both see the same numbers.
+  </p>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize input.mp4 --to 20mb</span>
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+
+  <h2>If your client does not speak MCP</h2>
+  <p>
+    There is also an agent skill, which is just instructions plus a command to run:
+    <code>npx skills add YKLovePython/halfsize</code>. It works in Claude Code, Codex, Cursor and
+    OpenCode. The MCP path is the stricter one — typed arguments, structured results, no shell
+    quoting for the agent to get wrong.
+  </p>
+
+  <h2>What it will not do</h2>
+  <ul>
+    <li><b>No upload.</b> stdio only: the client spawns the process, nothing listens on a port.
+        If a tool description ever asks the agent to post your video somewhere, that is not this one.</li>
+    <li><b>No editing.</b> One input, one output. Trimming, cutting and joining are out of scope;
+        several files are several calls.</li>
+    <li><b>No silent quality claims.</b> VMAF and SSIM come back with the file, so the agent has
+        something to report other than "done".</li>
+  </ul>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Does this upload my video?</summary><p>No. The server is a child process on your machine speaking JSON-RPC over stdin/stdout. There is no HTTP endpoint and no telemetry.</p></details>
+    <details><summary>Do I need an API key?</summary><p>No. There is nothing to authenticate — the client starts a local command.</p></details>
+    <details><summary>Why not let the agent call <code>ffmpeg</code> directly?</summary><p>It can, and it will guess a CRF. The failure is not the command, it is the budget: duration, audio bitrate, container overhead and resolution choice. That is what this tool encapsulates.</p></details>
+    <details><summary>Does it work offline?</summary><p>Compressing does. The first run may need network access for <code>npx</code> to fetch the package and for FFmpeg, which ships as an optional dependency. After that, no network is involved except a manual <code>halfsize --fix</code>.</p></details>
+    <details><summary>Windows?</summary><p>Supported, including Windows on ARM (the x64 FFmpeg build runs under emulation). If the client cannot find <code>npx</code>, point <code>command</code> at <code>npx.cmd</code> and keep the same args.</p></details>
+    <details><summary>What if the agent asks for an impossible size?</summary><p>The CLI exits with the smallest achievable size for that duration instead of producing a 6-minute slideshow. The tool returns that as an error the agent can relay.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../halfsize-vs-ffmpeg-vs-handbrake/">halfsize vs FFmpeg vs HandBrake</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg by hand</a>
+    <a href="../compress-video-to-size/">Every target size</a>
+    <a href="../20mb/">20 MB limit</a>
+    <a href="../offline/">Compress without uploading</a>
+    <a href="../video-size-calculator/">Size calculator</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>
