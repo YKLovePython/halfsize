@@ -13,6 +13,9 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node: [20, 22]
     runs-on: ${{ matrix.os }}
+    # A hung test used to sit here for the full 6-hour default. Fifteen minutes is
+    # more than the slowest job ever needed, and a hang is a failure, not a wait.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

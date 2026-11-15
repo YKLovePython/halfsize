@@ -46,14 +46,33 @@ function startServer() {
     const id = nextId++;
     const message = { jsonrpc: "2.0", id, method, params };
     const promise = new Promise((resolve, reject) => {
-      pending.set(id, resolve);
-      setTimeout(() => reject(new Error(`no response to ${method} within 20s`)), 20000).unref();
+      // A real (not unref'd) timer, cleared on reply: if the server never answers,
+      // the test has to fail rather than leave a promise nobody settles.
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        reject(new Error(`no response to ${method} within 20s`));
+      }, 20000);
+      pending.set(id, (reply) => {
+        clearTimeout(timer);
+        resolve(reply);
+      });
     });
     child.stdin.write(`${JSON.stringify(message)}\n`);
     return promise;
   };
 
   return { child, request, notify: (method, params) => child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", method, params })}\n`) };
+}
+
+// Closing stdin lets the server's read loop end on its own; destroying the pipes
+// after that is what stops the test runner from waiting on an open handle.
+function stop(server) {
+  const { child } = server;
+  child.stdin.end();
+  child.kill();
+  child.stdin.destroy();
+  child.stdout.destroy();
+  child.stderr.destroy();
 }
 
 test("initialize answers with a protocol version, tool capability and a name", async () => {
@@ -65,8 +84,7 @@ test("initialize answers with a protocol version, tool capability and a name", a
     assert.equal(res.result.serverInfo.name, "halfsize");
     assert.match(res.result.serverInfo.version, /^\d+\.\d+\.\d+$/);
   } finally {
-    server.child.stdin.end();
-    server.child.kill();
+    stop(server);
   }
 });
 
