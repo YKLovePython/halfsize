@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="msvalidate.01" content="D5517FDFEBAA23318580E81450A60C01">
+<title>halfsize vs FFmpeg vs HandBrake: which fits a size cap?</title>
+<meta name="description" content="FFmpeg is the encoder, HandBrake is a GUI on it, halfsize is the size arithmetic. A side-by-side of CRF, two-pass bitrate and target-size tools, with what each one gets wrong.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/halfsize-vs-ffmpeg-vs-handbrake/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="halfsize vs FFmpeg vs HandBrake">
+<meta property="og:description" content="Three tools, one question: which number do you control, quality or size? And who measures what you lost?">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is halfsize a replacement for HandBrake?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. HandBrake is a full transcoder with previews, chapters, subtitle tracks, filters and presets. halfsize does one job: make a file fit a byte target and report the quality loss. They can sit on the same machine without overlapping." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does halfsize encode differently from FFmpeg?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No. It runs ffmpeg with libx264 or libx265 in two-pass ABR. What it adds is the bitrate budget, the resolution choice, a retry when the encode overshoots, and a VMAF/SSIM measurement at the end." }
+    },
+    {
+      "@type": "Question",
+      "name": "Does halfsize use the GPU?",
+      "acceptedAnswer": { "@type": "Answer", "text": "No, it uses libx264 and libx265 for a reason. NVENC, QSV and AMF are much faster, but their average-bitrate control is looser, two-pass ABR is not the same, and at a fixed byte budget they produce a softer picture. A hard size cap is exactly the case where the slower encoder wins." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which tool should I use for a 20 MB upload limit?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Anything that solves for size rather than quality: halfsize, or ffmpeg with a hand-computed -b:v and -pass 1/-pass 2, or HandBrake's Average Bitrate with 2-Pass Encoding. A constant-quality encode is the wrong control for a hard cap." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/halfsize-vs-ffmpeg-vs-handbrake/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / comparison</p>
+  <h1>halfsize vs FFmpeg vs <em>HandBrake</em></h1>
+  <p class="lede">
+    They are not three competitors. FFmpeg is the encoder, HandBrake is a GUI in front of it, and
+    halfsize is a wrapper that does the size arithmetic and the quality check. The useful question is
+    not "which is better" but <b>which number do you control: quality or size?</b>
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>Side by side</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th></th><th><code>-crf</code></th><th><code>-b:v</code> 2-pass</th><th>HandBrake</th><th>halfsize</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>What you control</td><td>quality</td><td>size</td><td>quality (or avg bitrate)</td><td>size</td></tr>
+        <tr><td>Hits an exact size</td><td>no</td><td>close, after you do the maths</td><td>no target-size box since 0.10</td><td>1–3% under, automatically</td></tr>
+        <tr><td>Resolution decision</td><td>manual</td><td>manual</td><td>manual (filters only)</td><td>picked from the budget</td></tr>
+        <tr><td>Overshoot handling</td><td>re-encode and guess again</td><td>re-encode with a lower bitrate</td><td>the same loop, in a GUI</td><td>re-encodes once, then reports</td></tr>
+        <tr><td>Quality measurement</td><td><code>libvmaf</code>, by hand</td><td><code>libvmaf</code>, by hand</td><td>none built in</td><td>VMAF + SSIM + a verdict</td></tr>
+        <tr><td>Install</td><td>package manager</td><td>package manager</td><td>~150 MB installer</td><td><code>npx halfsize</code></td></tr>
+        <tr><td>Best at</td><td>archives, masters</td><td>scripted caps</td><td>browsing, previewing, editing</td><td>"make this fit 20 MB"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The only axis that matters</h2>
+  <p>
+    Constant quality and constant size are opposites. <code>-crf 23</code> holds the picture quality
+    and lets the byte count land wherever the content dictates: the same 23 on a talking head and on a
+    fireworks clip can differ by 4×. <code>-b:v 2460k</code> holds the byte rate and lets the quality
+    land wherever the content dictates.
+  </p>
+  <p>
+    An upload form with a hard cap is a size problem. Every tool below can solve it; only some of them
+    ask you to do the solving.
+  </p>
+
+  <h2>FFmpeg <code>-crf</code>: right when size does not matter</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffmpeg -i input.mp4 -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k out.mp4</span></code></pre>
+  <p>
+    One pass, no log files, no arithmetic. For a master file or an archive, this is the correct
+    command and you should stop reading. It is the wrong command the moment a form says 20 MB,
+    because you cannot know the output size without encoding it.
+  </p>
+
+  <h2>FFmpeg two-pass: correct, but you are the missing half</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffmpeg -y -i input.mp4 -c:v libx264 -b:v 2460k -pass 1 -an -f mp4 /dev/null</span>
+<span class="prompt">$</span> <span class="hl">ffmpeg -i input.mp4 -c:v libx264 -b:v 2460k -pass 2 -c:a aac -b:a 128k -movflags +faststart out.mp4</span></code></pre>
+  <p>To run that correctly you have to:</p>
+  <ol>
+    <li>Probe the duration and the real audio bitrate.</li>
+    <li>Compute the budget and subtract container overhead.</li>
+    <li>Decide whether 1080p fits that budget, or whether 720p would look better at the same bytes.</li>
+    <li>Encode, check the size, and adjust if it overshot.</li>
+    <li>Measure VMAF to know what it cost.</li>
+  </ol>
+  <p>
+    Steps 1–4 are the whole product. They also break the moment the input changes: the next clip has a
+    different duration, a different audio track, and needs a different bitrate. That is why people end
+    up guessing CRF instead — and why the guess keeps missing.
+  </p>
+
+  <h2>HandBrake: the same two ideas in a window</h2>
+  <p>
+    HandBrake exposes quality (RF) and average bitrate with <b>2-Pass Encoding</b>. It lost its
+    target-file-size control in 0.10 back in 2014, so "set the size in HandBrake" describes a version
+    that no longer ships. It is the right tool when you want to scrub through the timeline, pick a
+    range, check a preview frame and queue ten files. It does not compute the budget for you, choose a
+    resolution for you, or tell you what the picture lost.
+  </p>
+  <p class="small">
+    More detail: <a href="../handbrake-compress-to-size/">HandBrake and the 20 MB cap</a>.
+  </p>
+
+  <h2>halfsize: it does not encode differently, and that is the point</h2>
+  <p>
+    Underneath, halfsize runs the same <code>libx264</code>/<code>libx265</code> two-pass encode you
+    would type yourself. The difference is everything that surrounds it:
+  </p>
+  <ul>
+    <li><b>Budget.</b> Target bytes → bitrate, with the file's real duration, audio bitrate, rotation
+        and HDR flags read first.</li>
+    <li><b>Resolution ladder.</b> Walks down from the source size and picks the largest resolution
+        that stays above a bits-per-pixel floor (0.072 for H.264, 0.045 for H.265). That is why a
+        7× shrink can still look right: fewer pixels, honest bits.</li>
+    <li><b>One retry.</b> If the first encode lands more than 0.5% over the cap, it re-encodes with a
+        corrected bitrate instead of handing you a file the form will reject.</li>
+    <li><b>Proof.</b> VMAF and SSIM on sampled frames, then a verdict in words.</li>
+    <li><b>The caps, built in.</b> <code>--for discord</code>, <code>--for wechat</code>,
+        <code>--for whatsapp</code>, <code>--for email</code>, <code>--for outlook</code>,
+        <code>--for twitter</code>, and <code>--to 20mb</code> for anything else.</li>
+    <li><b>HDR handled.</b> HLG and PQ sources are tone-mapped to SDR BT.709 inside the same encode,
+        so the output does not end up washed out.</li>
+  </ul>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize input.mp4 --to 20mb</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     input.20mb.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+
+  <h2>What halfsize does not do</h2>
+  <ul>
+    <li><b>No editing.</b> No trimming, cuts, or joining. Several files in one command, each encoded
+        on its own: yes; a sequence: no.</li>
+    <li><b>No subtitle or chapter work.</b> Subtitle and extra audio tracks are dropped and reported,
+        not carried over.</li>
+    <li><b>No filter graphs.</b> No crop, denoise, watermark, or colour grading. Encode first, or use
+        FFmpeg or HandBrake for that step.</li>
+    <li><b>No GPU encoders.</b> NVENC/QSV/AMF are much faster, but their rate control is looser and
+        two-pass ABR is not equivalent; at a fixed byte budget they give you a softer picture. For a
+        quality-first encode, <code>ffmpeg -crf</code> on the same machine is faster than halfsize's
+        two passes — that is the trade.</li>
+    <li><b>No HDR output.</b> HDR input is converted to SDR on purpose. Keeping HDR tags on 8-bit
+        pixels is what makes phone videos look grey after compression.</li>
+    <li><b>Node.js 18+.</b> It runs FFmpeg as a subprocess and needs a Node runtime to do it, which is
+        why <code>npx</code> is the install.</li>
+  </ul>
+
+  <h2>Pick by situation</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Situation</th><th>Use</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>A form or chat app says 20 MB</td><td>halfsize</td><td>It solves for size and proves the quality</td></tr>
+        <tr><td>Archiving a master</td><td><code>ffmpeg -crf</code></td><td>Quality is the goal; size is whatever it is</td></tr>
+        <tr><td>Cutting a clip out first</td><td>HandBrake or FFmpeg</td><td>halfsize does not edit</td></tr>
+        <tr><td>A script or CI job</td><td>halfsize <code>--json</code></td><td>Plan, size and VMAF in one document</td></tr>
+        <tr><td>Hundreds of files overnight</td><td><code>ffmpeg -crf</code></td><td>Constant quality is cheaper than per-file VMAF</td></tr>
+        <tr><td>A phone video that looks grey</td><td>halfsize</td><td>HDR is tone-mapped instead of mis-tagged</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Is halfsize a replacement for HandBrake?</summary><p>No. HandBrake previews, trims, handles subtitles, chapters and batches; halfsize does one job and skips the rest. If you need to look at the picture before you commit, HandBrake or <code>halfsize --web</code>.</p></details>
+    <details><summary>Is halfsize slower than <code>-crf</code>?</summary><p>Yes, roughly twice as slow plus a quality check, because two passes analyse the file twice. On a 10-minute 1080p clip that is minutes, not hours. The reward is a file that fits on the first try.</p></details>
+    <details><summary>Why not just use <code>-fs 20M</code>?</summary><p><code>-fs</code> stops writing at the limit and can truncate mid-GOP, leaving a file of the right size that stops playing. It also gives you no control over where bits were spent.</p></details>
+    <details><summary>Does H.265 help?</summary><p>It usually keeps more resolution at the same byte budget, at the cost of playback compatibility. <code>--codec h265</code> switches the plan; VMAF will show whether it actually helped on your clip.</p></details>
+    <details><summary>Can I see what it will do before encoding?</summary><p><code>npx halfsize input.mp4 --to 20mb --dry-run</code> prints the bitrate, resolution and warnings in under a second.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../handbrake-compress-to-size/">HandBrake by hand</a>
+    <a href="../ffmpeg-compress-to-size/">FFmpeg by hand</a>
+    <a href="../compress-video-to-size/">Every target size</a>
+    <a href="../compress-video-without-losing-quality/">Quality, measured</a>
+    <a href="../video-size-calculator/">Size calculator</a>
+    <a href="../windows-compress-video-to-size/">Windows</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

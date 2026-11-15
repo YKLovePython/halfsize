@@ -34,7 +34,7 @@
   "codeRepository": "https://github.com/YKLovePython/halfsize",
   "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
-  "softwareVersion": "0.1.10"
+  "softwareVersion": "0.1.11"
 }
 </script>
 <script type="application/ld+json">
@@ -109,7 +109,7 @@
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 视频.mp4 --to 20mb</span>
 
-  halfsize 0.1.10
+  halfsize 0.1.11
 
   视频.mp4
   <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
@@ -135,6 +135,7 @@
     <a href="email/">邮件附件</a>
     <a href="twitter/">X / Twitter</a>
     <a href="ffmpeg-compress-to-size/">ffmpeg 指定大小</a>
+    <a href="handbrake-compress-to-size/">HandBrake 指定大小</a>
     <a href="file-size-limits/">各平台大小上限总表</a>
     <a href="hdr-washed-out/">HDR 压完发灰</a>
   </div>
@@ -204,6 +205,8 @@
     <div class="card"><h3><a href="video-size-calculator/">装得下吗？</a></h3><p>填时长和上限，算出码率、可用分辨率和大概的画质。</p></div>
     <div class="card"><h3><a href="video-blurry-after-sending/">发出去就糊</a></h3><p>发送软件会重编码。哪些原样传输、哪些会毁掉画质。</p></div>
     <div class="card"><h3><a href="windows-compress-video-to-size/">Windows 没有大小按钮</a></h3><p>ZIP 没用，照片只能裁剪，Clipchamp 只有预设。能指定体积的是这条两遍编码命令。</p></div>
+    <div class="card"><h3><a href="handbrake-compress-to-size/">HandBrake 与 20 MB 上限</a></h3><p>它的目标大小选项 0.10 就删了。该填什么，以及为什么导出还是 20.3 MB。</p></div>
+    <div class="card"><h3><a href="halfsize-vs-ffmpeg-vs-handbrake/">和 ffmpeg、HandBrake 比</a></h3><p>三个工具各自控制什么，谁负责告诉你画质损失了多少。</p></div>
   </div>
 
   <h2>常见问题</h2>

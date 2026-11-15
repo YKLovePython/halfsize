@@ -1,0 +1,218 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="msvalidate.01" content="D5517FDFEBAA23318580E81450A60C01">
+<title>halfsize 和 ffmpeg、HandBrake 有什么区别</title>
+<meta name="description" content="ffmpeg 是编码器，HandBrake 是它的图形界面，halfsize 是替你算大小和查画质的那一层。CRF、两遍码率、指定大小，三种做法各自适合什么。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/halfsize-vs-ffmpeg-vs-handbrake/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/halfsize-vs-ffmpeg-vs-handbrake/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="halfsize vs ffmpeg vs HandBrake">
+<meta property="og:description" content="三个工具，一个问题：你控制的是画质还是大小？谁负责告诉你损失了什么？">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/halfsize-vs-ffmpeg-vs-handbrake/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "halfsize 能替代 HandBrake 吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不能。HandBrake 有预览、裁剪、章节、字幕轨、滤镜和队列，halfsize 只做一件事：把文件压进字节目标，并告诉你画质付出了多少。两者可以同时装在一台机器上，不冲突。" }
+    },
+    {
+      "@type": "Question",
+      "name": "halfsize 的编码方式和 ffmpeg 不一样吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "一样。它调用的就是 ffmpeg 的 libx264 / libx265 两遍 ABR。多出来的是码率预算、分辨率选择、超出目标后的重压，以及最后的 VMAF/SSIM 测量。" }
+    },
+    {
+      "@type": "Question",
+      "name": "halfsize 用显卡编码吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不用，默认走 libx264 / libx265，这是有意的。NVENC、QSV、AMF 快得多，但平均码率控制更松，两遍 ABR 也不等价，同样的字节预算下画面更软。硬性大小上限恰好是最该用慢编码器的场景。" }
+    },
+    {
+      "@type": "Question",
+      "name": "20 MB 上传上限该用哪个？",
+      "acceptedAnswer": { "@type": "Answer", "text": "任何「解大小」而不是「解画质」的方式：halfsize，或者手算码率的 ffmpeg 两遍编码，或者 HandBrake 的平均码率加两遍编码。恒定画质模式对付硬上限是选错了旋钮。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../halfsize-vs-ffmpeg-vs-handbrake/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / 对比</p>
+  <h1>halfsize、ffmpeg、<em>HandBrake</em></h1>
+  <p class="lede">
+    这三个不是同一层的竞品。ffmpeg 是编码器，HandBrake 是它前面的图形界面，halfsize 是替你算大小、
+    查画质的那一层。真正有用的问题不是「哪个更好」，而是<b>你控制的是画质还是大小</b>。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>并排比</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th></th><th><code>-crf</code></th><th><code>-b:v</code> 两遍</th><th>HandBrake</th><th>halfsize</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>你控制什么</td><td>画质</td><td>大小</td><td>画质（或平均码率）</td><td>大小</td></tr>
+        <tr><td>能压到精确大小吗</td><td>不能</td><td>算完码率能接近</td><td>0.10 之后没有目标大小选项</td><td>自动落在下方 1% 到 3%</td></tr>
+        <tr><td>分辨率谁定</td><td>你自己</td><td>你自己</td><td>你自己（只有滤镜）</td><td>按预算自动选</td></tr>
+        <tr><td>超了怎么办</td><td>再猜一次重压</td><td>降码率重压</td><td>同样的循环，换成点鼠标</td><td>自动重压一次，然后报告</td></tr>
+        <tr><td>画质怎么量</td><td>自己跑 <code>libvmaf</code></td><td>自己跑 <code>libvmaf</code></td><td>不提供</td><td>VMAF + SSIM + 结论</td></tr>
+        <tr><td>怎么装</td><td>包管理器</td><td>包管理器</td><td>约 150 MB 安装包</td><td><code>npx halfsize</code></td></tr>
+        <tr><td>最擅长</td><td>存档、母版</td><td>脚本里的固定上限</td><td>浏览、预览、剪辑</td><td>「把它压进 20 MB」</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>唯一重要的那个维度</h2>
+  <p>
+    恒定画质和恒定大小是相反的。<code>-crf 23</code> 锁住画面质量，字节数随内容自己落：同样 23，
+    人物访谈和烟花视频能差 4 倍。<code>-b:v 2460k</code> 锁住码率，画质随内容自己落。
+  </p>
+  <p>
+    写出「上限 20 MB」的上传表单是个大小问题。下面每个工具都能解，区别在于有的工具让你自己解。
+  </p>
+
+  <h2>ffmpeg <code>-crf</code>：大小无所谓时才是对的</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffmpeg -i 输入.mp4 -c:v libx264 -crf 23 -preset medium -c:a aac -b:a 128k 输出.mp4</span></code></pre>
+  <p>
+    一遍、没有日志文件、不用算任何东西。存档或者做母版，这就是正确的命令，看到这里就可以走了。
+    一旦表单写着 20 MB，它就是错的，因为不压完你不可能知道大小。
+  </p>
+
+  <h2>ffmpeg 两遍：正确，但缺的那一半是你</h2>
+  <pre><code><span class="prompt">$</span> <span class="hl">ffmpeg -y -i 输入.mp4 -c:v libx264 -b:v 2460k -pass 1 -an -f mp4 /dev/null</span>
+<span class="prompt">$</span> <span class="hl">ffmpeg -i 输入.mp4 -c:v libx264 -b:v 2460k -pass 2 -c:a aac -b:a 128k -movflags +faststart 输出.mp4</span></code></pre>
+  <p>要把它用对，你得：</p>
+  <ol>
+    <li>探测时长和真实的音频码率。</li>
+    <li>算出预算，减掉容器开销。</li>
+    <li>判断 1080p 塞不塞得下；塞不下的话，同样字节下 720p 是不是更好看。</li>
+    <li>压完看一眼大小，超了就调。</li>
+    <li>量 VMAF，才知道代价是什么。</li>
+  </ol>
+  <p>
+    第 1 到 4 步就是这个产品本身。而且换一个素材就全部作废：下一条片子时长不同、音轨不同，码率也得重算。
+    这就是为什么大家最后都去猜 CRF 了，也是为什么猜的总是不准。
+  </p>
+
+  <h2>HandBrake：同样两个思路，装进一个窗口</h2>
+  <p>
+    HandBrake 提供质量（RF）和平均码率加 <b>2-Pass Encoding</b>。它在 2014 年的 0.10 里删掉了目标文件
+    大小，所以「在 HandBrake 里设置大小」说的是一个已经不存在的版本。想拖时间轴、选片段、看预览帧、
+    排十个文件进队列，它是正确的工具。但它不替你算预算、不替你选分辨率，也不告诉你画面损失了什么。
+  </p>
+  <p class="small">
+    展开看：<a href="../handbrake-compress-to-size/">HandBrake 与 20 MB 上限</a>。
+  </p>
+
+  <h2>halfsize：编码方式没变，这正是重点</h2>
+  <p>
+    底下跑的就是你会自己敲的那条 <code>libx264</code>/<code>libx265</code> 两遍编码。差别在它周围的一圈东西：
+  </p>
+  <ul>
+    <li><b>预算。</b> 从目标字节反推码率，用的是这个文件真实的时长、音频码率、旋转信息和 HDR 标记。</li>
+    <li><b>分辨率阶梯。</b> 从源分辨率往下走，挑「每像素比特数」（H.264 0.072，H.265 0.045）还撑得住的
+        最大一档。所以缩 7 倍还能看：像素少了，比特是实的。</li>
+    <li><b>一次重压。</b> 第一遍超出上限 0.5% 以上，就用修正后的码率再压一次，而不是把会被表单拒掉的文件
+        交给你。</li>
+    <li><b>证据。</b> 抽样帧量 VMAF 和 SSIM，然后用人话给结论。</li>
+    <li><b>上限内置。</b> <code>--for discord</code>、<code>--for wechat</code>、<code>--for whatsapp</code>、
+        <code>--for email</code>、<code>--for outlook</code>、<code>--for twitter</code>，其他情况用
+        <code>--to 20mb</code>。</li>
+    <li><b>HDR 有处理。</b> HLG / PQ 片源在同一次编码里转成 SDR BT.709，输出不会发灰。</li>
+  </ul>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 输入.mp4 --to 20mb</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     输入.20mb.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   小 7.0 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
+
+  <h2>halfsize 不做什么</h2>
+  <ul>
+    <li><b>不剪辑。</b> 不裁、不切、不拼接。一条命令可以连续处理多个文件，但每个各压各的；合成一条序列不行。</li>
+    <li><b>不处理字幕和章节。</b> 字幕轨和多余音轨会被丢掉并提示，不会带过去。</li>
+    <li><b>不给滤镜。</b> 不裁切、不降噪、不打水印、不调色。需要就先做完，或者交给 ffmpeg / HandBrake。</li>
+    <li><b>不用显卡编码。</b> NVENC/QSV/AMF 快得多，但码率控制更松、两遍 ABR 不等价，固定字节预算下画面更软。
+        要画质优先，同一台机器上 <code>ffmpeg -crf</code> 比 halfsize 的两遍更快，这是明摆着的取舍。</li>
+    <li><b>不输出 HDR。</b> HDR 片源是有意转成 SDR 的。8-bit 像素挂着 HDR 标签，正是手机视频压完发灰的原因。</li>
+    <li><b>需要 Node.js 18+。</b> FFmpeg 是子进程，得有个 Node 运行时，所以用 <code>npx</code> 安装。</li>
+  </ul>
+
+  <h2>按场景选</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>情况</th><th>用哪个</th><th>为什么</th></tr></thead>
+      <tbody>
+        <tr><td>表单或聊天软件写着 20 MB</td><td>halfsize</td><td>它是解大小的，而且给出画质结论</td></tr>
+        <tr><td>存母版</td><td><code>ffmpeg -crf</code></td><td>目标是画质，大小是多少算多少</td></tr>
+        <tr><td>先要剪一段</td><td>HandBrake 或 ffmpeg</td><td>halfsize 不剪辑</td></tr>
+        <tr><td>写进脚本或 CI</td><td>halfsize <code>--json</code></td><td>方案、大小、VMAF 一份文档全给</td></tr>
+        <tr><td>几百个文件跑一夜</td><td><code>ffmpeg -crf</code></td><td>恒定画质比逐个量 VMAF 便宜</td></tr>
+        <tr><td>手机视频压完发灰</td><td>halfsize</td><td>HDR 会真的转成 SDR，而不是贴错标签</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>halfsize 能替代 HandBrake 吗？</summary><p>不能。HandBrake 能预览、裁剪、处理字幕章节、排队批量；halfsize 只做一件事。压之前要先看一眼画面，用 HandBrake 或 <code>halfsize --web</code>。</p></details>
+    <details><summary>比 <code>-crf</code> 慢吗？</summary><p>慢，大约两倍，外加一次画质测量，因为两遍要分析两遍。10 分钟 1080p 是几分钟的差别，不是几小时。换来的是第一次就压进目标。</p></details>
+    <details><summary>为什么不用 <code>-fs 20M</code>？</summary><p><code>-fs</code> 是写到上限就停，可能在 GOP 中间截断，得到一个大小正好、结尾放不出来的文件；而且你完全不知道比特花在哪。</p></details>
+    <details><summary>H.265 值得吗？</summary><p>同样字节预算下通常能保住更多分辨率，代价是兼容性。<code>--codec h265</code> 会换方案，VMAF 会告诉你它在你这条片子上到底有没有帮上忙。</p></details>
+    <details><summary>压之前能看到方案吗？</summary><p>能，<code>npx halfsize 输入.mp4 --to 20mb --dry-run</code> 一秒内打印码率、分辨率和警告，不编码。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../handbrake-compress-to-size/">HandBrake 手写</a>
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 手写两遍</a>
+    <a href="../compress-video-to-size/">每个目标大小</a>
+    <a href="../compress-video-without-losing-quality/">画质怎么量</a>
+    <a href="../video-size-calculator/">大小计算器</a>
+    <a href="../windows-compress-video-to-size/">Windows</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

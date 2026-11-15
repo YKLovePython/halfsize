@@ -22,11 +22,17 @@ npx halfsize video.mp4 --for email
 npx halfsize video.mp4 --for outlook
 npx halfsize video.mp4 --for twitter
 npx halfsize --web
+npx halfsize --doctor
+npx halfsize --fix
 ```
 
 Options: `--to <size>`, `--for <app>`, `--crf <n>`, `--codec h264|h265`, `--preset <name>`,
 `--out <file>`, `--no-audio`, `--no-verify`, `--no-downscale`, `--force`, `--json`, `--dry-run`,
 `--port <n>`.
+
+`--fix` is the repair path: it downloads FFmpeg and FFprobe when npm silently skipped the
+`ffmpeg-static` download, verifies each build against the published sha256, and caches it per user.
+It tries GitHub, then the npmmirror mirror.
 
 Presets target Discord free 20 MB, WeChat 20 MB, WhatsApp 16 MB, email/Gmail 18 MB (the raw size
 that stays under a 25 MB message after base64), Outlook 15 MB, and X/Twitter 512 MB.
@@ -76,6 +82,8 @@ macOS and Linux are supported.
 - Email attachment guide: https://yklovepython.github.io/halfsize/email/
 - X (Twitter) guide: https://yklovepython.github.io/halfsize/twitter/
 - FFmpeg target-size guide: https://yklovepython.github.io/halfsize/ffmpeg-compress-to-size/
+- HandBrake target size (its target-size box was removed in 0.10): https://yklovepython.github.io/halfsize/handbrake-compress-to-size/
+- halfsize vs FFmpeg vs HandBrake: https://yklovepython.github.io/halfsize/halfsize-vs-ffmpeg-vs-handbrake/
 - Discord 20 MB: https://yklovepython.github.io/halfsize/discord/
 - WeChat 20 MB: https://yklovepython.github.io/halfsize/wechat/
 - WhatsApp 16 MB: https://yklovepython.github.io/halfsize/whatsapp/

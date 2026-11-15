@@ -49,7 +49,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.10
+  halfsize 0.1.11
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -187,6 +187,19 @@ npx skills add YKLovePython/halfsize
 也可以手动把整个文件夹放进 agent 技能目录（Claude Code 是 `.claude/skills/halfsize/`）。
 装好之后，agent 就能把「把这个视频压到 25 MB」变成一次压缩加一份画质报告，而不是瞎猜码率。
 
+如果你的客户端用的是 MCP，halfsize 本身也是一个单工具的 MCP 服务器：
+
+```json
+{
+  "mcpServers": {
+    "halfsize": { "command": "npx", "args": ["-y", "halfsize", "--mcp"] }
+  }
+}
+```
+
+它只暴露一个工具 `compress_video(input, target, output?, codec?, verify?)`，底下跑的是同一个
+CLI、同一份 JSON 报告。纯 stdio，不开端口、不起后台服务。
+
 ## 它怎么工作
 
 1. **探测。** 读取时长、分辨率、帧率、音频码率、旋转信息、HDR 标记。
@@ -247,6 +260,7 @@ halfsize <file> [options]
   --web             启动本地网页版
   --port <n>        网页版端口（默认 4174）
   --doctor          查看找到的 FFmpeg 和编码器
+  --fix             在 npm 没下到 FFmpeg 时补下载
   -h, --help        帮助
   -v, --version     版本
 ```
@@ -272,24 +286,27 @@ halfsize video.mp4 --to 25mb
 
 如果 `npx` 总是启动旧缓存，用 `npx halfsize@latest ...` 指定最新版。
 
-`ffmpeg-static` 和 `ffprobe-static` 会在 `npm install` 时下载预编译二进制。如果你在公司代理或
-会拦截 TLS 的网络后面，这一步可能失败。`halfsize` 会退回到 `PATH` 里的 `ffmpeg`，或者你手动指定的版本：
+`ffmpeg-static` 会在 `npm install` 时下载预编译的 FFmpeg；`ffprobe` 随包附带，不用下载。如果这一步
+因为代理、拦截 TLS 的杀毒软件或镜像问题**静默失败**，你会得到一个能启动、一压就报错、重装也修不好的
+命令行。一条命令就能补上，不用重装任何东西：
 
 ```bash
-HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe npx halfsize video.mp4 --to 25mb
+npx halfsize@latest --fix
 ```
 
-Windows 上 `winget install Gyan.FFmpeg` 就够了；macOS 用 `brew install ffmpeg`；
-Debian/Ubuntu 用 `sudo apt install ffmpeg`。跑一下 `npx halfsize --doctor` 能看到实际用的是哪个。
+`--fix` 拉的是同一份官方二进制，每个下载都用 `ffmpeg-static` 发布时公布的 sha256 校验，然后放进
+用户级缓存目录（`%LOCALAPPDATA%\halfsize\Cache\bin`、`~/Library/Caches/halfsize/bin` 或
+`~/.cache/halfsize/bin`）。之后不管全局安装还是 `npx`，都会自动找到它。它先试 GitHub，失败再退到
+npmmirror 二进制镜像（大陆很快）。
 
-如果 GitHub 下载慢或被阻断（大陆网络很常见），可以让 `ffmpeg-static` 改从 npmmirror 取二进制：
+如果连下载本身都被拦，还有两条路：
 
 ```bash
-# macOS / Linux
+# 让 ffmpeg-static 从 npmmirror 镜像取二进制
 FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static npx halfsize 视频.mp4 --to 25mb
 
-# Windows PowerShell
-$env:FFMPEG_BINARIES_URL="https://registry.npmmirror.com/-/binary/ffmpeg-static"; npx halfsize 视频.mp4 --to 25mb
+# 或者用你已有的 FFmpeg
+HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe npx halfsize 视频.mp4 --to 25mb
 ```
 
 如果 npm 报 `unable to verify the first certificate`，说明代理或杀毒软件在拦截 TLS。
@@ -299,14 +316,16 @@ Node 22.15 以上可以改用系统证书库：
 $env:NODE_OPTIONS="--use-system-ca"; npx halfsize 视频.mp4 --to 25mb
 ```
 
-FFmpeg 下载失败**不会再让整个安装失败**：`halfsize` 仍会装上，运行时会直接告诉你要用上面哪一种修法。
-`ffprobe` 是随包附带的，不需要单独下载。已经装过系统 FFmpeg 的话，`halfsize` 会优先用它，
-连这一步都可以跳过。
+FFmpeg 下载失败**不会再让整个安装失败**：`halfsize` 仍会装上，运行时会直接打印 `--fix` 那条命令。
+已经装过系统 FFmpeg 的话，`halfsize` 会优先用它，连这一步都可以跳过。
+Windows 上 `winget install Gyan.FFmpeg` 就够了；macOS 用 `brew install ffmpeg`；
+Debian/Ubuntu 用 `sudo apt install ffmpeg`。
 
 ## 常见问题
 
 **视频会被上传吗？**
-不会。命令行完全不联网。网页版只和 `127.0.0.1` 通信，上传的文件放在临时目录，进程退出就删掉。
+不会。压缩过程完全不联网；`halfsize` 唯一会发出的外部请求是 `--fix` 在 npm 漏下二进制时去取 FFmpeg
+本身。网页版只和 `127.0.0.1` 通信，上传的文件放在临时目录，进程退出就删掉。
 
 **Discord 发不出去，怎么压到 20 MB？**
 `npx halfsize 视频.mp4 --for discord` 会按免费档上限（2026 年底是 20 MB）压，输出就是普通 MP4，

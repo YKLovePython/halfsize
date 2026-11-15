@@ -1,0 +1,41 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Schema/master/schema.json",
+    "version": "0.1.11",
+    "description": "Compress any video to an exact size (Discord 20 MB, WhatsApp 16 MB) locally, and verify the quality with VMAF/SSIM.",
+    "homepage": "https://YKLovePython.github.io/halfsize/",
+    "license": "MIT",
+    "notes": [
+        "halfsize downloads FFmpeg on first use. If that is blocked, run: halfsize --fix",
+        "Compressing never touches the network; nothing is uploaded."
+    ],
+    "depends": "nodejs-lts",
+    "url": "https://registry.npmjs.org/halfsize/-/halfsize-0.1.11.tgz",
+    "hash": "sha256:ee7a918e345f7944acd529694e39cb09e7bac2e78e6ca7c35a7bc7fbbfe9e26b",
+    "extract_dir": "package",
+    "bin": "halfsize.cmd",
+    "installer": {
+        "script": [
+            "Push-Location \"$dir\"",
+            "npm install --omit=dev --no-audit --no-fund",
+            "Pop-Location",
+            "# A .cmd wrapper rather than the .mjs itself: every Scoop version can shim a",
+            "# .cmd, not every one knows what to do with a Node module entry point.",
+            "$content = @(",
+            "    '@echo off'",
+            "    'node \"%~dp0bin\\halfsize.mjs\" %*'",
+            ")",
+            "Set-Content -Path \"$dir\\halfsize.cmd\" -Value $content -Encoding ASCII"
+        ]
+    },
+    "uninstaller": {
+        "script": [
+            "# npm leaves the FFmpeg download behind; it is ~110 MB and only this app uses it.",
+            "Remove-Item -Path \"$env:LOCALAPPDATA\\halfsize\" -Recurse -Force -ErrorAction SilentlyContinue",
+            "Remove-Item -Path \"$env:USERPROFILE\\.cache\\halfsize\" -Recurse -Force -ErrorAction SilentlyContinue"
+        ]
+    },
+    "checkver": {
+        "url": "https://registry.npmjs.org/halfsize/latest",
+        "jsonpath": "$.version"
+    }
+}

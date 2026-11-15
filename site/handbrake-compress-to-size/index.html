@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="msvalidate.01" content="D5517FDFEBAA23318580E81450A60C01">
+<title>HandBrake: compress to an exact size (20 MB example)</title>
+<meta name="description" content="HandBrake targets quality, not bytes. How to get close to a 20 MB cap with its average-bitrate box, why the result drifts, and the one setting that fixes it.">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/handbrake-compress-to-size/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/handbrake-compress-to-size/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/handbrake-compress-to-size/">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HandBrake: compress to an exact size">
+<meta property="og:description" content="The target-size box left HandBrake in 0.10. Here is what replaced it, and how to land under a 20 MB cap.">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/handbrake-compress-to-size/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does HandBrake have a target file size option?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Not since version 0.10 in 2014. HandBrake removed the target-size control and kept two modes: constant quality (RF/CRF) and average bitrate. Average bitrate with 2-pass encoding is the closest thing to a size cap, and it still is not a promise." }
+    },
+    {
+      "@type": "Question",
+      "name": "What average bitrate gives me 20 MB?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Multiply the target bytes by 8, divide by the duration in seconds, then subtract the audio bitrate and about 1.5% for container overhead. A 60-second clip at 20,000,000 bytes works out to about 2.46 Mbps of video after 128 kbps of AAC." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why did HandBrake produce 20.4 MB when I asked for 20 MB?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Average bitrate targets an average, not a ceiling. Container overhead, a short clip, and HandBrake's own audio encode all sit outside the video bitrate you typed. Budget 3-5% under the cap." }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">Home</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../zh/handbrake-compress-to-size/">中文</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / HandBrake target size</p>
+  <h1>HandBrake: can it hit an <em>exact size</em>?</h1>
+  <p class="lede">
+    No. HandBrake asks for a quality level or an average bitrate, and neither is a byte count.
+    Here is what its average-bitrate box actually does, how to land under a 20 MB cap with it,
+    and where the last few percent goes.
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">Get halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">Star on GitHub</a>
+  </div>
+
+  <h2>The target-size box left HandBrake in 0.10</h2>
+  <p>
+    Older versions had a <b>Target file size</b> control. It was removed in 0.10 (2014) because it
+    was honest about its own limits: the encoder cannot know the byte count until it has finished,
+    so the number moved anyway, and users read the miss as a bug. What is left in the Video tab is:
+  </p>
+  <ul>
+    <li><b>Quality</b> (constant RF in HandBrake's wording, CRF in x264's). Same picture quality,
+        size varies by content — often 2–4× between a talking head and a fireworks clip.</li>
+    <li><b>Average bitrate</b> (kbps) with an optional <b>2-Pass Encoding</b> checkbox. This is the
+        only mode that points at a size, and it is the one to use for an upload cap.</li>
+  </ul>
+  <p>
+    If a guide tells you to "set target size in HandBrake", it is describing a version that stopped
+    shipping twelve years ago.
+  </p>
+
+  <h2>Turn a size into a bitrate, then type it in</h2>
+  <p>The arithmetic is the same one FFmpeg needs, because it is the same encoder underneath:</p>
+  <pre><code>video_kbps = (target_bytes × 8 ÷ seconds) ÷ 1000 − audio_kbps − container_overhead</code></pre>
+  <p>
+    A 60-second clip at 20 MB (20,000,000 bytes) is 2.67 Mbps total. Subtract 128 kbps of AAC and
+    roughly 1.5% for the MP4 container, and the video stream has about <b>2.46 Mbps ≈ 2460 kbps</b>.
+  </p>
+  <p>In HandBrake, for that file:</p>
+  <ol>
+    <li><b>Video</b> tab → <b>Video Encoder</b>: H.264 (x264).</li>
+    <li><b>Framerate</b>: same as source, constant. Changing it changes the budget.</li>
+    <li><b>Quality</b> → switch to <b>Average Bitrate</b>, type <code>2460</code>.</li>
+    <li>Tick <b>2-Pass Encoding</b>. Optionally tick <b>Turbo first pass</b> — it only affects pass one.</li>
+    <li><b>Audio</b> tab: AAC, 128 kbps. This is the number you subtracted above, so do not leave it
+        on "Auto" and hope.</li>
+  </ol>
+  <p>
+    One pass would have to guess how complex the next scene is. Two passes analyse the whole file
+    first, then spend the budget where the picture needs it — the same reason the FFmpeg version of
+    this guide runs <code>-pass 1</code> and <code>-pass 2</code>.
+  </p>
+
+  <h2>Why it still lands at 20.3 MB</h2>
+  <ul>
+    <li><b>Average is not a ceiling.</b> x264 targets a mean over the clip. A 10-second file gives the
+        rate controller almost nothing to average, so it drifts further than a 10-minute one.</li>
+    <li><b>Container overhead is outside your maths.</b> MP4 headers and the moov atom add 1–2%. If
+        you mux to MKV the overhead moves, and the size moves with it.</li>
+    <li><b>HandBrake re-encodes audio.</b> Whatever the Audio tab says happens; a 96 kbps AAC source
+        re-encoded at 160 kbps eats budget you did not plan for. Match the track you measured.</li>
+    <li><b>Filters change the bitrate.</b> Denoise, deinterlace and crop all make the picture easier
+        or harder to encode. A quality preset applied after the size maths invalidates it.</li>
+  </ul>
+  <p>
+    Landing 1–3% under the cap is the correct outcome. 19.45 MB is accepted everywhere; 20.01 MB is
+    rejected by the same form.
+  </p>
+
+  <h2>The loop everyone runs instead</h2>
+  <p>
+    Encode → check the file size in Explorer → go back to the bitrate box → drop it by 5% → encode
+    again. It converges, usually in two or three attempts, and each attempt is a full encode. The
+    part that never gets answered is whether the file that finally fits still looks like the source.
+  </p>
+  <p>
+    HandBrake does not measure that for you: there is no VMAF or SSIM number on the queue or in the
+    log. You can produce one afterwards with FFmpeg's <code>libvmaf</code> filter, which means
+    keeping FFmpeg around next to HandBrake anyway.
+  </p>
+
+  <h2>What halfsize does differently</h2>
+  <p>
+    Same encoder, same two passes — the difference is that the bookkeeping is not yours:
+  </p>
+  <ul>
+    <li>Computes the budget from the target, including container overhead and the real audio bitrate
+        of <em>this</em> file, instead of a number you worked out by hand.</li>
+    <li>Downscales when that looks better than a starved bitrate: 1080p when the budget allows it,
+        720p or 540p when it does not. Squeezing 1080p into 800 kbps is how a video ends up soft.</li>
+    <li>Re-encodes once if the first attempt lands more than 0.5% over, so you do not run the loop.</li>
+    <li>Measures VMAF and SSIM, then prints a verdict in words: <em>indistinguishable</em>,
+        <em>slight softening</em>, <em>visible loss</em>.</li>
+    <li>Knows the caps: <code>--for discord</code>, <code>--for wechat</code>,
+        <code>--for whatsapp</code>, <code>--for email</code>, <code>--for outlook</code>,
+        <code>--for twitter</code>.</li>
+  </ul>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize input.mp4 --to 20mb</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     input.20mb.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   7.0x smaller   2.7% under target</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   slight softening</span></code></pre>
+
+  <h2>Measured results</h2>
+  <p>60-second 1080p30 source at 18 Mbps, halfsize defaults, one laptop:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Target</th><th>Output</th><th>Resolution</th><th>Video bitrate</th><th>VMAF</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">1.17 Mbps</td><td class="num">82.9</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">0.55 Mbps</td><td class="num">72.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">
+    What this table is not: a HandBrake benchmark. HandBrake wraps the same x264 build, so at the
+    same preset, tune and bitrate the output is within a few percent — but we have not measured it
+    here, and a made-up comparison row would be worse than no row.
+  </p>
+
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details><summary>Does HandBrake have a target file size option?</summary><p>Not since 0.10 (2014). Average bitrate plus 2-pass is the closest thing, and it still aims at an average rather than a hard ceiling.</p></details>
+    <details><summary>Which is better, quality mode or average bitrate?</summary><p>Quality mode for archives, average bitrate for a cap. Quality mode spends bits where the picture needs them but gives no size guarantee; average bitrate gives you a size estimate at the cost of a slightly less efficient bit allocation.</p></details>
+    <details><summary>Can HandBrake tell me how much quality I lost?</summary><p>Not by itself. HandBrake has no VMAF/SSIM report. You measure it afterwards with FFmpeg's <code>libvmaf</code>, which halfsize does automatically as part of the same command.</p></details>
+    <details><summary>HandBrake vs FFmpeg: same output?</summary><p>Both can drive x264. HandBrake adds its own defaults for filters, audio and container, and rounds the bitrate to whole kbps, so identical settings rarely produce identical files. The 1–3% under target behaviour is the same.</p></details>
+    <details><summary>Is there a GUI for halfsize?</summary><p>Yes, a local web app: <code>npx halfsize --web</code>. It opens on 127.0.0.1, takes a drag-and-drop, and never uploads anything.</p></details>
+  </div>
+
+  <h2>Related</h2>
+  <div class="platforms">
+    <a href="../ffmpeg-compress-to-size/">FFmpeg by hand</a>
+    <a href="../halfsize-vs-ffmpeg-vs-handbrake/">halfsize vs FFmpeg vs HandBrake</a>
+    <a href="../20mb/">20 MB limit</a>
+    <a href="../discord/">Discord <b>20 MB</b></a>
+    <a href="../wechat/">WeChat <b>20 MB</b></a>
+    <a href="../email/">Email attachments</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">Home</a> · <a href="../sitemap.xml">Sitemap</a></span>
+</footer>
+
+</div>
+</body>
+</html>

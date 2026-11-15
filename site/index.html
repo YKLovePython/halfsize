@@ -36,7 +36,7 @@
   "codeRepository": "https://github.com/YKLovePython/halfsize",
   "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "softwareVersion": "0.1.10"
+  "softwareVersion": "0.1.11"
 }
 </script>
 <script type="application/ld+json">
@@ -113,7 +113,7 @@
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize source.mp4 --to 2mb</span>
 
-  halfsize 0.1.10
+  halfsize 0.1.11
 
   source.mp4
   <span class="out">23.2 MB  8s  1920x1080  30.00 fps  h264</span>
@@ -140,6 +140,7 @@
     <a href="email/">Email attachments</a>
     <a href="twitter/">X / Twitter</a>
     <a href="ffmpeg-compress-to-size/">FFmpeg target size</a>
+    <a href="handbrake-compress-to-size/">HandBrake target size</a>
     <a href="file-size-limits/">Every platform's size cap</a>
     <a href="hdr-washed-out/">HDR looks washed out</a>
   </div>
@@ -209,6 +210,8 @@
     <div class="card"><h3><a href="video-size-calculator/">Will it fit?</a></h3><p>Type a duration and a limit; get the bitrate, the resolution and the expected quality.</p></div>
     <div class="card"><h3><a href="video-blurry-after-sending/">Blurry after sending</a></h3><p>The app you sent it through re-encoded it. Which ones pass the file through, and which ones ruin it.</p></div>
     <div class="card"><h3><a href="windows-compress-video-to-size/">Windows 11, no size button</a></h3><p>ZIP does nothing, Photos only trims, Clipchamp only has presets. The two-pass command that does.</p></div>
+    <div class="card"><h3><a href="handbrake-compress-to-size/">HandBrake and the 20 MB cap</a></h3><p>Its target-size box left in 0.10. What to set instead, and why the file still lands at 20.3 MB.</p></div>
+    <div class="card"><h3><a href="halfsize-vs-ffmpeg-vs-handbrake/">Compared with FFmpeg and HandBrake</a></h3><p>Which number each tool controls, and who measures what the picture lost.</p></div>
   </div>
 
   <h2>FAQ</h2>

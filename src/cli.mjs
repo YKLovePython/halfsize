@@ -60,6 +60,8 @@ const HELP = `
     halfsize --web                     Open the local app
     halfsize --web --port 8080         Use a different port
     halfsize --doctor                  Check FFmpeg and hardware encoders
+    halfsize --fix                     Download FFmpeg when npm skipped it
+    halfsize --mcp                     Run as an MCP server on stdio (for AI agents)
 
   Options
     --to <size>       Target size: 25mb, 700k, 1.5gb
@@ -133,6 +135,8 @@ function parseArgs(argv) {
     else if (a === "--force") args.flags.force = true;
     else if (a === "--web") args.flags.web = true;
     else if (a === "--doctor") args.flags.doctor = true;
+    else if (a === "--fix") args.flags.fix = true;
+    else if (a === "--mcp") args.flags.mcp = true;
     else if (a === "--port") {
       const raw = required(argv, ++i, "--port");
       const value = Number(raw);
@@ -181,11 +185,18 @@ export async function main(argv) {
     console.log(VERSION);
     return;
   }
-  if (flags.help || (!args._.length && !flags.web && !flags.doctor)) {
+  // A stdio server must not print a banner: stdout carries the protocol.
+  if (flags.mcp) {
+    const { serve } = await import("./mcp.mjs");
+    await serve();
+    return;
+  }
+  if (flags.help || (!args._.length && !flags.web && !flags.doctor && !flags.fix)) {
     console.log(HELP);
     return;
   }
   if (flags.doctor) return doctor();
+  if (flags.fix) return fix();
   if (flags.web) return startWeb(flags.port);
 
   if (flags.to && flags.for) throw new Error("Use --to or --for, not both.");
@@ -262,6 +273,7 @@ async function processFile(input, flags, targetBytes, platform, batch) {
       info,
       plan,
       out: outPath,
+      targetBytes,
       dryRun: true,
     };
   }
@@ -435,7 +447,92 @@ const SOURCE_LABEL = {
   env: "HALFSIZE_FFMPEG",
   path: "system PATH",
   bundled: "bundled with halfsize",
+  cache: "downloaded by halfsize --fix",
 };
+
+async function fix() {
+  const { fixBinaries, humanBytes } = await import("./fix.mjs");
+  const { findBinaries } = await import("./ffmpeg.mjs");
+
+  console.log("");
+  console.log(`  halfsize ${VERSION} fix`);
+  console.log("");
+  console.log(`  node       ${process.version}   ${process.platform} ${process.arch}`);
+
+  const before = await findBinaries();
+  if (before.ffmpeg && before.ffprobe) {
+    console.log("");
+    console.log(`  ffmpeg     ${before.ffmpeg}`);
+    console.log(`  ffprobe    ${before.ffprobe}`);
+    console.log(`  source     ${SOURCE_LABEL[before.source] || before.source}`);
+    console.log("");
+    console.log("  nothing to fix.");
+    console.log("");
+    return;
+  }
+
+  const missing = ["ffmpeg", "ffprobe"].filter((name) => !before[name]);
+  const tty = Boolean(process.stdout.isTTY);
+  const started = new Set();
+  let line = "";
+
+  const clear = () => {
+    if (!line) return;
+    process.stdout.write(`\r${" ".repeat(Math.max(line.length, 1))}\r`);
+    line = "";
+  };
+
+  const log = (event, info) => {
+    if (event === "progress") {
+      if (tty) {
+        const pct = info.total ? `${String(Math.floor((info.received / info.total) * 100)).padStart(3)}%` : "    ";
+        line = `  ${info.name.padEnd(8)} downloading ${pct}  ${humanBytes(info.received)}`;
+        process.stdout.write(`\r${line.padEnd(60)}`);
+      } else if (!started.has(info.name)) {
+        console.log(`  ${info.name.padEnd(8)} downloading`);
+      }
+      started.add(info.name);
+      return;
+    }
+    if (event === "installed") {
+      clear();
+      let host = "";
+      try {
+        host = new URL(info.url).host;
+      } catch {
+        host = info.url;
+      }
+      console.log(`  ${info.name.padEnd(8)} ok  ${humanBytes(info.bytes)} from ${host}`);
+    }
+  };
+
+  console.log("");
+  try {
+    const result = await fixBinaries({ log });
+    clear();
+    if (result.target.emulated) {
+      console.log(`  note       no native build for ${process.arch}; using the ${result.target.arch} binary`);
+    }
+    console.log("");
+    console.log(`  ffmpeg     ${result.found.ffmpeg}`);
+    console.log(`  ffprobe    ${result.found.ffprobe}`);
+    console.log("");
+    console.log("  ready. Try it on any video:");
+    console.log("    npx halfsize video.mp4 --to 20mb");
+    console.log("");
+  } catch (err) {
+    clear();
+    console.error("");
+    console.error(err?.message?.replace(/^/gm, "  ") || `  x ${err}`);
+    console.error("");
+    console.error("  If the download is blocked, use an FFmpeg you already have instead:");
+    console.error("    Windows  winget install Gyan.FFmpeg");
+    console.error("    macOS    brew install ffmpeg");
+    console.error("    Linux    sudo apt install ffmpeg");
+    console.error("");
+    process.exitCode = 1;
+  }
+}
 
 async function doctor() {
   const { resolveBinaries } = await import("./ffmpeg.mjs");
@@ -501,7 +598,7 @@ async function startWeb(port) {
     await resolveBinaries();
   } catch (err) {
     console.error(`\n  x ${err.message}`);
-    console.error("\n  Fix FFmpeg first, then run `npx halfsize@latest --doctor` to confirm.\n");
+    console.error("\n  Run `npx halfsize@latest --fix` to download FFmpeg, then try again.\n");
     process.exitCode = 1;
     return;
   }

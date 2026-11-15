@@ -1,0 +1,195 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="msvalidate.01" content="D5517FDFEBAA23318580E81450A60C01">
+<title>HandBrake 压到指定大小（20 MB 为例）</title>
+<meta name="description" content="HandBrake 控制的是画质，不是字节数。用它的平均码率把文件压到 20 MB 以下，为什么还会差几个百分点，以及最省事的那条路。">
+<link rel="canonical" href="https://yklovepython.github.io/halfsize/zh/handbrake-compress-to-size/">
+<link rel="alternate" hreflang="zh-CN" href="https://yklovepython.github.io/halfsize/zh/handbrake-compress-to-size/">
+<link rel="alternate" hreflang="en" href="https://yklovepython.github.io/halfsize/handbrake-compress-to-size/">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HandBrake 压到指定大小">
+<meta property="og:description" content="指定文件大小这个选项早在 0.10 就被删了。剩下的两个模式怎么用，才能压进 20 MB。">
+<meta property="og:url" content="https://yklovepython.github.io/halfsize/zh/handbrake-compress-to-size/">
+<meta property="og:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/YKLovePython/halfsize/main/docs/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "HandBrake 有指定文件大小的选项吗？",
+      "acceptedAnswer": { "@type": "Answer", "text": "2014 年的 0.10 版本之后就没有了。现在只剩恒定画质（RF/CRF）和平均码率两个模式。平均码率勾上两遍编码，是最接近「压到指定大小」的用法，但它仍然只是瞄准一个平均值，不是硬上限。" }
+    },
+    {
+      "@type": "Question",
+      "name": "20 MB 应该填多少平均码率？",
+      "acceptedAnswer": { "@type": "Answer", "text": "目标字节 × 8 ÷ 时长秒数，再减掉音频码率和大约 1.5% 的容器开销。60 秒压到 20,000,000 字节，减掉 128 kbps 的 AAC，视频流大约 2.46 Mbps，也就是 2460 kbps。" }
+    },
+    {
+      "@type": "Question",
+      "name": "为什么填了 20 MB，导出却是 20.4 MB？",
+      "acceptedAnswer": { "@type": "Answer", "text": "平均码率管的是平均，不是上限。容器开销、片段太短、以及 HandBrake 自己的音频编码都在你填的那个视频码率之外。按上限往下留 3% 到 5% 才是稳的。" }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<header class="site">
+  <a class="brand" href="../"><span class="mark"></span>halfsize</a>
+  <nav class="top">
+    <a href="../">首页</a>
+    <a href="../20mb/">20 MB</a>
+    <a href="../../handbrake-compress-to-size/">English</a>
+    <a class="stars" href="https://github.com/YKLovePython/halfsize">GitHub ★</a>
+  </nav>
+</header>
+
+<main>
+  <p class="small"><a href="../">halfsize</a> / HandBrake 指定大小</p>
+  <h1>HandBrake 能压到<em>指定大小</em>吗？</h1>
+  <p class="lede">
+    不能。它要的是画质档位或者平均码率，两个都不是字节数。下面说清楚它的平均码率框到底在做什么、
+    怎么把文件压进 20 MB，以及最后那百分之几跑到哪里去了。
+  </p>
+
+  <div class="actions">
+    <a class="button" href="https://www.npmjs.com/package/halfsize">获取 halfsize</a>
+    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+  </div>
+
+  <h2>「目标文件大小」这个选项，0.10 就删了</h2>
+  <p>
+    老版本里有一个 <b>Target file size</b>。0.10（2014 年）把它去掉了，理由很实在：编码器在压完之前
+    不可能知道准确的字节数，所以那个数字总会飘，而用户会把「飘」当成 bug。视频标签页剩下的是：
+  </p>
+  <ul>
+    <li><b>质量</b>（HandBrake 叫 RF，x264 叫 CRF）。画质固定，大小随内容变——人物访谈和烟花视频
+        能差 2 到 4 倍。</li>
+    <li><b>平均码率</b>（kbps），可以勾 <b>2-Pass Encoding</b>。这是唯一指向「大小」的模式，对付上传
+        上限就用它。</li>
+  </ul>
+  <p>如果哪篇教程让你「在 HandBrake 里设置目标大小」，它描述的是十二年前就停售的版本。</p>
+
+  <h2>把大小换算成码率，填进去</h2>
+  <p>算法和 FFmpeg 完全一样，因为底下是同一个编码器：</p>
+  <pre><code>视频码率(kbps) = (目标字节 × 8 ÷ 时长秒数) ÷ 1000 − 音频码率 − 容器开销</code></pre>
+  <p>
+    60 秒压到 20 MB（20,000,000 字节），总码率 2.67 Mbps。减掉 128 kbps 的 AAC，再留约 1.5% 给 MP4
+    容器，视频流大约 <b>2.46 Mbps，也就是 2460 kbps</b>。
+  </p>
+  <p>在这条片子上，HandBrake 里这样设：</p>
+  <ol>
+    <li><b>Video</b> 标签，<b>Video Encoder</b> 选 H.264（x264）。</li>
+    <li><b>Framerate</b> 保持与源相同、恒定。改了帧率，预算就变了。</li>
+    <li><b>Quality</b> 切成 <b>Average Bitrate</b>，填 <code>2460</code>。</li>
+    <li>勾上 <b>2-Pass Encoding</b>。<b>Turbo first pass</b> 可选，只影响第一遍。</li>
+    <li><b>Audio</b> 标签：AAC，128 kbps。这就是上面减掉的那个数，别留在「Auto」上碰运气。</li>
+  </ol>
+  <p>
+    单遍编码要在压的时候猜后面的画面有多复杂。两遍先把整条片子分析完，再把码率花在画面真正需要的地方，
+    和 <a href="../ffmpeg-compress-to-size/">ffmpeg 那篇</a>里跑 <code>-pass 1</code>、
+    <code>-pass 2</code> 是同一个道理。
+  </p>
+
+  <h2>为什么最后还是 20.3 MB</h2>
+  <ul>
+    <li><b>平均值不是上限。</b> x264 追的是整段的平均。10 秒的片子几乎没有可平均的样本，飘得比 10 分钟
+        的厉害得多。</li>
+    <li><b>容器开销不在你的算式里。</b> MP4 头和 moov 原子占 1% 到 2%。换个封装（比如 MKV），开销变了，
+        大小也跟着变。</li>
+    <li><b>HandBrake 会重编码音频。</b> Audio 标签写多少就是多少；96 kbps 的源重编成 160 kbps，多花的
+        码率你没算进去。</li>
+    <li><b>滤镜会改码率。</b> 降噪、反交错、裁切都会让画面更好压或更难压。算完大小再套画质预设，
+        前面的账就作废了。</li>
+  </ul>
+  <p>落在上限下方 1% 到 3% 才是正确结果：19.45 MB 到处能过，20.01 MB 会被同一个表单拒掉。</p>
+
+  <h2>大多数人实际在跑的循环</h2>
+  <p>
+    压一遍，在资源管理器里看大小，回去把码率往下调 5%，再压一遍。两三次能收敛，每次都完整压一遍。
+    而这个循环从头到尾没有回答一个问题：最后塞进去的那个文件，还像不像原片。
+  </p>
+  <p>
+    HandBrake 不替你量这个：队列里和日志里都没有 VMAF 或 SSIM。你只能在事后用 FFmpeg 的
+    <code>libvmaf</code> 滤镜补一次，也就是说，HandBrake 旁边还是得装 FFmpeg。
+  </p>
+
+  <h2>halfsize 做的有什么不同</h2>
+  <p>同一个编码器、同样两遍，区别是这些账不用你算：</p>
+  <ul>
+    <li>从目标反推码率，用的是<b>这个文件</b>的真实时长、音频码率和容器开销，不是你手算的那个数。</li>
+    <li>该降分辨率的时候降：预算够就 1080p，不够就 720p 或 540p。硬把 1080p 塞进 800 kbps，压出来就是糊的。</li>
+    <li>第一遍超出目标 0.5% 以上会自动用修正后的码率再压一次，不用你跑那个循环。</li>
+    <li>压完量 VMAF 和 SSIM，然后用人话给结论：<em>几乎无差别</em>、<em>轻微变软</em>、<em>明显损失</em>。</li>
+    <li>平台上限是内置的：<code>--for discord</code>、<code>--for wechat</code>、<code>--for whatsapp</code>、
+        <code>--for email</code>、<code>--for outlook</code>、<code>--for twitter</code>。</li>
+  </ul>
+
+  <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 输入.mp4 --to 20mb</span>
+
+  target     20.0 MB
+  plan       H.264  1280x720  2.46 Mbps  audio 128 kbps  2-pass
+  scale      1920x1080 → 1280x720
+  output     输入.20mb.mp4
+
+  <span class="hl">136 MB  →  19.45 MB   小 7.0 倍   比目标小 2.7%</span>
+  <span class="hl">VMAF 88.3   SSIM 0.971   轻微变软</span></code></pre>
+
+  <h2>实测数据</h2>
+  <p>60 秒 1080p30、源 18 Mbps，halfsize 默认设置，普通笔记本：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>目标</th><th>输出</th><th>分辨率</th><th>视频码率</th><th>VMAF</th></tr></thead>
+      <tbody>
+        <tr><td>20 MB</td><td class="num">19.45 MB</td><td class="num">1280×720</td><td class="num">2.46 Mbps</td><td class="num">88.3</td></tr>
+        <tr><td>16 MB</td><td class="num">15.59 MB</td><td class="num">960×540</td><td class="num">1.94 Mbps</td><td class="num">84.8</td></tr>
+        <tr><td>10 MB</td><td class="num">9.77 MB</td><td class="num">960×540</td><td class="num">1.17 Mbps</td><td class="num">82.9</td></tr>
+        <tr><td>5 MB</td><td class="num">4.93 MB</td><td class="num">640×360</td><td class="num">0.55 Mbps</td><td class="num">72.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small">
+    这张表<b>不是</b> HandBrake 的跑分。HandBrake 用的是同一个 x264，在相同预设、tune 和码率下，输出
+    通常只差几个百分点；但这个差别我们没有实测，编一行对比数据比不写更糟。
+  </p>
+
+  <h2>常见问题</h2>
+  <div class="faq">
+    <details><summary>HandBrake 到底有没有「指定文件大小」？</summary><p>0.10（2014）之后就没了。平均码率加两遍编码最接近，但它瞄的还是平均值，不是硬上限。</p></details>
+    <details><summary>质量模式和平均码率，选哪个？</summary><p>存档用质量模式，有硬性上限用平均码率。质量模式把码率花在画面上最需要的地方，但给不了大小保证；平均码率能估出大小，代价是分配效率略低一点。</p></details>
+    <details><summary>HandBrake 能量化我损失了多少画质吗？</summary><p>它自己不提供。队列和日志里没有 VMAF/SSIM，只能事后用 FFmpeg 的 <code>libvmaf</code> 量一次。halfsize 是在同一条命令里顺手量掉的。</p></details>
+    <details><summary>HandBrake 和 FFmpeg 压出来一样吗？</summary><p>两边都能调 x264。HandBrake 有自己的滤镜、音频和封装默认值，码率还会取整到 kbps，所以同样的设置很少字节级一致。落在目标下方 1% 到 3% 这个行为是一样的。</p></details>
+    <details><summary>halfsize 有图形界面吗？</summary><p>有，本地网页版：<code>npx halfsize --web</code>。只监听 127.0.0.1，拖进去就行，什么都不上传。</p></details>
+  </div>
+
+  <h2>相关</h2>
+  <div class="platforms">
+    <a href="../ffmpeg-compress-to-size/">ffmpeg 手写两遍</a>
+    <a href="../halfsize-vs-ffmpeg-vs-handbrake/">三者对比</a>
+    <a href="../20mb/">20 MB 上限</a>
+    <a href="../wechat/">微信 <b>20 MB</b></a>
+    <a href="../email/">邮件附件</a>
+  </div>
+</main>
+
+<footer class="site">
+  <span>halfsize · MIT · <a href="https://github.com/YKLovePython/halfsize">GitHub</a> · <a href="https://www.npmjs.com/package/halfsize">npm</a></span>
+  <span><a href="../">首页</a> · <a href="../../sitemap.xml">站点地图</a></span>
+</footer>
+
+</div>
+</body>
+</html>

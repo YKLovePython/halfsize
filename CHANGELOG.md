@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.11
+
+- New `halfsize --fix`: when npm skips the `ffmpeg-static` download (proxy,
+  TLS-inspecting antivirus, blocked GitHub) the package still installs, so the
+  CLI starts and then cannot encode. `--fix` fetches the same published builds,
+  verifies each one against the sha256 in the `ffmpeg-static` release, and keeps
+  them in a user-level cache that global installs, `npx` runs and local installs
+  all find. It tries GitHub first and falls back to the npmmirror binary mirror
+- The missing-FFmpeg error went from 27 lines to 8: the reason, one command that
+  fixes it, and where to point `HALFSIZE_FFMPEG` if the download is blocked
+- Windows on ARM: `ffmpeg-static` publishes no `win32-arm64` build, so halfsize
+  now falls back to the x64 binary, which runs under the OS emulation layer
+
 ## 0.1.10
 
 - macOS: the first run no longer reports "FFmpeg was not found". The bundled

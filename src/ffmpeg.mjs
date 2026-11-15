@@ -1,4 +1,7 @@
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 let cache = null;
 
@@ -28,7 +31,36 @@ async function bundled(spec) {
   }
 }
 
-export async function resolveBinaries() {
+// Where `halfsize --fix` puts the binaries it downloads. It is a user-level
+// cache rather than node_modules, because a global install, an npx run and a
+// local install all have different (often read-only, often disposable)
+// dependency trees, and one download should serve all three.
+export function binaryCacheDir(env = process.env, platform = process.platform) {
+  if (env.HALFSIZE_BIN_DIR) return env.HALFSIZE_BIN_DIR;
+  if (platform === "win32") {
+    const local = env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    return path.join(local, "halfsize", "Cache", "bin");
+  }
+  if (platform === "darwin") {
+    return path.join(os.homedir(), "Library", "Caches", "halfsize", "bin");
+  }
+  return path.join(env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache"), "halfsize", "bin");
+}
+
+function cachedBinary(name) {
+  const exe = name + (process.platform === "win32" ? ".exe" : "");
+  const file = path.join(binaryCacheDir(), exe);
+  try {
+    fs.accessSync(file, fs.constants.X_OK);
+    return file;
+  } catch {
+    return "";
+  }
+}
+
+// Same as resolveBinaries(), but reports what is missing instead of throwing.
+// `--fix` uses this to download only the binary that is actually absent.
+export async function findBinaries() {
   if (cache) return cache;
 
   const envFfmpeg = process.env.HALFSIZE_FFMPEG || "";
@@ -56,38 +88,41 @@ export async function resolveBinaries() {
     if (bin && works(bin)) ffprobe = bin;
   }
 
-  if (!ffmpeg || !ffprobe) {
-    throw new Error(
-      [
-        "FFmpeg was not found.",
-        "",
-        "  halfsize ships its own FFmpeg, but npm could not download it. The package",
-        "  still installs, so you can fix the binary without reinstalling the CLI.",
-        "",
-        "  Fix it one of these ways:",
-        "",
-        "    1. Download the binary from a mirror (fast in mainland China)",
-        "         PowerShell  $env:FFMPEG_BINARIES_URL=\"https://registry.npmmirror.com/-/binary/ffmpeg-static\"; npm install -g halfsize",
-        "         macOS/Linux FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static npm install -g halfsize",
-        "",
-        "       TLS-inspecting proxy or antivirus (Node 22.15+)",
-        "         PowerShell  $env:NODE_OPTIONS=\"--use-system-ca\"; npm install -g halfsize",
-        "         macOS/Linux NODE_OPTIONS=--use-system-ca npm install -g halfsize",
-        "",
-        "    2. Use an FFmpeg you already have",
-        "         Windows   winget install Gyan.FFmpeg",
-        "         macOS     brew install ffmpeg",
-        "         Linux     sudo apt install ffmpeg",
-        "",
-        "    3. Point at a specific build",
-        "         HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe",
-        "",
-        "  Then check what halfsize found:",
-        "    npx halfsize@latest --doctor",
-      ].join("\n"),
-    );
+  if (!ffmpeg) {
+    const bin = cachedBinary("ffmpeg");
+    if (bin && works(bin)) {
+      ffmpeg = bin;
+      source = "cache";
+    }
+  }
+  if (!ffprobe) {
+    const bin = cachedBinary("ffprobe");
+    if (bin && works(bin)) ffprobe = bin;
   }
 
-  cache = { ffmpeg, ffprobe, source };
-  return cache;
+  return { ffmpeg, ffprobe, source };
+}
+
+export async function resolveBinaries() {
+  const found = await findBinaries();
+  if (found.ffmpeg && found.ffprobe) {
+    cache = found;
+    return cache;
+  }
+
+  throw new Error(
+    [
+      "FFmpeg was not found.",
+      "",
+      "  halfsize ships FFmpeg, but npm skipped the download (proxy, mirror or",
+      "  antivirus). One command fixes it without reinstalling the CLI:",
+      "",
+      "    npx halfsize@latest --fix",
+      "",
+      "  Already have FFmpeg? Point halfsize at it:",
+      "    HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe",
+      "",
+      "  More options: npx halfsize@latest --doctor",
+    ].join("\n"),
+  );
 }

@@ -29,6 +29,7 @@ test("no arguments prints help, which documents the main flags", () => {
 test("--help wins over a missing file", () => {
   const out = run(["--help"]);
   assert.match(out, /--doctor/);
+  assert.match(out, /--fix/);
 });
 
 test("an unknown flag fails with a readable message", () => {

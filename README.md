@@ -52,7 +52,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.10
+  halfsize 0.1.11
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -197,6 +197,20 @@ Or copy the folder into your agent's skills directory by hand (for Claude Code:
 `.claude/skills/halfsize/`). Either way the agent can turn "make this fit in 25 MB" into a
 compression plus a measured quality report, instead of guessing a bitrate.
 
+If your client speaks MCP instead, halfsize is also a single-tool MCP server:
+
+```json
+{
+  "mcpServers": {
+    "halfsize": { "command": "npx", "args": ["-y", "halfsize", "--mcp"] }
+  }
+}
+```
+
+That gives the agent one tool, `compress_video(input, target, output?, codec?, verify?)`,
+backed by the same CLI and the same JSON report. It is stdio only: no port, no daemon,
+nothing listening.
+
 ## How it works
 
 1. **Probe.** Read duration, resolution, frame rate, audio bitrate, rotation, and HDR metadata.
@@ -263,6 +277,7 @@ halfsize <file> [options]
   --web             Start the local web app
   --port <n>        Port for the web app (default 4174)
   --doctor          Show which FFmpeg and encoders were found
+  --fix             Download FFmpeg when npm skipped it
   -h, --help        Help
   -v, --version     Version
 ```
@@ -292,7 +307,20 @@ If `npx` keeps starting an old cached version, pin it: `npx halfsize@latest ...`
 
 `ffmpeg-static` downloads a prebuilt FFmpeg during `npm install`; FFprobe ships inside
 `ffprobe-static`, so it needs no download. If you are behind a proxy or a TLS-inspecting
-network, that download can fail. Point it at a mirror, or use a build you already have:
+network, that download can silently fail and leave you with a CLI that starts but cannot
+encode. One command repairs it, without reinstalling anything:
+
+```bash
+npx halfsize@latest --fix
+```
+
+`--fix` fetches the same published FFmpeg and FFprobe builds, checks each download against
+the sha256 that `ffmpeg-static` published, and keeps them in a user-level cache
+(`%LOCALAPPDATA%\halfsize\Cache\bin`, `~/Library/Caches/halfsize/bin`, or
+`~/.cache/halfsize/bin`). Every later run, global or `npx`, finds them there. It tries GitHub
+first and falls back to the npmmirror binary mirror, which is fast in mainland China.
+
+Two alternatives if the download itself is blocked:
 
 ```bash
 # use the npmmirror binary mirror (fast in mainland China)
@@ -309,16 +337,17 @@ TLS. On Node 22.15+ use the system certificate store:
 $env:NODE_OPTIONS="--use-system-ca"; npx halfsize video.mp4 --to 25mb
 ```
 
-A failed binary download no longer aborts the install: halfsize still starts and tells you
-which of these fixes to apply. On Windows, `winget install Gyan.FFmpeg` is enough. On
-macOS, `brew install ffmpeg`. On Debian/Ubuntu, `sudo apt install ffmpeg`. Run
+A failed binary download no longer aborts the install: halfsize still starts and prints the
+`--fix` command. On Windows, `winget install Gyan.FFmpeg` is enough. On macOS,
+`brew install ffmpeg`. On Debian/Ubuntu, `sudo apt install ffmpeg`. Run
 `npx halfsize --doctor` to see what was found.
 
 ## FAQ
 
 **Does my video get uploaded?**
-No. The CLI never touches the network. The web app talks only to `127.0.0.1`, and uploaded
-files go to a temp directory that is deleted when the process exits.
+No. Compressing a video never touches the network: the only outbound request halfsize ever
+makes is `--fix` downloading FFmpeg itself when npm skipped it. The web app talks only to
+`127.0.0.1`, and uploaded files go to a temp directory that is deleted when the process exits.
 
 **How do I get a video under Discord's 20 MB limit?**
 `npx halfsize clip.mp4 --for discord` targets the free-tier cap (20 MB as of late 2026) and
