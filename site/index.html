@@ -103,12 +103,12 @@
     <a class="button" href="https://www.npmjs.com/package/halfsize">Install from npm</a>
     <a class="button ghost" href="https://github.com/YKLovePython/halfsize">View source on GitHub</a>
   </div>
-  <p class="small">As featured in <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> · 1,900+ npm downloads a week</p>
+  <p class="small">As featured in <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> · 2,500+ downloads on npm</p>
   <p class="new">
-  <b>New in 0.1.10</b> — the first run on macOS no longer reports a missing FFmpeg. The
-  bundled ffprobe is a 76 MB binary, and macOS can spend more than ten seconds scanning it
-  before the first launch. The old six-second check called that a failure.
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.10">Release notes</a>
+  <b>New in 0.1.11</b> — <code>--fix</code> repairs an install where npm silently skipped the FFmpeg
+  download, and <code>--mcp</code> turns the same command into a tool for Claude Code, Cursor and
+  VS Code. Neither one sends your video anywhere.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.11">Release notes</a>
   </p>
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize source.mp4 --to 2mb</span>

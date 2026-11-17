@@ -26,12 +26,12 @@
 </p>
 
 <p align="center">
-  <sub>已被 <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> 收录 · npm 每周 1,900+ 次下载</sub>
+  <sub>已被 <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> 收录 · npm 累计下载 2,500+ 次</sub>
 </p>
 
 <p align="center">
-  <b>0.1.10 更新：</b>macOS 首次运行不再误报「找不到 FFmpeg」。内置的 ffprobe 是 76 MB，系统首次启动前会扫描一遍，可能超过十秒，旧版本的六秒超时把它当成了失败。
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.10">更新说明</a>
+  <b>0.1.11 更新：</b><code>--fix</code> 修好「npm 静默跳过 FFmpeg 下载」的安装，<code>--mcp</code> 把同一条命令变成 Claude Code、Cursor、VS Code 能调用的工具。两者都不会把视频发到任何地方。
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.11">更新说明</a>
 </p>
 
 ---
