@@ -1,0 +1,76 @@
+name: publish-mcp
+
+# Publishes server.json to the official MCP Registry (registry.modelcontextprotocol.io).
+#
+# Nothing secret is needed: the registry authenticates the workflow with GitHub OIDC, and
+# proves ownership of the npm package by reading `mcpName` out of the published package.json.
+# That is why the npm release has to exist before this runs — the tag is the trigger, and the
+# registry refuses a server whose package does not carry the matching marker.
+#
+# The npm publish itself stays manual (web auth), so this workflow never touches NPM_TOKEN.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # the registry login
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches package.json
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF#refs/tags/v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag v$tag but package.json says $pkg" >&2
+            exit 1
+          fi
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl -fsSL -o "$archive" "$base/$archive"
+          curl -fsSL -o "$archive.sigstore.json" "$base/$archive.sigstore.json"
+          cosign verify-blob "$archive" \
+            --bundle "$archive.sigstore.json" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp "https://github.com/modelcontextprotocol/registry/.github/workflows/.*@refs/tags/${MCP_PUBLISHER_VERSION}"
+          tar xzf "$archive" mcp-publisher
+          ./mcp-publisher --help > /dev/null
+
+      - name: Publish to the MCP Registry
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF#refs/tags/v}"
+          jq --arg v "$version" '.version = $v | .packages[0].version = $v' server.json > server.tmp
+          mv server.tmp server.json
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
+
+      - name: Read the record back
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 12); do
+            body="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.yklovepython/halfsize")"
+            if echo "$body" | grep -q "io.github.yklovepython/halfsize"; then
+              echo "$body" | head -c 2000
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "published, but the registry has not served it back yet" >&2

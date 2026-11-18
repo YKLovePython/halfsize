@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yklovepython/halfsize",
+  "title": "halfsize",
+  "description": "Compress a video to an exact byte size locally with FFmpeg, then measure VMAF and SSIM.",
+  "version": "0.1.12",
+  "websiteUrl": "https://YKLovePython.github.io/halfsize/",
+  "repository": {
+    "url": "https://github.com/YKLovePython/halfsize",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "halfsize",
+      "version": "0.1.12",
+      "runtimeHint": "npx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-y"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "--mcp"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

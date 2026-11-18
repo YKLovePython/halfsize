@@ -30,8 +30,8 @@
 </p>
 
 <p align="center">
-  <b>0.1.11 更新：</b><code>--fix</code> 修好「npm 静默跳过 FFmpeg 下载」的安装，<code>--mcp</code> 把同一条命令变成 Claude Code、Cursor、VS Code 能调用的工具。两者都不会把视频发到任何地方。
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.11">更新说明</a>
+  <b>0.1.12 更新：</b><code>--mcp</code> 已收录进 <a href="https://registry.modelcontextprotocol.io/v0/servers?search=halfsize">MCP 官方注册表</a>，Claude Code、Cursor、VS Code 不用再手贴配置就能搜到。
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.12">更新说明</a>
 </p>
 
 ---
@@ -49,7 +49,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.11
+  halfsize 0.1.12
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264

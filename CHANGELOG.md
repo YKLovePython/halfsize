@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.12
+
+- Listed in the official MCP Registry as `io.github.yklovepython/halfsize`, so
+  clients and directories that read the registry (PulseMCP, Glama, editor MCP
+  marketplaces) can find `halfsize --mcp` without anyone pasting a config. The
+  package now carries `mcpName` to prove it published the entry, and
+  `server.json` records how to start it (`npx -y halfsize --mcp`, stdio)
+- `keywords` gained `mcp` and `mcp-server`, which is how npm's own search
+  groups the package with other MCP servers
+
 ## 0.1.11
 
 - New `halfsize --fix`: when npm skips the `ffmpeg-static` download (proxy,

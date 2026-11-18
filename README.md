@@ -30,10 +30,10 @@
 </p>
 
 <p align="center">
-  <b>New in 0.1.11:</b> <code>--fix</code> repairs an install where npm silently skipped the
-  FFmpeg download, and <code>--mcp</code> turns the same command into a tool for Claude Code,
-  Cursor and VS Code. Neither one sends your video anywhere.
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.11">Release notes</a>
+  <b>New in 0.1.12:</b> <code>--mcp</code> is listed in the
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=halfsize">official MCP Registry</a>,
+  so Claude Code, Cursor and VS Code can discover it instead of having a config pasted in.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.12">Release notes</a>
 </p>
 
 ---
@@ -52,7 +52,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.11
+  halfsize 0.1.12
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
