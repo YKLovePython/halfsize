@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Schema/master/schema.json",
-    "version": "0.1.11",
+    "version": "0.1.13",
     "description": "Compress any video to an exact size (Discord 20 MB, WhatsApp 16 MB) locally, and verify the quality with VMAF/SSIM.",
     "homepage": "https://YKLovePython.github.io/halfsize/",
     "license": "MIT",
@@ -9,8 +9,8 @@
         "Compressing never touches the network; nothing is uploaded."
     ],
     "depends": "nodejs-lts",
-    "url": "https://registry.npmjs.org/halfsize/-/halfsize-0.1.11.tgz",
-    "hash": "sha256:afafaea03deeed56ff8a6379ae86ce4c76b29f97378fc6b68e94f04cdbf9eb94",
+    "url": "https://registry.npmjs.org/halfsize/-/halfsize-0.1.13.tgz",
+    "hash": "sha256:d6f4c56f6acf71f85e6bf80773fc6fa7725602320710f9f2a624353ae6a8e47f",
     "extract_dir": "package",
     "bin": "halfsize.cmd",
     "installer": {

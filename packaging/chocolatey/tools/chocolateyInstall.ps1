@@ -8,7 +8,7 @@ $toolsDir    = Split-Path -Parent $MyInvocation.MyCommand.Definition
 # so Chocolatey verifies exactly the bytes that were published to npm.
 $url      = "https://registry.npmjs.org/$packageName/-/$packageName-$version.tgz"
 $tgz      = Join-Path $toolsDir "$packageName-$version.tgz"
-$checksum = 'afafaea03deeed56ff8a6379ae86ce4c76b29f97378fc6b68e94f04cdbf9eb94'
+$checksum = 'd6f4c56f6acf71f85e6bf80773fc6fa7725602320710f9f2a624353ae6a8e47f'
 
 Get-ChocolateyWebFile -PackageName $packageName `
                       -FileFullPath $tgz `
