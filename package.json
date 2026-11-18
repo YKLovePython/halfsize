@@ -1,7 +1,7 @@
 {
   "name": "halfsize",
-  "version": "0.1.12",
-  "mcpName": "io.github.yklovepython/halfsize",
+  "version": "0.1.13",
+  "mcpName": "io.github.YKLovePython/halfsize",
   "description": "Compress any video to an exact size (Discord or WeChat 20 MB, WhatsApp 16 MB) locally with FFmpeg and verify the quality with VMAF/SSIM.",
   "type": "module",
   "bin": {

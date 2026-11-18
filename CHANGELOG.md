@@ -1,14 +1,24 @@
 # Changelog
 
-## 0.1.12
+## 0.1.13
 
-- Listed in the official MCP Registry as `io.github.yklovepython/halfsize`, so
+- Listed in the official MCP Registry as `io.github.YKLovePython/halfsize`, so
   clients and directories that read the registry (PulseMCP, Glama, editor MCP
   marketplaces) can find `halfsize --mcp` without anyone pasting a config. The
-  package now carries `mcpName` to prove it published the entry, and
-  `server.json` records how to start it (`npx -y halfsize --mcp`, stdio)
+  package carries `mcpName` to prove it published the entry, and `server.json`
+  records how to start it (`npx -y halfsize --mcp`, stdio)
+- Registry namespaces are case-sensitive and the one GitHub OIDC grants is the
+  account's own spelling, `io.github.YKLovePython/*`. 0.1.12 declared the
+  lowercased name and the publish was refused with 403, so this version is the
+  same change with the case fixed — `mcpName` lives in package.json, and a
+  published npm version cannot be edited
 - `keywords` gained `mcp` and `mcp-server`, which is how npm's own search
   groups the package with other MCP servers
+
+## 0.1.12 (superseded by 0.1.13)
+
+- Same code as 0.1.13, but `mcpName` was lowercased. It is on npm and installs
+  fine; use 0.1.13.
 
 ## 0.1.11
 

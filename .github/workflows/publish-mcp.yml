@@ -65,9 +65,12 @@ jobs:
       - name: Read the record back
         run: |
           set -euo pipefail
+          # The namespace is case-sensitive (it is the GitHub account's own spelling), so read
+          # the name from the file we just published instead of repeating it here.
+          name="$(jq -r .name server.json)"
           for _ in $(seq 1 12); do
-            body="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.yklovepython/halfsize")"
-            if echo "$body" | grep -q "io.github.yklovepython/halfsize"; then
+            body="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=${name}")"
+            if echo "$body" | grep -q "$name"; then
               echo "$body" | head -c 2000
               exit 0
             fi
