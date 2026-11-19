@@ -14,6 +14,7 @@
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-b6f36a"></a>
   <a href="https://github.com/YKLovePython/halfsize/actions/workflows/test.yml"><img alt="tests" src="https://github.com/YKLovePython/halfsize/actions/workflows/test.yml/badge.svg"></a>
   <img alt="node" src="https://img.shields.io/badge/node-%3E%3D18-b6f36a">
+  <img alt="windows exe" src="https://img.shields.io/badge/windows-.exe%2C%20no%20node-b6f36a">
   <img alt="no upload" src="https://img.shields.io/badge/upload-none-b6f36a">
 </p>
 
