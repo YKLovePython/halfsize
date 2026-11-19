@@ -1,29 +1,27 @@
 # Chocolatey package
 
-Wraps the published npm tarball so `choco install halfsize` works on Windows without
-a global npm install.
+Installs `halfsize.exe` and its FFmpeg from the GitHub release ZIP. No Node.js, no
+npm, no first-run download.
 
 ## Files
 
-- `halfsize.nuspec` — metadata, `nodejs-lts` dependency, description shown on
-  community.chocolatey.org.
-- `tools/chocolateyInstall.ps1` — downloads the tarball with a checksum, installs it
-  into the package's `tools` directory, shims `halfsize.cmd`, then runs `--doctor` so
-  a missing FFmpeg is reported during install rather than on the first video.
+- `halfsize.nuspec` — metadata and the description shown on community.chocolatey.org.
+- `tools/chocolateyInstall.ps1` — downloads `halfsize-<version>-win-x64-full.zip`
+  with a sha256, unzips it into the package's `tools` directory, shims
+  `halfsize.exe`, then runs `--doctor` so a broken FFmpeg is reported during
+  install rather than on the first video.
 
 ## Bumping the version
 
-1. Publish the npm version first.
+1. Build the Windows ZIP (`npm run build:exe`) or let `.github/workflows/exe.yml`
+   do it, and attach it to the GitHub release.
 2. Set `<version>` in `halfsize.nuspec`.
-3. Download the tarball and compute its SHA-256:
+3. Read `sha256` from `build/artifact.json` (or
+   `(Get-FileHash .\halfsize-<version>-win-x64-full.zip -Algorithm SHA256).Hash.ToLower()`)
+   and put it in `$checksum` in `tools/chocolateyInstall.ps1`.
+4. Pack and test locally, then push.
 
-   ```powershell
-   node --use-system-ca -e "const fs=require('fs');fetch('https://registry.npmjs.org/halfsize/-/halfsize-<version>.tgz').then(async r=>{if(!r.ok)throw new Error(r.status);fs.writeFileSync('halfsize-<version>.tgz',Buffer.from(await r.arrayBuffer()))})"
-   (Get-FileHash .\halfsize-<version>.tgz -Algorithm SHA256).Hash.ToLower()
-   ```
-
-4. Replace `$checksum` in `tools/chocolateyInstall.ps1`.
-5. Pack and test locally, then push.
+The release must already exist: the install script downloads by version number.
 
 ## Pack and test
 
@@ -32,12 +30,13 @@ choco pack
 choco install halfsize -s . -f -y
 halfsize --version
 halfsize --doctor
+halfsize input.mp4 --to 5mb
 choco uninstall halfsize -y
 ```
 
-`choco install -s .` installs from the local folder; the `-f` flag makes repeated
-tests cheap. Uninstall and reinstall once before pushing: leftover files in
-`tools\node_modules` are the failure mode this layout is meant to avoid.
+`choco install -s .` installs from the local folder; `-f` makes repeated tests
+cheap. Uninstall and reinstall once before pushing: a leftover `halfsize.exe` or
+`ffmpeg.exe` in `tools` is the failure mode this layout is meant to avoid.
 
 ## Push
 
@@ -48,5 +47,4 @@ choco apikey --key <KEY> --source https://push.chocolatey.org/
 choco push halfsize.<version>.nupkg --source https://push.chocolatey.org/
 ```
 
-Moderation usually takes a few days. The version in the nuspec must match an npm
-version that exists, because the install script fetches it by version number.
+Moderation usually takes a few days.

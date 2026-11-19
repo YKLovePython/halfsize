@@ -4,58 +4,32 @@ $packageName = 'halfsize'
 $version     = $env:chocolateyPackageVersion
 $toolsDir    = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
-# Install from the published tarball rather than letting npm resolve the version,
-# so Chocolatey verifies exactly the bytes that were published to npm.
-$url      = "https://registry.npmjs.org/$packageName/-/$packageName-$version.tgz"
-$tgz      = Join-Path $toolsDir "$packageName-$version.tgz"
-$checksum = 'd6f4c56f6acf71f85e6bf80773fc6fa7725602320710f9f2a624353ae6a8e47f'
+# The ZIP already contains ffmpeg.exe and ffprobe.exe next to halfsize.exe, so
+# there is nothing to install afterwards and no first-run download to fail.
+# Pinned by sha256 to the bytes that were attached to the GitHub release.
+$url      = "https://github.com/YKLovePython/halfsize/releases/download/v$version/halfsize-$version-win-x64-full.zip"
+$checksum = '37f3202490614ff316135ea0f42d7abe3bd789f0740db1b4bf9dd0116e28682e'
 
-Get-ChocolateyWebFile -PackageName $packageName `
-                      -FileFullPath $tgz `
-                      -Url $url `
-                      -Checksum $checksum `
-                      -ChecksumType 'sha256'
+Install-ChocolateyZipPackage -PackageName $packageName `
+                             -Url $url `
+                             -UnzipLocation $toolsDir `
+                             -Checksum $checksum `
+                             -ChecksumType 'sha256'
 
-$npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
-if (-not $npm) {
-  $npm = Join-Path $env:ChocolateyInstall 'bin\npm.cmd'
-  if (-not (Test-Path $npm)) {
-    throw 'npm.cmd was not found. The nodejs-lts dependency should have installed it; open a new shell and retry.'
-  }
+$exe = Join-Path $toolsDir 'halfsize.exe'
+if (-not (Test-Path $exe)) {
+  throw "The ZIP installed but $exe is missing."
 }
 
-# Install into the package tools directory instead of the user's global npm
-# prefix, so uninstalling the package removes every file it created.
-$npmArgs = @"
-install --prefix "`"$toolsDir`"" "`"$tgz`"" --omit=dev --no-audit --no-fund --loglevel error
-"@
+Install-BinFile -Name $packageName -Path $exe
 
-Start-ChocolateyProcessAsAdmin `
-  -ExeToRun $npm `
-  -Statements $npmArgs `
-  -WorkingDirectory $toolsDir
-
-$wrapper = Join-Path $toolsDir 'node_modules\.bin\halfsize.cmd'
-if (-not (Test-Path $wrapper)) {
-  throw "npm finished but $wrapper was not created."
-}
-
-Install-BinFile -Name $packageName -Path $wrapper
-
-Remove-Item $tgz -Force -ErrorAction SilentlyContinue
-
-# Say it now rather than on the user's first video: the bundled FFmpeg download
-# is an optional npm dependency, so a blocked network leaves a working CLI that
-# cannot compress anything.
-$doctor = & $wrapper --doctor 2>&1 | Out-String
+# Prove the pair works before telling the user it does. --doctor exits non-zero
+# when it cannot find an FFmpeg it can run.
+$doctor = & $exe --doctor 2>&1 | Out-String
 if ($LASTEXITCODE -ne 0) {
-  Write-Warning 'halfsize is installed, but its bundled FFmpeg could not be downloaded.'
+  Write-Warning 'halfsize is installed, but it could not run its FFmpeg.'
   Write-Host $doctor
-  Write-Host 'Repair it in place, without reinstalling:'
-  Write-Host '  halfsize --fix'
-  Write-Host 'Or retry with a mirror, or point the CLI at an existing FFmpeg:'
-  Write-Host '  $env:FFMPEG_BINARIES_URL="https://registry.npmmirror.com/-/binary/ffmpeg-static"; choco install halfsize -f'
+  throw "halfsize --doctor failed. The package files are in $toolsDir"
 }
-else {
-  Write-Host 'halfsize is ready. Try: halfsize input.mp4 --to 20mb'
-}
+
+Write-Host 'halfsize is ready. Try: halfsize input.mp4 --to 20mb'

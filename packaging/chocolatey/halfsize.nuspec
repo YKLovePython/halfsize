@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>halfsize</id>
-    <version>0.1.13</version>
+    <version>0.2.0</version>
     <title>halfsize</title>
     <authors>YKLovePython</authors>
     <owners>YKLovePython</owners>
@@ -49,14 +49,8 @@ The usual advice is `ffmpeg -crf 28`. That trades quality for size and leaves th
 
 ### Notes
 
-* Requires Node.js 18 or newer. The `nodejs-lts` dependency installs it if missing.
-* FFmpeg is downloaded during installation (the package ships `ffmpeg-static` and `ffprobe-static`), so the first install needs network access.
-* If a TLS-inspecting proxy blocks that download, run `halfsize --fix` (it retries from GitHub, then the npmmirror binary mirror, and verifies the checksum), or set
-  `FFMPEG_BINARIES_URL=https://registry.npmmirror.com/-/binary/ffmpeg-static` and reinstall, or point `HALFSIZE_FFMPEG` / `HALFSIZE_FFPROBE` at an FFmpeg you already have.
+* Nothing else is required: the package downloads a ZIP that already contains ffmpeg.exe and ffprobe.exe. No Node.js, no first-run download, no installer.
 * Everything runs locally. Your video never leaves the machine.
     ]]></description>
-    <dependencies>
-      <dependency id="nodejs-lts" version="18.0.0" />
-    </dependencies>
-  </metadata>
+    </metadata>
 </package>
