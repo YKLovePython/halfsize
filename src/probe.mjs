@@ -5,6 +5,12 @@ import { hdrKind } from "./hdr.mjs";
 
 const run = promisify(execFile);
 
+// A file that makes ffprobe wait — a truncated recording, a network share that
+// stops answering, a demuxer stuck on a damaged index — used to hang the CLI and
+// the web server with no way out. Bounded here, and the message says the read
+// timed out instead of pretending the file is not a video.
+const PROBE_TIMEOUT_MS = Number(process.env.HALFSIZE_PROBE_TIMEOUT_MS || 120_000);
+
 // Demuxers that happily "read" things which are not videos. FFmpeg's tty
 // demuxer turns a .txt file into an ANSI-art video stream, and image2 turns a
 // single JPEG into a one-frame movie. Both used to sail through as valid input.
@@ -17,9 +23,15 @@ export async function probe(file) {
     ({ stdout } = await run(
       ffprobe,
       ["-v", "error", "-print_format", "json", "-show_format", "-show_streams", file],
-      { maxBuffer: 32 * 1024 * 1024, windowsHide: true },
+      { maxBuffer: 32 * 1024 * 1024, windowsHide: true, timeout: PROBE_TIMEOUT_MS, killSignal: "SIGKILL" },
     ));
   } catch (err) {
+    if (err.killed || err.signal) {
+      throw new Error(
+        `FFmpeg stopped responding while reading this file (${Math.round(PROBE_TIMEOUT_MS / 1000)}s). ` +
+          "It may be damaged or on a drive that stopped answering.",
+      );
+    }
     // The raw execFile error is a full local path plus a command line. Nobody
     // needs that in a UI; keep it behind HALFSIZE_DEBUG.
     const detail = process.env.HALFSIZE_DEBUG ? `\n${err.stderr || err.message}` : "";

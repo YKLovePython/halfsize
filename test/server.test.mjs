@@ -33,7 +33,7 @@ function clip() {
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "12", "-pix_fmt", "yuv420p",
         file,
       ],
-      { windowsHide: true, stdio: "ignore" },
+      { windowsHide: true, stdio: "ignore", timeout: 60_000 },
     );
     return file;
   })();
