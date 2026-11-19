@@ -276,6 +276,14 @@ export async function startServer(options = {}) {
           connection: "keep-alive",
         });
         res.write(": connected\n\n");
+        // A comment line every 15 seconds, so the socket is never silent while an
+        // encode runs. Without it a client that only checks its own deadline on
+        // inbound data (the test helper did) can wait forever if no event ever
+        // arrives, and a stalled encode looks like a hung test rather than a
+        // timeout. It also keeps idle proxies from dropping the connection.
+        const heartbeat = setInterval(() => res.write(": ping\n\n"), 15000);
+        heartbeat.unref?.();
+        res.on("close", () => clearInterval(heartbeat));
         if (!clients.has(id)) clients.set(id, new Set());
         clients.get(id).add(res);
         // Without this, a socket error after the tab closes becomes an
@@ -477,8 +485,24 @@ export async function startServer(options = {}) {
     server,
     close: () =>
       new Promise((resolve) => {
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve();
+        };
+        // A socket that never finishes its response — an SSE reader, a half-open
+        // client — keeps `server.close` from calling back. Waiting for it turned a
+        // stuck test into a 300-second timeout with no output; five seconds is
+        // enough for a loopback server and still ends in a real failure.
+        const timer = setTimeout(() => {
+          server.closeAllConnections?.();
+          done();
+        }, 5000);
+        timer.unref?.();
         server.closeAllConnections?.();
-        server.close(() => resolve());
+        server.close(done);
       }),
   };
 }

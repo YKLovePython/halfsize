@@ -52,26 +52,33 @@ async function waitForDone(base, id, timeout = 120000) {
   const res = await fetch(`${base}/api/events/${id}`);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
-  const deadline = Date.now() + timeout;
   let seen = "";
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    seen += decoder.decode(value, { stream: true });
-    if (seen.includes("event: done")) {
-      await reader.cancel();
-      return "done";
+  let expired = false;
+
+  // A real clock, not a check after each chunk: the old version only looked at
+  // Date.now() once data arrived, so a silent stream never timed out and the
+  // test hung until the harness killed it (300s, with no failure to read).
+  const timer = setTimeout(() => {
+    expired = true;
+    reader.cancel().catch(() => {});
+  }, timeout);
+
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      seen += decoder.decode(value, { stream: true });
+      if (seen.includes("event: done")) return "done";
+      if (seen.includes("event: failed")) return "failed";
     }
-    if (seen.includes("event: failed")) {
-      await reader.cancel();
-      return "failed";
-    }
-    if (Date.now() > deadline) {
-      await reader.cancel();
-      return "timeout";
-    }
+  } catch {
+    // cancel() rejects the pending read; that is the deadline above, not an error.
+  } finally {
+    clearTimeout(timer);
   }
-  return "closed";
+
+  if (expired) return "timeout";
+  return seen.includes("event: done") ? "done" : "closed";
 }
 
 test("a text file is refused instead of treated as a video", () =>
