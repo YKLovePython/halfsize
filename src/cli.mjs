@@ -1,17 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { probe } from "./probe.mjs";
 import { planEncode, estimateBytes } from "./plan.mjs";
 import { encodeToSize } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { bytes, duration, bitrate, ratio, parseSize, clock } from "./human.mjs";
+import { VERSION, IS_SEA, selfCommand } from "./self.mjs";
 
-// package.json is the single source of truth, so `--version`, the help banner,
-// and the published tarball can never disagree.
-const pkg = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"));
-const VERSION = pkg.version;
 const REPO_URL = "https://github.com/YKLovePython/halfsize";
 
 let starPromptShown = false;
@@ -60,7 +56,7 @@ const HELP = `
     halfsize --web                     Open the local app
     halfsize --web --port 8080         Use a different port
     halfsize --doctor                  Check FFmpeg and hardware encoders
-    halfsize --fix                     Download FFmpeg when npm skipped it
+    halfsize --fix                     ${IS_SEA ? "Download FFmpeg if this download has none" : "Download FFmpeg when npm skipped it"}
     halfsize --mcp                     Run as an MCP server on stdio (for AI agents)
 
   Options
@@ -445,6 +441,7 @@ function printResult(summary, outPath, { promo = true } = {}) {
 
 const SOURCE_LABEL = {
   env: "HALFSIZE_FFMPEG",
+  sibling: "next to halfsize.exe",
   path: "system PATH",
   bundled: "bundled with halfsize",
   cache: "downloaded by halfsize --fix",
@@ -518,7 +515,7 @@ async function fix() {
     console.log(`  ffprobe    ${result.found.ffprobe}`);
     console.log("");
     console.log("  ready. Try it on any video:");
-    console.log("    npx halfsize video.mp4 --to 20mb");
+    console.log(`    ${selfCommand()} video.mp4 --to 20mb`);
     console.log("");
   } catch (err) {
     clear();
@@ -543,8 +540,12 @@ async function doctor() {
   console.log("");
   console.log(`  halfsize ${VERSION} doctor`);
   console.log("");
-  console.log(`  node       ${process.version}   ${process.platform} ${process.arch}`);
-  console.log(`  npm        ${process.env.npm_config_user_agent || "not running under npm/npx"}`.slice(0, 120));
+  console.log(`  node       ${process.version}   ${process.platform} ${process.arch}${IS_SEA ? "   (bundled)" : ""}`);
+  if (IS_SEA) {
+    console.log(`  install    single executable ${process.execPath}`);
+  } else {
+    console.log(`  npm        ${process.env.npm_config_user_agent || "not running under npm/npx"}`.slice(0, 120));
+  }
 
   let bins;
   try {
@@ -582,6 +583,8 @@ async function doctor() {
   console.log("");
   if (bins.source === "bundled") {
     console.log("  ready. No system FFmpeg install is needed.");
+  } else if (bins.source === "sibling") {
+    console.log("  ready. Using the FFmpeg that came in this download.");
   } else {
     console.log(`  ready. Using ${SOURCE_LABEL[bins.source] || bins.source}.`);
   }
@@ -598,7 +601,7 @@ async function startWeb(port) {
     await resolveBinaries();
   } catch (err) {
     console.error(`\n  x ${err.message}`);
-    console.error("\n  Run `npx halfsize@latest --fix` to download FFmpeg, then try again.\n");
+    console.error("\n  Run `" + selfCommand("--fix") + "` to download FFmpeg, then try again.\n");
     process.exitCode = 1;
     return;
   }

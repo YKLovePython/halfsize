@@ -30,10 +30,9 @@
 </p>
 
 <p align="center">
-  <b>New in 0.1.13:</b> <code>--mcp</code> is listed in the
-  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=halfsize">official MCP Registry</a>,
-  so Claude Code, Cursor and VS Code can discover it instead of having a config pasted in.
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.13">Release notes</a>
+  <b>New in 0.2.0:</b> Windows users can download one <code>halfsize.exe</code> and skip Node.js,
+  npm and the installer entirely — CLI, local web app and MCP server in one file.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.2.0">Release notes</a>
 </p>
 
 ---
@@ -52,7 +51,7 @@ It computes the bitrate, picks the resolution that actually fits, encodes twice,
 the result with **SSIM** and **VMAF** so you know whether it still looks the same.
 
 ```
-  halfsize 0.1.13
+  halfsize 0.2.0
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -91,6 +90,23 @@ still looks right"** is the part every tool makes you guess at.
 | Learns a new UI | no | yes | yes |
 
 ## Quick start
+
+### Windows, without Node.js
+
+Download **[`halfsize-0.2.0-win-x64-full.zip`](https://github.com/YKLovePython/halfsize/releases/download/v0.2.0/halfsize-0.2.0-win-x64-full.zip)**
+(82 MB, includes FFmpeg), unzip it anywhere, and run:
+
+```bat
+halfsize.exe video.mp4 --to 25mb
+```
+
+The smaller `halfsize-0.2.0-win-x64.zip` (33 MB) is the same program without FFmpeg:
+run `halfsize --fix` once and it downloads FFmpeg into your user cache.
+
+The executable is not code-signed — a certificate costs money and this project is free —
+so Windows may show a SmartScreen warning on first launch.
+
+### With Node.js
 
 Requires [Node.js 18+](https://nodejs.org). FFmpeg is bundled on first install; if it cannot
 be downloaded, `halfsize` uses your system install instead.

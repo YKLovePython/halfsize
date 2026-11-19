@@ -1,0 +1,57 @@
+name: windows-exe
+
+# Builds the single executable that Windows users download. It runs on a tag so a
+# release gets its Windows build attached automatically, and by hand so the ZIP
+# can be inspected (and hashed for winget/Scoop/Chocolatey) before a release.
+#
+# The build has to run on Windows: a single executable is the running node.exe
+# with a blob injected, so the runtime and the blob must come from the same
+# platform.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 22 is the oldest LTS that supports single executable applications
+          # without extra flags, and an executable built on 22 runs everywhere.
+          node-version: 22
+
+      - run: npm ci
+
+      - name: Build the executable and the ZIPs
+        run: npm run build:exe
+
+      - name: Verify the executable
+        run: |
+          .\build\halfsize.exe --version
+          .\build\halfsize\halfsize.exe --doctor
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: |
+            build/*.zip
+            build/artifact.json
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -ne 0) { gh release create $env:TAG --title $env:TAG --generate-notes }
+          gh release upload $env:TAG build/halfsize-*.zip --clobber

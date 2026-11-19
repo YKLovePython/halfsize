@@ -30,8 +30,8 @@
 </p>
 
 <p align="center">
-  <b>0.1.13 更新：</b><code>--mcp</code> 已收录进 <a href="https://registry.modelcontextprotocol.io/v0/servers?search=halfsize">MCP 官方注册表</a>，Claude Code、Cursor、VS Code 不用再手贴配置就能搜到。
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.13">更新说明</a>
+  <b>0.2.0 更新：</b>Windows 用户现在只下一个 <code>halfsize.exe</code> 就能用，不用装 Node.js、不用 npm、不用安装程序——命令行、本地网页版、MCP 服务都在一个文件里。
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.2.0">更新说明</a>
 </p>
 
 ---
@@ -49,7 +49,7 @@ npx halfsize 婚礼.mp4 --to 25mb
 画质到底还在不在。
 
 ```
-  halfsize 0.1.13
+  halfsize 0.2.0
 
   source.mp4
   23.2 MB  8s  1920x1080  30.00 fps  h264
@@ -87,6 +87,22 @@ npx halfsize 婚礼.mp4 --to 25mb
 | 需要重新学一套界面 | 不用 | 要 | 要 |
 
 ## 快速开始
+
+### Windows：不需要 Node.js
+
+下载 **[`halfsize-0.2.0-win-x64-full.zip`](https://github.com/YKLovePython/halfsize/releases/download/v0.2.0/halfsize-0.2.0-win-x64-full.zip)**
+（82 MB，已包含 FFmpeg），解压到任意目录，然后：
+
+```bat
+halfsize.exe 视频.mp4 --to 25mb
+```
+
+另有 `halfsize-0.2.0-win-x64.zip`（33 MB），同一个程序但不带 FFmpeg：
+第一次运行 `halfsize --fix`，它会把 FFmpeg 下到你的用户缓存里。
+
+这个 exe 没有代码签名（证书要钱，项目是免费的），所以 Windows 首次运行可能弹 SmartScreen 提示。
+
+### 有 Node.js 的话
 
 需要 [Node.js 18+](https://nodejs.org)。首次安装会下载 FFmpeg；下载失败时会自动使用你系统里已有的 FFmpeg。
 

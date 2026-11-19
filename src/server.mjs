@@ -9,9 +9,35 @@ import { planEncode } from "./plan.mjs";
 import { encodeToSize } from "./encode.mjs";
 import { measureQuality, verdict } from "./quality.mjs";
 import { parseSize, bytes as fmt } from "./human.mjs";
+import { IS_SEA } from "./self.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const WEB_DIR = path.resolve(__dirname, "..", "web");
+// Inside a bundled executable there is no web/ directory (the page is inlined by
+// the build), so this path is only computed when it can be used. import.meta.url
+// does not exist in the CommonJS bundle, hence the fallback to the executable's
+// own directory.
+let webDirCache = "";
+function webDir() {
+  if (webDirCache) return webDirCache;
+  try {
+    webDirCache = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "web");
+  } catch {
+    webDirCache = path.resolve(path.dirname(process.execPath), "web");
+  }
+  return webDirCache;
+}
+
+let pageCache = null;
+async function webPage() {
+  if (pageCache) return pageCache;
+  if (IS_SEA) {
+    // The build bundles this module; esbuild turns web/index.html into a string.
+    const mod = await import("./embedded.mjs");
+    pageCache = Buffer.from(mod.indexHtml);
+  } else {
+    pageCache = fs.readFileSync(path.join(webDir(), "index.html"));
+  }
+  return pageCache;
+}
 
 const jobs = new Map();
 const clients = new Map();
@@ -207,14 +233,15 @@ export async function startServer(options = {}) {
       const pathname = url.pathname;
 
       if (req.method === "GET" && (pathname === "/" || pathname === "/index.html")) {
-        const html = fs.readFileSync(path.join(WEB_DIR, "index.html"));
+        const html = await webPage();
         res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
         return res.end(html);
       }
 
       if (req.method === "GET" && pathname.startsWith("/assets/")) {
-        const file = path.join(WEB_DIR, pathname.slice("/assets/".length));
-        const inside = path.relative(WEB_DIR, file);
+        const dir = webDir();
+        const file = path.join(dir, pathname.slice("/assets/".length));
+        const inside = path.relative(dir, file);
         if (!inside || inside.startsWith("..") || path.isAbsolute(inside)) return send(res, 404, { error: "not found" });
         if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return send(res, 404, { error: "not found" });
         res.writeHead(200, { "content-type": contentType(file) });

@@ -1,4 +1,5 @@
 node_modules/
+build/
 _old_firstlook/
 *.25mb.mp4
 *.mp4

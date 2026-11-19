@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { IS_SEA, selfCommand } from "./self.mjs";
 
 let cache = null;
 
@@ -58,6 +59,21 @@ function cachedBinary(name) {
   }
 }
 
+// A ZIP distribution can drop ffmpeg.exe beside halfsize.exe. That is the
+// closest thing to "bundled" a single executable can offer without doubling its
+// size, and it beats a first-run download.
+function nextToExecutable(name) {
+  if (!IS_SEA) return "";
+  const exe = name + (process.platform === "win32" ? ".exe" : "");
+  const file = path.join(path.dirname(process.execPath), exe);
+  try {
+    fs.accessSync(file, fs.constants.X_OK);
+    return file;
+  } catch {
+    return "";
+  }
+}
+
 // Same as resolveBinaries(), but reports what is missing instead of throwing.
 // `--fix` uses this to download only the binary that is actually absent.
 export async function findBinaries() {
@@ -70,20 +86,35 @@ export async function findBinaries() {
   let ffprobe = envFfprobe && works(envFfprobe) ? envFfprobe : "";
   let source = ffmpeg ? "env" : "";
 
+  if (!ffmpeg) {
+    const bin = nextToExecutable("ffmpeg");
+    if (bin && works(bin)) {
+      ffmpeg = bin;
+      source = "sibling";
+    }
+  }
+  if (!ffprobe) {
+    const bin = nextToExecutable("ffprobe");
+    if (bin && works(bin)) ffprobe = bin;
+  }
+
   if (!ffmpeg && works("ffmpeg")) {
     ffmpeg = "ffmpeg";
     source = "path";
   }
   if (!ffprobe && works("ffprobe")) ffprobe = "ffprobe";
 
-  if (!ffmpeg) {
+  // ffmpeg-static only exists in an npm install. Inside the executable the
+  // resolution would be against the build machine's path anyway, which is a
+  // confusing way to find a random node_modules; skip it.
+  if (!IS_SEA && !ffmpeg) {
     const bin = await bundled("ffmpeg-static");
     if (bin && works(bin)) {
       ffmpeg = bin;
       source = "bundled";
     }
   }
-  if (!ffprobe) {
+  if (!IS_SEA && !ffprobe) {
     const bin = await bundled("ffprobe-static");
     if (bin && works(bin)) ffprobe = bin;
   }
@@ -111,18 +142,31 @@ export async function resolveBinaries() {
   }
 
   throw new Error(
-    [
-      "FFmpeg was not found.",
-      "",
-      "  halfsize ships FFmpeg, but npm skipped the download (proxy, mirror or",
-      "  antivirus). One command fixes it without reinstalling the CLI:",
-      "",
-      "    npx halfsize@latest --fix",
-      "",
-      "  Already have FFmpeg? Point halfsize at it:",
-      "    HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe",
-      "",
-      "  More options: npx halfsize@latest --doctor",
-    ].join("\n"),
+    IS_SEA
+      ? [
+          "halfsize needs FFmpeg, and it is not next to this executable.",
+          "",
+          "  Download it once (about 140 MB, into your user cache):",
+          "",
+          `    ${selfCommand("--fix")}`,
+          "",
+          "  Already have FFmpeg? Point halfsize at it:",
+          "    HALFSIZE_FFMPEG=C:\\path\\to\\ffmpeg.exe HALFSIZE_FFPROBE=C:\\path\\to\\ffprobe.exe",
+          "",
+          `  More options: ${selfCommand("--doctor")}`,
+        ].join("\n")
+      : [
+          "FFmpeg was not found.",
+          "",
+          "  halfsize ships FFmpeg, but the download was skipped (proxy, mirror or",
+          "  antivirus). One command fixes it without reinstalling:",
+          "",
+          `    ${selfCommand("--fix")}`,
+          "",
+          "  Already have FFmpeg? Point halfsize at it:",
+          "    HALFSIZE_FFMPEG=/path/to/ffmpeg HALFSIZE_FFPROBE=/path/to/ffprobe",
+          "",
+          `  More options: ${selfCommand("--doctor")}`,
+        ].join("\n"),
   );
 }

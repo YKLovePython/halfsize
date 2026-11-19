@@ -1,15 +1,19 @@
-import fs from "node:fs";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { VERSION, IS_SEA } from "./self.mjs";
 
 // A one-tool MCP server over stdio. The point is not to wrap every flag: it is
 // to give an agent a callable "make this video fit in 20 MB and tell me what it
 // cost" that runs on the user's machine. Everything below mirrors the CLI's
 // --json output, so the agent sees exactly what a human would.
 
-const pkg = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8"));
-const VERSION = pkg.version;
-const BIN = fileURLToPath(new URL("../bin/halfsize.mjs", import.meta.url));
+// Inside the bundled executable there is no bin/halfsize.mjs to point at: the
+// executable is the CLI, so it re-runs itself. Computed lazily because
+// import.meta.url does not exist in the CommonJS bundle.
+function binArgs() {
+  if (IS_SEA) return [];
+  return [fileURLToPath(new URL("../bin/halfsize.mjs", import.meta.url))];
+}
 
 const PROTOCOL_VERSIONS = ["2024-11-05", "2025-03-26", "2025-06-18"];
 const LATEST_PROTOCOL = PROTOCOL_VERSIONS[PROTOCOL_VERSIONS.length - 1];
@@ -54,7 +58,7 @@ function runCli(args) {
   return new Promise((resolve) => {
     let child;
     try {
-      child = spawn(process.execPath, [BIN, ...args], { windowsHide: true });
+      child = spawn(process.execPath, [...binArgs(), ...args], { windowsHide: true });
     } catch (err) {
       resolve({ code: -1, out: "", err: err?.message || String(err) });
       return;

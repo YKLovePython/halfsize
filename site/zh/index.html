@@ -34,7 +34,7 @@
   "codeRepository": "https://github.com/YKLovePython/halfsize",
   "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
-  "softwareVersion": "0.1.13"
+  "softwareVersion": "0.2.0"
 }
 </script>
 <script type="application/ld+json">
@@ -51,7 +51,7 @@
     {
       "@type": "Question",
       "name": "需要自己装 FFmpeg 吗？",
-      "acceptedAnswer": { "@type": "Answer", "text": "不用。首次安装会自动下载静态版本；下载失败时会退回使用系统里已有的 FFmpeg。" }
+      "acceptedAnswer": { "@type": "Answer", "text": "不用。Windows 的 .exe 下载包里已经带了；npm 版首次安装会自动下载静态版本，失败时会退回使用系统里已有的 FFmpeg。" }
     },
     {
       "@type": "Question",
@@ -61,7 +61,7 @@
     {
       "@type": "Question",
       "name": "Windows 能用吗？",
-      "acceptedAnswer": { "@type": "Answer", "text": "能。Windows、macOS、Linux 都支持，只需要 Node.js 18+。" }
+      "acceptedAnswer": { "@type": "Answer", "text": "能。Windows 用户下载一个 .exe 就行，完全不用 Node.js；macOS 和 Linux 需要 Node.js 18+。" }
     },
     {
       "@type": "Question",
@@ -98,18 +98,18 @@
     <b>SSIM</b> 测一遍，告诉你画质到底掉了多少。全程在你自己的电脑上完成。
   </p>
   <div class="actions">
-    <a class="button" href="https://www.npmjs.com/package/halfsize">从 npm 安装</a>
-    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">GitHub 源码</a>
+    <a class="button" href="https://github.com/YKLovePython/halfsize/releases/download/v0.2.0/halfsize-0.2.0-win-x64-full.zip">下载 Windows 版（.exe）</a>
+    <a class="button ghost" href="https://www.npmjs.com/package/halfsize">从 npm 安装</a>
   </div>
   <p class="small">已被 <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> 收录 · npm 累计下载 2,500+ 次</p>
   <p class="new">
-    <b>0.1.13 更新</b> — <code>--mcp</code> 已收录进 <a href="https://registry.modelcontextprotocol.io/v0/servers?search=halfsize">MCP 官方注册表</a>，Claude Code、Cursor、VS Code 不用再手贴配置就能搜到。
-    <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.13">更新说明</a>
+    <b>0.2.0 更新</b> — Windows 用户只下一个 <code>halfsize.exe</code>：命令行、本地网页版、MCP 服务都在里面，不用装 Node.js。
+    <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.2.0">更新说明</a>
   </p>
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize 视频.mp4 --to 20mb</span>
 
-  halfsize 0.1.13
+  halfsize 0.2.0
 
   视频.mp4
   <span class="out">136 MB  60s  1920x1080  30.00 fps  h264</span>
@@ -213,9 +213,9 @@
   <h2>常见问题</h2>
   <div class="faq">
     <details><summary>视频会被上传到服务器吗？</summary><p>不会。编码和测量都在本地用 FFmpeg 完成，免账号、无额度，装好之后断网也能用。</p></details>
-    <details><summary>需要自己装 FFmpeg 吗？</summary><p>不用。首次安装会自动下载静态版本；下载失败时会退回使用系统里已有的 FFmpeg。</p></details>
+    <details><summary>需要自己装 FFmpeg 吗？</summary><p>不用。Windows 的 .exe 下载包里已经带了；npm 版首次安装会自动下载静态版本，失败时会退回使用系统里已有的 FFmpeg。</p></details>
     <details><summary>能保持原分辨率吗？</summary><p>可以，加 <code>--no-downscale</code>。但同样的比特分给更多像素，画面通常会更软。</p></details>
-    <details><summary>Windows 能用吗？</summary><p>能。Windows、macOS、Linux 都支持，只需要 Node.js 18+。</p></details>
+    <details><summary>Windows 能用吗？</summary><p>能。Windows 用户下载一个 .exe 就行，完全不用 Node.js；macOS 和 Linux 需要 Node.js 18+。</p></details>
     <details><summary>可以写进脚本吗？</summary><p>可以。<code>--json</code> 输出机器可读结果，<code>--dry-run</code> 只打印方案不编码。</p></details>
     <details><summary>真的免费吗？</summary><p>MIT 协议，没有付费版。如果它帮你省了时间，<a href="https://github.com/YKLovePython/halfsize">点个 star</a> 能让更多人找到它。</p></details>
   </div>

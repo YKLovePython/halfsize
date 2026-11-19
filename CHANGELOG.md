@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.0
+
+- **A Windows executable that needs nothing installed.** `halfsize.exe` bundles
+  the CLI, the web page and a Node runtime in one file: no Node, no npm, no
+  installer. Two downloads on the release page: the small build (33 MB) fetches
+  FFmpeg once with `halfsize --fix`, the full build (~90 MB) already contains
+  `ffmpeg.exe` and `ffprobe.exe` beside it
+- The executable runs all three modes: the CLI, `--web` (the page is inlined
+  into the binary, so there is no `web/` directory to lose) and `--mcp`
+  (`compress_video`, verified by a real handshake against the built artifact)
+- `halfsize --fix` and the "FFmpeg was not found" message now say `halfsize …`
+  instead of `npx halfsize@latest …` when running from the executable, and
+  FFmpeg next to the .exe is found before one on PATH
+- `--doctor` reports `source  next to halfsize.exe` for that case
+
+### Fixed
+
+- `probe()` had no timeout. A damaged file, a network drive that stopped
+  answering or a stuck demuxer could hang the CLI and the web server forever;
+  ffprobe is now bounded at 120s (`HALFSIZE_PROBE_TIMEOUT_MS`) and reports that
+  the read timed out instead of claiming the file is not a video
+- The web server's SSE stream sent nothing while an encode ran, so a client that
+  only checked its deadline on inbound data could wait forever. It now emits a
+  comment heartbeat every 15s
+- `close()` had no upper bound: a connection that never finished could keep the
+  process alive. It now stops after 5s
+- A test file that timed out was retried silently, which turned a real stall into
+  a green build. The runner now prints the timed-out attempt's last 25 lines
+  before retrying, and every `ffmpeg`/CLI call in the tests has a timeout;
+  `ETIMEDOUT` is rethrown instead of being skipped as "this ffmpeg cannot
+  generate clips"
+
 ## 0.1.13
 
 - Listed in the official MCP Registry as `io.github.YKLovePython/halfsize`, so

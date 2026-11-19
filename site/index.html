@@ -36,7 +36,7 @@
   "codeRepository": "https://github.com/YKLovePython/halfsize",
   "license": "https://github.com/YKLovePython/halfsize/blob/main/LICENSE",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "softwareVersion": "0.1.13"
+  "softwareVersion": "0.2.0"
 }
 </script>
 <script type="application/ld+json">
@@ -52,7 +52,7 @@
     {
       "@type": "Question",
       "name": "Do I need to install FFmpeg?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. A static build is downloaded on first install. If that fails, halfsize uses an FFmpeg already on your PATH." }
+      "acceptedAnswer": { "@type": "Answer", "text": "No. The Windows .exe download includes it, and the npm package downloads a static build on first install. If that fails, halfsize uses an FFmpeg already on your PATH." }
     },
     {
       "@type": "Question",
@@ -62,7 +62,7 @@
     {
       "@type": "Question",
       "name": "Does it work on Windows, macOS and Linux?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Node.js 18+ is the only requirement." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Windows users can download one .exe and skip Node.js entirely; macOS and Linux need Node.js 18+." }
     },
     {
       "@type": "Question",
@@ -100,20 +100,19 @@
     Everything runs on your machine.
   </p>
   <div class="actions">
-    <a class="button" href="https://www.npmjs.com/package/halfsize">Install from npm</a>
-    <a class="button ghost" href="https://github.com/YKLovePython/halfsize">View source on GitHub</a>
+    <a class="button" href="https://github.com/YKLovePython/halfsize/releases/download/v0.2.0/halfsize-0.2.0-win-x64-full.zip">Download for Windows (.exe)</a>
+    <a class="button ghost" href="https://www.npmjs.com/package/halfsize">Install from npm</a>
   </div>
   <p class="small">As featured in <a href="https://www.ruanyifeng.com/blog/2026/11/weekly-issue-418.html">阮一峰《科技爱好者周刊》第 418 期</a> · 2,500+ downloads on npm</p>
   <p class="new">
-  <b>New in 0.1.13</b> — <code>--mcp</code> is listed in the
-  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=halfsize">official MCP Registry</a>,
-  so Claude Code, Cursor and VS Code can discover it instead of having a config pasted in.
-  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.1.13">Release notes</a>
+  <b>New in 0.2.0</b> — Windows users get one <code>halfsize.exe</code> with the CLI, the local web app
+  and the MCP server inside, and no Node.js to install.
+  <a href="https://github.com/YKLovePython/halfsize/releases/tag/v0.2.0">Release notes</a>
   </p>
 
   <pre><code><span class="prompt">$</span> <span class="hl">npx halfsize source.mp4 --to 2mb</span>
 
-  halfsize 0.1.13
+  halfsize 0.2.0
 
   source.mp4
   <span class="out">23.2 MB  8s  1920x1080  30.00 fps  h264</span>
@@ -218,9 +217,9 @@
   <h2>FAQ</h2>
   <div class="faq">
     <details><summary>Does it upload my video anywhere?</summary><p>No. Encoding and measurement run locally with FFmpeg. No account, no quota, and it works offline after installation.</p></details>
-    <details><summary>Do I need to install FFmpeg?</summary><p>No. A static build is downloaded on first install. If that fails, halfsize uses an FFmpeg already on your PATH.</p></details>
+    <details><summary>Do I need to install FFmpeg?</summary><p>No. The Windows .exe download includes it, and the npm package downloads a static build on first install. If that fails, halfsize uses an FFmpeg already on your PATH.</p></details>
     <details><summary>Can it compress without shrinking the resolution?</summary><p>Yes: add <code>--no-downscale</code>. It will keep the source size and spend the budget there, which is usually softer than letting it downscale.</p></details>
-    <details><summary>Does it work on Windows, macOS and Linux?</summary><p>Yes. Node.js 18+ is the only requirement.</p></details>
+    <details><summary>Does it work on Windows, macOS and Linux?</summary><p>Yes. Windows users can download one .exe and skip Node.js entirely; macOS and Linux need Node.js 18+.</p></details>
     <details><summary>Can I use it in a script?</summary><p>Yes. <code>--json</code> prints a machine-readable result, and <code>--dry-run</code> shows the plan without encoding.</p></details>
     <details><summary>Is it really free?</summary><p>MIT licensed, no paid tier. If it saves you time, <a href="https://github.com/YKLovePython/halfsize">a star</a> helps other people find it.</p></details>
   </div>
