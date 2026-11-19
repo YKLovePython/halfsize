@@ -1,8 +1,8 @@
 # halfsize
 
 > halfsize compresses a video to an exact target size on your own machine and reports the measured
-> VMAF/SSIM quality loss. It is a free, MIT-licensed Node.js CLI with a local web UI. Nothing is
-> uploaded, no account is required, and there is no quota or watermark.
+> VMAF/SSIM quality loss. It is a free, MIT-licensed Node.js CLI and Windows executable, with a local
+> web UI. Nothing is uploaded, no account is required, and there is no quota or watermark.
 
 ## What it solves
 
@@ -82,8 +82,11 @@ VMAF above 90 reads as "looks the same", 80–90 as "slight softening", 70–80 
 
 ## Requirements
 
-Node.js 18 or newer. FFmpeg is bundled, so it does not need to be installed separately. Windows,
-macOS and Linux are supported.
+Node.js 18 or newer, or the Windows executable which needs nothing installed. FFmpeg is bundled in
+both, so it does not need to be installed separately. Windows, macOS and Linux are supported.
+
+Windows download (includes FFmpeg):
+https://github.com/YKLovePython/halfsize/releases/latest
 
 ## Links
 
