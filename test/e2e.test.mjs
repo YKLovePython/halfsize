@@ -14,6 +14,12 @@ import { measureQuality } from "../src/quality.mjs";
 const WORK = fs.mkdtempSync(path.join(os.tmpdir(), "halfsize-test-"));
 const BIN = fileURLToPath(new URL("../bin/halfsize.mjs", import.meta.url));
 
+// Every ffmpeg call here carries a timeout. A child that stalls used to leave the
+// whole test file hanging until the harness killed it at 300s with no output; a
+// timeout at least names the process that stalled. ETIMEDOUT is rethrown rather
+// than skipped, because "this build cannot make test clips" and "this machine
+// stalled for a minute" are different problems and only one is environmental.
+
 test.after(() => {
   fs.rmSync(WORK, { recursive: true, force: true });
 });
@@ -34,9 +40,10 @@ test("end to end: generate, probe, compress to size, verify quality", async (t) 
         "-c:a", "aac", "-b:a", "96k",
         source,
       ],
-      { windowsHide: true, stdio: "ignore" },
+      { windowsHide: true, stdio: "ignore", timeout: 60_000 },
     );
-  } catch {
+  } catch (err) {
+    if (err.code === "ETIMEDOUT") throw err;
     t.skip("ffmpeg cannot generate test clips here");
     return;
   }
@@ -84,9 +91,10 @@ test("end to end: --no-audio produces a silent file and mono stays mono", async 
         "-c:a", "aac", "-b:a", "96k", "-ac", "1",
         source,
       ],
-      { windowsHide: true, stdio: "ignore" },
+      { windowsHide: true, stdio: "ignore", timeout: 60_000 },
     );
-  } catch {
+  } catch (err) {
+    if (err.code === "ETIMEDOUT") throw err;
     t.skip("ffmpeg cannot generate test clips here");
     return;
   }
@@ -122,9 +130,10 @@ test("end to end: a Matroska source still lands on target", async (t) => {
         "-c:a", "aac", "-b:a", "96k",
         source,
       ],
-      { windowsHide: true, stdio: "ignore" },
+      { windowsHide: true, stdio: "ignore", timeout: 60_000 },
     );
-  } catch {
+  } catch (err) {
+    if (err.code === "ETIMEDOUT") throw err;
     t.skip("ffmpeg cannot generate test clips here");
     return;
   }
@@ -163,9 +172,10 @@ test("end to end: an HDR source is tone-mapped to SDR, not left washed out", asy
         "-an",
         source,
       ],
-      { windowsHide: true, stdio: "ignore" },
+      { windowsHide: true, stdio: "ignore", timeout: 60_000 },
     );
-  } catch {
+  } catch (err) {
+    if (err.code === "ETIMEDOUT") throw err;
     t.skip("this ffmpeg cannot generate an HLG clip");
     return;
   }
@@ -215,9 +225,10 @@ test("batch: several files in one command, one JSON document", async (t) => {
           "-c:v", "libx264", "-preset", "veryfast", "-b:v", "2M", "-pix_fmt", "yuv420p",
           file,
         ],
-        { windowsHide: true, stdio: "ignore" },
+        { windowsHide: true, stdio: "ignore", timeout: 60_000 },
       );
-    } catch {
+    } catch (err) {
+      if (err.code === "ETIMEDOUT") throw err;
       t.skip("ffmpeg cannot generate test clips here");
       return;
     }
@@ -228,7 +239,7 @@ test("batch: several files in one command, one JSON document", async (t) => {
   const stdout = execFileSync(
     process.execPath,
     [BIN, ...files, "--to", "150kb", "--json", "--no-verify"],
-    { encoding: "utf8", windowsHide: true },
+    { encoding: "utf8", windowsHide: true, timeout: 180_000 },
   );
   const parsed = JSON.parse(stdout);
   assert.ok(Array.isArray(parsed.files), "batch JSON should wrap results in files[]");

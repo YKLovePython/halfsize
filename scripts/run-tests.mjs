@@ -92,6 +92,16 @@ for (const name of files) {
   if (result.timedOut) {
     console.log(`\n${name}  TIMED OUT after ${Math.round(TIMEOUT_MS / 1000)}s${retried ? " (again, after retry)" : ""}`);
     console.log("    This is the file to look at: a test in it never finished.");
+    // The runner prints each finished test as it goes. A tail here separates "one test
+    // is stuck" (partial list, no summary) from "everything passed but the process
+    // will not exit" (summary printed, event loop held open by some handle).
+    const tail = `${result.stdout}${result.stderr}`.replace(/\u001b\[[0-9;]*m/g, "").trimEnd();
+    if (tail) {
+      console.log("    --- last output before the kill ---");
+      for (const line of tail.split("\n").slice(-25)) console.log(`    ${line}`);
+    } else {
+      console.log("    (the file produced no output at all)");
+    }
     failures.push(name);
     continue;
   }
